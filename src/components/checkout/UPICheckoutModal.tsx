@@ -28,7 +28,7 @@ import {
   RefreshCw,
   Wallet
 } from 'lucide-react';
-import { INDIAN_STATES, calculateGST, SAC_CODES } from '@/lib/gst';
+import { INDIAN_STATES, calculateGST, SAC_CODES, formatINR, formatINRDecimal } from '@/lib/gst';
 import { generateUPIIntentUri, generateQRCodeMatrix } from '@/lib/upi';
 import { useCreatorStore } from '@/lib/store';
 import { ProductType, Order } from '@/types';
@@ -294,7 +294,7 @@ export default function UPICheckoutModal({
               <div className="text-right">
                 <div className="text-[10px] text-slate-400 font-medium">Total Payable</div>
                 <div className="font-display text-xl sm:text-2xl font-extrabold text-white font-mono tracking-tight">
-                  ₹{gstDetails.totalAmount.toFixed(2)}
+                  ₹{formatINRDecimal(gstDetails.totalAmount)}
                 </div>
                 <div className="flex items-center justify-end gap-1 text-[10px] text-amber-400 font-mono font-semibold mt-0.5">
                   <Clock className="h-3 w-3" />
@@ -339,28 +339,28 @@ export default function UPICheckoutModal({
                     </div>
                     <div className="flex justify-between text-slate-300">
                       <span>Base Price (Taxable Value):</span>
-                      <span className="font-mono">₹{item.price.toFixed(2)}</span>
+                      <span className="font-mono">₹{formatINRDecimal(item.price)}</span>
                     </div>
                     {gstDetails.isInterState ? (
                       <div className="flex justify-between text-slate-400">
                         <span>IGST (18% Inter-State to {buyerState}):</span>
-                        <span className="font-mono text-royal-300">₹{gstDetails.igst.toFixed(2)}</span>
+                        <span className="font-mono text-royal-300">₹{formatINRDecimal(gstDetails.igst)}</span>
                       </div>
                     ) : (
                       <>
                         <div className="flex justify-between text-slate-400">
                           <span>CGST (9% Central):</span>
-                          <span className="font-mono text-blue-300">₹{gstDetails.cgst.toFixed(2)}</span>
+                          <span className="font-mono text-blue-300">₹{formatINRDecimal(gstDetails.cgst)}</span>
                         </div>
                         <div className="flex justify-between text-slate-400">
                           <span>SGST (9% State - {buyerState}):</span>
-                          <span className="font-mono text-blue-300">₹{gstDetails.sgst.toFixed(2)}</span>
+                          <span className="font-mono text-blue-300">₹{formatINRDecimal(gstDetails.sgst)}</span>
                         </div>
                       </>
                     )}
                     <div className="pt-2 border-t border-white/[0.08] flex justify-between font-bold text-white text-xs">
                       <span>Total Amount with 18% GST:</span>
-                      <span className="text-emerald-400 font-mono">₹{gstDetails.totalAmount.toFixed(2)}</span>
+                      <span className="text-emerald-400 font-mono">₹{formatINRDecimal(gstDetails.totalAmount)}</span>
                     </div>
                   </div>
                 </motion.div>
@@ -854,7 +854,7 @@ export default function UPICheckoutModal({
                       className="w-full rounded-[14px] bg-royal-600 hover:bg-royal-500 py-3 text-xs font-bold text-white shadow-royal"
                     >
                       <Lock className="h-4 w-4" />
-                      <span>Pay ₹{gstDetails.totalAmount.toFixed(2)} via Razorpay Card</span>
+                      <span>Pay ₹{formatINRDecimal(gstDetails.totalAmount)} via Razorpay Card</span>
                     </RippleButton>
                   </div>
                 )}
@@ -990,7 +990,7 @@ export default function UPICheckoutModal({
                   Payment Confirmed, {completedOrder.buyerName.split(' ')[0]}!
                 </h3>
                 <p className="text-xs text-slate-300 mt-1">
-                  You successfully paid <strong className="text-white font-mono">₹{completedOrder.totalAmount.toFixed(2)}</strong> via {completedOrder.paymentMethod === 'UPI' ? completedOrder.paymentApp : completedOrder.paymentMethod}.
+                  You successfully paid <strong className="text-white font-mono">₹{formatINRDecimal(completedOrder.totalAmount)}</strong> via {completedOrder.paymentMethod === 'UPI' ? completedOrder.paymentApp : completedOrder.paymentMethod}.
                 </p>
               </div>
 

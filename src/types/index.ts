@@ -169,6 +169,9 @@ export interface Order {
   totalAmount: number;
   paymentMethod: 'UPI' | 'Card' | 'Netbanking' | 'CRED';
   paymentApp?: 'PhonePe' | 'GPay' | 'Paytm' | 'CRED' | 'BHIM';
+  paymentGateway?: string;
+  razorpayPaymentId?: string;
+  razorpayOrderId?: string;
   upiRefId?: string;
   invoiceNumber: string;
   sacCode: string;
@@ -179,6 +182,8 @@ export interface Order {
   billingAddress?: string;
   bookingDate?: string;
   bookingTimeSlot?: string;
+  downloadUrl?: string;
+  isInterState?: boolean;
   deliverySentWhatsapp: boolean;
   deliverySentEmail: boolean;
 }

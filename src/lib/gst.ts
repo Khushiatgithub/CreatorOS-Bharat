@@ -150,6 +150,7 @@ export function calculateGST(
     const igst = (taxableAmount * gstRate) / 100;
     return {
       isInterState: true,
+      taxableAmount: Number(taxableAmount.toFixed(2)),
       cgst: 0,
       sgst: 0,
       igst: Number(igst.toFixed(2)),
@@ -162,6 +163,7 @@ export function calculateGST(
     const sgst = (taxableAmount * halfRate) / 100;
     return {
       isInterState: false,
+      taxableAmount: Number(taxableAmount.toFixed(2)),
       cgst: Number(cgst.toFixed(2)),
       sgst: Number(sgst.toFixed(2)),
       igst: 0,

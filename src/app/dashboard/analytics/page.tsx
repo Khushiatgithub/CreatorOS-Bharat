@@ -13,6 +13,8 @@ import {
   ShieldCheck, 
   Building 
 } from 'lucide-react';
+import { formatINR, formatINRDecimal } from '@/lib/gst';
+import AIBusinessCoachWidget from '@/components/dashboard/AIBusinessCoach';
 import { 
   AnimatedCounter, 
   RippleButton, 
@@ -74,7 +76,7 @@ export default function AnalyticsPage() {
           >
             <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
             <span>
-              Instant IMPS Settlement of ₹{totalGMV.toFixed(2)} dispatched to {activeCreator?.bankAccount.bankName} (IFSC: {activeCreator?.bankAccount.ifsc}).
+              Instant IMPS Settlement of ₹{formatINRDecimal(totalGMV)} dispatched to {activeCreator?.bankAccount.bankName} (IFSC: {activeCreator?.bankAccount.ifsc}).
             </span>
           </motion.div>
         )}
@@ -193,6 +195,9 @@ export default function AnalyticsPage() {
           </div>
 
         </div>
+
+        {/* AI BUSINESS COACH & GROWTH ENGINE */}
+        <AIBusinessCoachWidget />
 
       </div>
     </PageTransition>

@@ -319,6 +319,98 @@ export function useCreatorStore() {
     return { order: newOrder, appointment: newAppointment };
   };
 
+  // Custom Invoice creation from GST dashboard
+  const createInvoice = (params: {
+    buyerName: string;
+    buyerEmail: string;
+    buyerPhone: string;
+    buyerState: string;
+    buyerGst?: string;
+    itemTitle: string;
+    itemType?: ProductType;
+    sacCode?: string;
+    amount: number;
+    gstRate?: number;
+    status: 'Paid' | 'Pending' | 'Overdue';
+    dueDate?: string;
+    notes?: string;
+    paymentMethod?: 'UPI' | 'Card' | 'Netbanking' | 'CRED';
+  }) => {
+    const creator = activeCreator;
+    const gstRate = params.gstRate || 18;
+    const gstCalc = calculateGST(params.amount, creator.state, params.buyerState, gstRate);
+    const orderNum = `ORD-${Math.floor(10000 + Math.random() * 90000)}`;
+    const orderId = `inv_${Date.now()}`;
+    const invoiceNum = `INV-${new Date().getFullYear()}-${orderNum.slice(-5)}`;
+
+    const isPaid = params.status === 'Paid';
+    const isUPI = !params.paymentMethod || params.paymentMethod === 'UPI';
+    const txnRef = isPaid
+      ? isUPI
+        ? `UPI-${Math.floor(100000000000 + Math.random() * 900000000000)}`
+        : `RZP-PAY-${Math.floor(1000000000 + Math.random() * 9000000000)}`
+      : undefined;
+
+    const newOrder: Order = {
+      id: orderId,
+      orderNumber: orderNum,
+      date: new Date().toISOString(),
+      creatorId: creator.id,
+      buyerName: params.buyerName,
+      buyerEmail: params.buyerEmail,
+      buyerPhone: params.buyerPhone,
+      buyerGst: params.buyerGst,
+      buyerState: params.buyerState,
+      itemType: params.itemType || 'product',
+      itemId: `custom_${Date.now()}`,
+      itemTitle: params.itemTitle,
+      amount: params.amount,
+      gstRate: gstRate,
+      cgst: gstCalc.cgst,
+      sgst: gstCalc.sgst,
+      igst: gstCalc.igst,
+      totalAmount: gstCalc.totalAmount,
+      paymentMethod: params.paymentMethod || 'UPI',
+      paymentApp: isPaid ? 'PhonePe' : undefined,
+      upiRefId: txnRef,
+      invoiceNumber: invoiceNum,
+      sacCode: params.sacCode || SAC_CODES.DIGITAL_PRODUCT.code,
+      status: isPaid ? 'completed' : 'pending',
+      paymentStatus: params.status,
+      dueDate: params.dueDate,
+      notes: params.notes,
+      deliverySentWhatsapp: isPaid,
+      deliverySentEmail: isPaid
+    };
+
+    setOrders((prev) => {
+      const next = [newOrder, ...prev];
+      saveState(STORAGE_KEYS.ORDERS, next);
+      return next;
+    });
+
+    return newOrder;
+  };
+
+  const updateInvoiceStatus = (orderId: string, status: 'Paid' | 'Pending' | 'Overdue') => {
+    setOrders((prev) => {
+      const next = prev.map((o) => {
+        if (o.id === orderId) {
+          const isPaid = status === 'Paid';
+          return {
+            ...o,
+            paymentStatus: status,
+            status: (isPaid ? 'completed' : 'pending') as any,
+            upiRefId: isPaid && !o.upiRefId ? `UPI-${Math.floor(100000000000 + Math.random() * 900000000000)}` : o.upiRefId
+          };
+        }
+        return o;
+      });
+      saveState(STORAGE_KEYS.ORDERS, next);
+      return next;
+    });
+  };
+
   // Submit proposal to brand collab brief
   const applyToBrandBrief = (briefId: string, proposedAmount: number, pitch: string, deliverables: string[], timelineDays: number) => {
     const brief = brandBriefs.find((b) => b.id === briefId);
@@ -407,6 +499,8 @@ export function useCreatorStore() {
     addCourse,
     addBookingService,
     processCheckout,
+    createInvoice,
+    updateInvoiceStatus,
     applyToBrandBrief,
     updateMediaKit,
     resetDemoData

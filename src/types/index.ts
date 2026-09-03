@@ -172,7 +172,10 @@ export interface Order {
   upiRefId?: string;
   invoiceNumber: string;
   sacCode: string;
-  status: 'completed' | 'pending' | 'failed' | 'refunded';
+  status: 'completed' | 'pending' | 'failed' | 'refunded' | 'Paid' | 'Pending' | 'Overdue';
+  paymentStatus?: 'Paid' | 'Pending' | 'Overdue';
+  dueDate?: string;
+  notes?: string;
   bookingDate?: string;
   bookingTimeSlot?: string;
   deliverySentWhatsapp: boolean;
@@ -290,5 +293,10 @@ export interface GSTInvoiceData {
     mode: string;
     transactionId: string;
     paidDate: string;
+    status: 'Paid' | 'Pending' | 'Overdue';
   };
+  dueDate?: string;
+  amountInWords?: string;
+  notes?: string;
+  terms?: string;
 }

@@ -16,10 +16,14 @@ import {
   ArrowUpRight 
 } from 'lucide-react';
 import Link from 'next/link';
+import { INITIAL_COURSES } from '@/lib/mock-data';
+import { formatINR } from '@/lib/gst';
 import { PageTransition, HoverCard, RippleButton } from '@/components/ui/motion';
 
 export default function CoursesManagerPage() {
   const { courses, activeCreator } = useCreatorStore();
+
+  const currentCourses = courses && courses.length > 0 ? courses : INITIAL_COURSES;
 
   return (
     <PageTransition>
@@ -50,7 +54,7 @@ export default function CoursesManagerPage() {
 
         {/* Courses List */}
         <div className="space-y-5">
-          {courses.map((c) => (
+          {currentCourses.map((c) => (
             <HoverCard
               hoverY={-3}
               key={c.id}
@@ -102,14 +106,14 @@ export default function CoursesManagerPage() {
 
                 <div className="text-right shrink-0 md:border-l md:border-white/[0.08] md:pl-6 space-y-3">
                   <div>
-                    <span className="font-display text-2xl font-bold text-white">₹{c.price}</span>
+                    <span className="font-display text-2xl font-bold text-white font-mono">₹{formatINR(c.price)}</span>
                     {c.originalPrice && (
-                      <p className="text-xs text-slate-500 line-through">₹{c.originalPrice}</p>
+                      <p className="text-xs text-slate-500 line-through font-mono">₹{formatINR(c.originalPrice)}</p>
                     )}
                   </div>
 
                   <Link
-                    href={`/${activeCreator?.username}/course/${c.id}`}
+                    href={`/${activeCreator?.username || 'aarav.tech'}/course/${c.id}`}
                     target="_blank"
                     className="flex items-center justify-center gap-1.5 rounded-[14px] bg-white/[0.05] hover:bg-white/[0.08] px-4 py-2 text-xs font-semibold text-white transition btn-press"
                   >

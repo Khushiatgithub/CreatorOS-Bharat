@@ -12,14 +12,18 @@ import {
   User, 
   Phone, 
   Mail, 
-  Sparkles,
+  Sparkles, 
   ArrowUpRight 
 } from 'lucide-react';
+import { INITIAL_BOOKINGS } from '@/lib/mock-data';
+import { formatINR, formatINRDecimal } from '@/lib/gst';
 import { PageTransition, HoverCard, RippleButton } from '@/components/ui/motion';
 import PremiumEmptyState from '@/components/ui/EmptyState';
 
 export default function BookingsManagerPage() {
   const { bookingServices, appointments, activeCreator } = useCreatorStore();
+
+  const currentBookings = bookingServices && bookingServices.length > 0 ? bookingServices : INITIAL_BOOKINGS;
 
   return (
     <PageTransition>
@@ -55,7 +59,7 @@ export default function BookingsManagerPage() {
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {bookingServices.map((srv) => (
+            {currentBookings.map((srv) => (
               <HoverCard
                 hoverY={-3}
                 key={srv.id}
@@ -71,7 +75,7 @@ export default function BookingsManagerPage() {
                   </div>
 
                   <div className="text-right shrink-0">
-                    <span className="font-display text-lg font-bold text-white">₹{srv.price}</span>
+                    <span className="font-display text-lg font-bold text-white font-mono">₹{formatINR(srv.price)}</span>
                     <p className="text-[10px] text-slate-400 font-mono">{srv.durationMinutes} mins</p>
                   </div>
                 </div>
@@ -96,7 +100,7 @@ export default function BookingsManagerPage() {
                     {srv.bookingsCompleted} Completed • ★ {srv.rating} Rating
                   </span>
                   <a
-                    href={`/${activeCreator?.username}`}
+                    href={`/${activeCreator?.username || 'aarav.tech'}`}
                     target="_blank"
                     className="text-royal-400 hover:underline font-medium text-xs flex items-center gap-1"
                   >
@@ -128,7 +132,7 @@ export default function BookingsManagerPage() {
               description="When a buyer selects a time slot and pays via UPI on your bio storefront, the calendar booking and Google Meet invite will automatically appear here."
               badge="Topmate Sync Active"
               actionLabel="Preview Booking Slots"
-              onAction={() => window.open(`/${activeCreator?.username}`, '_blank')}
+              onAction={() => window.open(`/${activeCreator?.username || 'aarav.tech'}`, '_blank')}
             />
           ) : (
             <div className="overflow-x-auto">
@@ -162,7 +166,7 @@ export default function BookingsManagerPage() {
                           <span>Join Meet</span>
                         </a>
                       </td>
-                      <td className="py-3 text-right font-bold text-white font-mono">₹{apt.amountPaid.toFixed(2)}</td>
+                      <td className="py-3 text-right font-bold text-white font-mono">₹{formatINRDecimal(apt.amountPaid)}</td>
                     </tr>
                   ))}
                 </tbody>

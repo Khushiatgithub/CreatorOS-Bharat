@@ -198,6 +198,7 @@ export function useCreatorStore() {
     buyerPhone: string;
     buyerState: string;
     buyerGst?: string;
+    paymentMethod?: 'UPI' | 'Card' | 'Netbanking' | 'CRED';
     paymentApp?: 'PhonePe' | 'GPay' | 'Paytm' | 'CRED' | 'BHIM';
     bookingDate?: string;
     bookingTimeSlot?: string;
@@ -212,6 +213,11 @@ export function useCreatorStore() {
     if (params.itemType === 'course') sac = SAC_CODES.COURSE.code;
     else if (params.itemType === 'booking') sac = SAC_CODES.BOOKING.code;
     else if (params.itemType === 'tip') sac = SAC_CODES.TIP.code;
+
+    const isUPI = !params.paymentMethod || params.paymentMethod === 'UPI';
+    const txnRef = isUPI
+      ? `UPI-${Math.floor(100000000000 + Math.random() * 900000000000)}`
+      : `RZP-PAY-${Math.floor(1000000000 + Math.random() * 9000000000)}`;
 
     const newOrder: Order = {
       id: orderId,
@@ -232,12 +238,14 @@ export function useCreatorStore() {
       sgst: gstCalc.sgst,
       igst: gstCalc.igst,
       totalAmount: gstCalc.totalAmount,
-      paymentMethod: 'UPI',
-      paymentApp: params.paymentApp || 'PhonePe',
-      upiRefId: `UPI-${Math.floor(100000000000 + Math.random() * 900000000000)}`,
+      paymentMethod: params.paymentMethod || 'UPI',
+      paymentApp: params.paymentApp || (params.paymentMethod === 'Card' ? undefined : 'PhonePe'),
+      upiRefId: txnRef,
       invoiceNumber: invoiceNum,
       sacCode: sac,
       status: 'completed',
+      bookingDate: params.bookingDate,
+      bookingTimeSlot: params.bookingTimeSlot,
       deliverySentWhatsapp: true,
       deliverySentEmail: true
     };

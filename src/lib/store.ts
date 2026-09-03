@@ -326,6 +326,7 @@ export function useCreatorStore() {
     buyerPhone: string;
     buyerState: string;
     buyerGst?: string;
+    billingAddress?: string;
     itemTitle: string;
     itemType?: ProductType;
     sacCode?: string;
@@ -351,6 +352,10 @@ export function useCreatorStore() {
         : `RZP-PAY-${Math.floor(1000000000 + Math.random() * 9000000000)}`
       : undefined;
 
+    let sac = params.sacCode || SAC_CODES.DIGITAL_PRODUCT.code;
+    if (params.itemType === 'course') sac = SAC_CODES.COURSE.code;
+    else if (params.itemType === 'booking') sac = SAC_CODES.BOOKING.code;
+
     const newOrder: Order = {
       id: orderId,
       orderNumber: orderNum,
@@ -361,6 +366,7 @@ export function useCreatorStore() {
       buyerPhone: params.buyerPhone,
       buyerGst: params.buyerGst,
       buyerState: params.buyerState,
+      billingAddress: params.billingAddress,
       itemType: params.itemType || 'product',
       itemId: `custom_${Date.now()}`,
       itemTitle: params.itemTitle,
@@ -374,7 +380,7 @@ export function useCreatorStore() {
       paymentApp: isPaid ? 'PhonePe' : undefined,
       upiRefId: txnRef,
       invoiceNumber: invoiceNum,
-      sacCode: params.sacCode || SAC_CODES.DIGITAL_PRODUCT.code,
+      sacCode: sac,
       status: isPaid ? 'completed' : 'pending',
       paymentStatus: params.status,
       dueDate: params.dueDate,
@@ -406,6 +412,14 @@ export function useCreatorStore() {
         }
         return o;
       });
+      saveState(STORAGE_KEYS.ORDERS, next);
+      return next;
+    });
+  };
+
+  const deleteInvoice = (orderId: string) => {
+    setOrders((prev) => {
+      const next = prev.filter((o) => o.id !== orderId);
       saveState(STORAGE_KEYS.ORDERS, next);
       return next;
     });
@@ -501,6 +515,7 @@ export function useCreatorStore() {
     processCheckout,
     createInvoice,
     updateInvoiceStatus,
+    deleteInvoice,
     applyToBrandBrief,
     updateMediaKit,
     resetDemoData

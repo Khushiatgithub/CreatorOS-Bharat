@@ -34,17 +34,12 @@ export const INDIAN_STATES: { [key: string]: string } = {
   'Jammu and Kashmir': '01',
   'Ladakh': '38',
   'Puducherry': '34',
-  'Dadra and Nagar Haveli and Daman and Diu': '26',
-  'Andaman and Nicobar Islands': '35',
-  'Lakshadweep': '31'
+  'Goa, Daman and Diu': '25'
 };
 
-export const GST_STATE_CODE_MAP: { [code: string]: string } = Object.entries(INDIAN_STATES).reduce(
-  (acc, [state, code]) => {
-    acc[code] = state;
-    return acc;
-  },
-  {} as { [code: string]: string }
+export const STATE_CODE_TO_NAME: { [key: string]: string } = Object.entries(INDIAN_STATES).reduce(
+  (acc, [name, code]) => ({ ...acc, [code]: name }),
+  {}
 );
 
 export const SAC_CODES = {
@@ -67,78 +62,66 @@ export const SAC_CODES = {
   TIP: {
     code: '999799',
     description: 'Voluntary creator contribution / appreciation tip'
-  },
-  MANAGEMENT: {
-    code: '998311',
-    description: 'Management consulting and brand marketing services'
   }
 };
 
 /**
- * Validates 15-character Indian GSTIN
- * Format: 2 digits (state) + 10 chars PAN + 1 entity num + 'Z' + 1 check char
+ * Validates Indian Goods & Services Tax Identification Number (GSTIN)
+ * Format: 2 digits (State Code) + 10 chars (PAN) + 1 digit (Entity) + 'Z' + 1 char (Checksum)
  */
-export function validateGSTIN(gstin: string): {
-  isValid: boolean;
-  stateCode?: string;
-  stateName?: string;
-  pan?: string;
-  message: string;
-} {
-  if (!gstin) {
+export function validateGSTIN(gstin: string): { isValid: boolean; message: string; stateName?: string; stateCode?: string } {
+  if (!gstin || !gstin.trim()) {
     return { isValid: false, message: 'GSTIN is empty' };
   }
 
-  const cleanGstin = gstin.trim().toUpperCase();
-
-  if (cleanGstin.length !== 15) {
-    return {
-      isValid: false,
-      message: `GSTIN must be exactly 15 characters (currently ${cleanGstin.length})`
+  const cleaned = gstin.trim().toUpperCase();
+  
+  if (cleaned.length !== 15) {
+    return { 
+      isValid: false, 
+      message: `GSTIN must be exactly 15 characters (currently ${cleaned.length})` 
     };
   }
 
+  // Regex for 15-character Indian GSTIN
   const gstinRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
-  if (!gstinRegex.test(cleanGstin)) {
-    return {
-      isValid: false,
-      message: 'Invalid GSTIN format. Expected format: 29ABCDE1234F1Z5'
+  if (!gstinRegex.test(cleaned)) {
+    return { 
+      isValid: false, 
+      message: 'Invalid GSTIN structure (Expected: 2-digit state + 10-char PAN + 1-digit entity + Z + Checksum)' 
     };
   }
 
-  const stateCode = cleanGstin.substring(0, 2);
-  const stateName = GST_STATE_CODE_MAP[stateCode] || 'Unknown State';
-  const pan = cleanGstin.substring(2, 12);
+  const stateCode = cleaned.substring(0, 2);
+  const stateName = STATE_CODE_TO_NAME[stateCode];
+
+  if (!stateName) {
+    return { 
+      isValid: false, 
+      message: `Invalid state code '${stateCode}' in GSTIN` 
+    };
+  }
 
   return {
     isValid: true,
-    stateCode,
+    message: `Valid Indian GSTIN (${stateName})`,
     stateName,
-    pan,
-    message: `Valid GSTIN (${stateName})`
+    stateCode
   };
 }
 
-/**
- * Calculates Indian GST components based on intra-state vs inter-state
- */
 export function calculateGST(
   taxableAmount: number,
   creatorState: string,
   buyerState: string,
   gstRate: number = 18
 ) {
-  const normCreator = (creatorState || 'Karnataka').trim().toLowerCase();
-  const normBuyer = (buyerState || 'Karnataka').trim().toLowerCase();
-  const isInterState = normCreator !== normBuyer;
+  const isInterState = creatorState.trim().toLowerCase() !== buyerState.trim().toLowerCase();
   
   if (isInterState) {
     const igst = (taxableAmount * gstRate) / 100;
     return {
       isInterState: true,
-      cgstRate: 0,
-      sgstRate: 0,
-      igstRate: gstRate,
       cgst: 0,
       sgst: 0,
       igst: Number(igst.toFixed(2)),
@@ -151,9 +134,6 @@ export function calculateGST(
     const sgst = (taxableAmount * halfRate) / 100;
     return {
       isInterState: false,
-      cgstRate: halfRate,
-      sgstRate: halfRate,
-      igstRate: 0,
       cgst: Number(cgst.toFixed(2)),
       sgst: Number(sgst.toFixed(2)),
       igst: 0,
@@ -163,80 +143,18 @@ export function calculateGST(
   }
 }
 
-/**
- * Converts numbers into Indian Currency Words (Lakhs & Crores format)
- */
-export function numberToIndianWords(amount: number): string {
-  if (amount === 0) return 'Rupees Zero Only';
-
-  const ones = [
-    '', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
-    'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
-    'Seventeen', 'Eighteen', 'Nineteen'
-  ];
-
-  const tens = [
-    '', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'
-  ];
-
-  function convertTwoDigits(n: number): string {
-    if (n < 20) return ones[n];
-    return `${tens[Math.floor(n / 10)]} ${ones[n % 10]}`.trim();
-  }
-
-  function convertThreeDigits(n: number): string {
-    const hundred = Math.floor(n / 100);
-    const rest = n % 100;
-    let res = '';
-    if (hundred > 0) res += `${ones[hundred]} Hundred `;
-    if (rest > 0) res += convertTwoDigits(rest);
-    return res.trim();
-  }
-
-  const integerPart = Math.floor(amount);
-  const decimalPart = Math.round((amount - integerPart) * 100);
-
-  let num = integerPart;
-  let words = '';
-
-  const crore = Math.floor(num / 10000000);
-  num %= 10000000;
-  const lakh = Math.floor(num / 100000);
-  num %= 100000;
-  const thousand = Math.floor(num / 1000);
-  num %= 1000;
-  const remainder = num;
-
-  if (crore > 0) words += `${convertTwoDigits(crore)} Crore `;
-  if (lakh > 0) words += `${convertTwoDigits(lakh)} Lakh `;
-  if (thousand > 0) words += `${convertTwoDigits(thousand)} Thousand `;
-  if (remainder > 0) words += `${convertThreeDigits(remainder)} `;
-
-  words = words.trim();
-  let result = words ? `INR ${words} Rupees` : 'INR Zero Rupees';
-
-  if (decimalPart > 0) {
-    result += ` and ${convertTwoDigits(decimalPart)} Paise`;
-  }
-
-  return `${result} Only`;
-}
-
-export function buildInvoiceData(
-  order: Order,
-  creator: {
-    name: string;
-    businessName?: string;
-    state: string;
-    gstNumber?: string;
-    address?: string;
-  }
-): GSTInvoiceData {
+export function buildInvoiceData(order: Order, creator: {
+  name: string;
+  businessName?: string;
+  state: string;
+  gstNumber?: string;
+  address?: string;
+}): GSTInvoiceData {
   const isInterState = (creator.state || 'Karnataka').toLowerCase() !== (order.buyerState || 'Delhi').toLowerCase();
   const stateCode = INDIAN_STATES[creator.state] || '29';
   const buyerStateCode = INDIAN_STATES[order.buyerState] || '07';
 
-  const invoiceStatus = (order.paymentStatus || (order.status === 'completed' ? 'Paid' : 'Pending')) as 'Paid' | 'Pending' | 'Overdue';
+  const status = order.paymentStatus || (order.status === 'completed' ? 'Paid' : 'Pending');
 
   return {
     invoiceNumber: order.invoiceNumber || `INV-${new Date().getFullYear()}-${order.orderNumber.slice(-5)}`,
@@ -254,7 +172,7 @@ export function buildInvoiceData(
       state: creator.state || 'Karnataka',
       stateCode: stateCode,
       gstin: creator.gstNumber || '29ABCDE1234F1Z5',
-      pan: (creator.gstNumber && creator.gstNumber.length >= 12) ? creator.gstNumber.substring(2, 12) : 'ABCDE1234F'
+      pan: 'ABCDE1234F'
     },
     buyer: {
       name: order.buyerName,
@@ -282,19 +200,18 @@ export function buildInvoiceData(
     igstRate: isInterState ? order.gstRate : 0,
     igstAmount: order.igst,
     totalInvoiceValue: order.totalAmount,
-    amountInWords: numberToIndianWords(order.totalAmount),
-    dueDate: order.dueDate || new Date(new Date(order.date).getTime() + 14 * 86400000).toLocaleDateString('en-IN', {
+    paymentDetails: {
+      mode: order.paymentMethod,
+      transactionId: order.upiRefId || `UPI-${Math.floor(100000000000 + Math.random() * 900000000000)}`,
+      paidDate: status === 'Paid' ? new Date(order.date).toLocaleString('en-IN') : 'Pending Payment'
+    },
+    status,
+    dueDate: order.dueDate || new Date(Date.now() + 86400000 * 7).toLocaleDateString('en-IN', {
       day: '2-digit',
       month: 'short',
       year: 'numeric'
     }),
-    notes: order.notes || 'Thank you for your business. For electronic delivery support, reach out via WhatsApp.',
-    terms: 'Supply of online services and digital content. Subject to jurisdiction of Bengaluru, Karnataka.',
-    paymentDetails: {
-      mode: order.paymentMethod || 'UPI',
-      transactionId: order.upiRefId || `UPI-${Math.floor(100000000000 + Math.random() * 900000000000)}`,
-      paidDate: new Date(order.date).toLocaleString('en-IN'),
-      status: invoiceStatus
-    }
+    notes: order.notes || 'Goods/Services once sold are subject to terms of service. Computer generated GST tax invoice.',
+    reverseCharge: 'No'
   };
 }

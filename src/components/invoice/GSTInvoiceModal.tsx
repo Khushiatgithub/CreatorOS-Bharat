@@ -1,23 +1,10 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { 
-  X, 
-  Download, 
-  Printer, 
-  ShieldCheck, 
-  CheckCircle2, 
-  FileText, 
-  Clock, 
-  AlertCircle,
-  Building2,
-  Copy,
-  Check,
-  CreditCard
-} from 'lucide-react';
+import { X, Download, Printer, ShieldCheck, CheckCircle, FileText, AlertCircle, Clock } from 'lucide-react';
 import { Order } from '@/types';
 import { useCreatorStore } from '@/lib/store';
-import { buildInvoiceData, numberToIndianWords } from '@/lib/gst';
+import { buildInvoiceData } from '@/lib/gst';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -31,7 +18,6 @@ export default function GSTInvoiceModal({ isOpen, onClose, order }: GSTInvoiceMo
   const { activeCreator } = useCreatorStore();
   const invoiceRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
-  const [copiedUpi, setCopiedUpi] = useState(false);
 
   if (!isOpen) return null;
 
@@ -43,17 +29,14 @@ export default function GSTInvoiceModal({ isOpen, onClose, order }: GSTInvoiceMo
     address: `${activeCreator?.location || 'Bengaluru, Karnataka'}, India`
   });
 
-  const invoiceStatus = (order.paymentStatus || (order.status === 'completed' ? 'Paid' : 'Pending')) as 'Paid' | 'Pending' | 'Overdue';
-
   const handleDownloadPDF = async () => {
     if (!invoiceRef.current) return;
     try {
       setDownloading(true);
       const canvas = await html2canvas(invoiceRef.current, {
-        scale: 2.5,
+        scale: 2,
         useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false
+        backgroundColor: '#ffffff'
       });
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
@@ -68,172 +51,159 @@ export default function GSTInvoiceModal({ isOpen, onClose, order }: GSTInvoiceMo
     }
   };
 
-  const handleCopyUpi = () => {
-    navigator.clipboard.writeText(activeCreator?.upiId || 'creator@okaxis');
-    setCopiedUpi(true);
-    setTimeout(() => setCopiedUpi(false), 2000);
-  };
+  const status = invoice.status || 'Paid';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-xl overflow-y-auto animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-2xl overflow-y-auto animate-fade-in">
       <div className="relative w-full max-w-3xl rounded-[24px] border border-white/[0.12] bg-[#0A0D17] p-5 sm:p-6 shadow-2xl text-slate-100 animate-scale-in my-6 max-h-[95vh] overflow-y-auto">
         
-        {/* Header toolbar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.08] pb-4 mb-4">
+        {/* Header bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-white/[0.08] pb-4 mb-4">
           <div className="flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-[12px] bg-royal-600/20 border border-royal-500/30 flex items-center justify-center text-royal-400">
-              <FileText className="h-4 w-4" />
-            </div>
+            <FileText className="h-5 w-5 text-royal-400" />
             <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-display text-base font-bold text-white tracking-tight">
-                  GST Tax Invoice ({invoice.invoiceNumber})
-                </h3>
-                {invoiceStatus === 'Paid' && (
-                  <span className="rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-bold text-emerald-400 border border-emerald-500/30 font-mono">
-                    ✓ Paid
-                  </span>
-                )}
-                {invoiceStatus === 'Pending' && (
-                  <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[10px] font-bold text-amber-400 border border-amber-500/30 font-mono">
-                    ⏳ Pending
-                  </span>
-                )}
-                {invoiceStatus === 'Overdue' && (
-                  <span className="rounded-full bg-rose-500/15 px-2.5 py-0.5 text-[10px] font-bold text-rose-400 border border-rose-500/30 font-mono">
-                    ⚠️ Overdue
-                  </span>
-                )}
-              </div>
-              <p className="text-[11px] text-slate-400">Official compliant e-invoice under Indian GST Act 2017</p>
+              <h3 className="font-display text-base font-bold text-white flex items-center gap-2">
+                <span>GST Tax Invoice</span>
+                <span className="font-mono text-royal-300 font-semibold text-xs">({invoice.invoiceNumber})</span>
+              </h3>
+              <p className="text-[11px] text-slate-400">Official compliant invoice under Section 31 of CGST Act, 2017</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             <button
               onClick={() => window.print()}
-              className="flex items-center gap-1.5 rounded-[12px] border border-white/[0.1] bg-white/[0.04] px-3 py-1.5 text-xs text-slate-300 hover:bg-white/[0.08] transition btn-press font-semibold"
-              title="Print Tax Invoice"
+              className="flex items-center gap-1.5 rounded-[12px] border border-white/[0.1] bg-white/[0.04] px-3.5 py-1.5 text-xs text-slate-300 hover:bg-white/[0.08] transition btn-press"
             >
               <Printer className="h-3.5 w-3.5" />
               <span>Print</span>
             </button>
+
             <button
               onClick={handleDownloadPDF}
               disabled={downloading}
-              className="flex items-center gap-1.5 rounded-[12px] bg-royal-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-royal-500 shadow-royal-sm transition btn-press disabled:opacity-50"
-              title="Export as PDF file"
+              className="flex items-center gap-1.5 rounded-[12px] bg-royal-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-royal-500 shadow-royal-sm transition btn-press disabled:opacity-50"
             >
               <Download className="h-3.5 w-3.5" />
-              <span>{downloading ? 'Exporting PDF...' : 'Download PDF'}</span>
+              <span>{downloading ? 'Exporting...' : 'Download PDF'}</span>
             </button>
+
             <button
               onClick={onClose}
               className="rounded-full p-1.5 text-slate-400 hover:bg-white/[0.08] hover:text-white transition"
-              title="Close modal"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
         </div>
 
-        {/* PRINTABLE INVOICE PAPER SHEET (Clean, Authentic Indian GST Format) */}
+        {/* INVOICE PAPER SHEET (Stripe / Razorpay Grade Legal Tax Invoice) */}
         <div 
           ref={invoiceRef} 
-          className="rounded-[16px] bg-white p-6 sm:p-8 text-slate-900 shadow-2xl border border-gray-300 text-xs leading-relaxed font-sans"
+          className="rounded-[16px] bg-white p-6 sm:p-8 text-slate-900 shadow-xl border border-gray-200 text-xs leading-relaxed font-sans"
         >
-          {/* Top Legal Header */}
+          {/* Top Row: Business Info + Tax Invoice Header */}
           <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4 mb-4">
-            <div className="max-w-[58%]">
+            <div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-base text-slate-900 tracking-tight">{invoice.creator.businessName}</span>
-                <span className="bg-blue-50 text-blue-900 text-[9px] font-bold px-2 py-0.5 rounded border border-blue-200">
-                  GSTIN REGISTERED
+                <span className="font-bold text-base sm:text-lg text-slate-900 tracking-tight">{invoice.creator.businessName}</span>
+                <span className="bg-blue-50 text-blue-800 text-[9px] font-bold px-2 py-0.5 rounded border border-blue-200 font-mono">
+                  GST REGISTERED
                 </span>
               </div>
-              <p className="text-gray-700 mt-0.5 text-[11px]">{invoice.creator.address}</p>
-              <div className="grid grid-cols-2 gap-x-2 text-[11px] text-gray-800 mt-1">
-                <p><strong className="text-slate-900">State:</strong> {invoice.creator.state} (Code: {invoice.creator.stateCode})</p>
-                <p><strong className="text-slate-900">PAN:</strong> <span className="font-mono">{invoice.creator.pan}</span></p>
-                <p className="col-span-2 font-mono font-bold text-slate-900">
-                  <strong>GSTIN:</strong> {invoice.creator.gstin}
-                </p>
-              </div>
+              <p className="text-gray-600 mt-0.5">{invoice.creator.address}</p>
+              <p className="text-gray-700 font-medium">State: <span className="font-bold">{invoice.creator.state}</span> (State Code: <span className="font-mono font-bold">{invoice.creator.stateCode}</span>)</p>
+              <p className="text-gray-900 font-bold font-mono text-[11px] mt-0.5">GSTIN: {invoice.creator.gstin}</p>
+              <p className="text-gray-600 font-mono text-[10px]">PAN: {invoice.creator.pan}</p>
             </div>
 
             <div className="text-right">
-              <span className="inline-block bg-slate-900 text-white font-bold text-xs uppercase px-3 py-1 rounded tracking-wider shadow-sm">
-                TAX INVOICE
-              </span>
-              <p className="text-[10px] text-gray-500 mt-0.5">(Original for Recipient - Rule 46 of CGST Rules)</p>
+              <div className="flex items-center justify-end gap-2">
+                <span className="inline-block bg-slate-900 text-white font-bold text-xs uppercase px-2.5 py-1 rounded tracking-wider">
+                  TAX INVOICE
+                </span>
+                {status === 'Paid' && (
+                  <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-[10px] px-2 py-0.5 rounded font-mono uppercase">
+                    PAID
+                  </span>
+                )}
+                {status === 'Pending' && (
+                  <span className="bg-amber-100 text-amber-800 border border-amber-300 font-bold text-[10px] px-2 py-0.5 rounded font-mono uppercase">
+                    PENDING
+                  </span>
+                )}
+                {status === 'Overdue' && (
+                  <span className="bg-rose-100 text-rose-800 border border-rose-300 font-bold text-[10px] px-2 py-0.5 rounded font-mono uppercase">
+                    OVERDUE
+                  </span>
+                )}
+              </div>
+              <p className="text-[10px] text-gray-500 mt-0.5">(Original for Recipient)</p>
               
               <div className="mt-2.5 space-y-0.5 text-[11px]">
                 <p className="font-bold text-gray-900">Invoice No: <span className="font-mono text-royal-700">{invoice.invoiceNumber}</span></p>
-                <p className="text-gray-700">Invoice Date: <strong className="text-slate-900">{invoice.invoiceDate}</strong></p>
-                <p className="text-gray-700">Due Date: <strong className="text-slate-900">{invoice.dueDate}</strong></p>
-                <p className="text-gray-700">Place of Supply: <strong className="text-slate-900">{invoice.placeOfSupply}</strong></p>
+                <p className="text-gray-600">Invoice Date: <span className="font-medium text-slate-900">{invoice.invoiceDate}</span></p>
+                <p className="text-gray-600">Due Date: <span className="font-medium text-slate-900">{invoice.dueDate}</span></p>
+                <p className="text-gray-600">Place of Supply: <span className="font-semibold text-slate-900">{invoice.placeOfSupply}</span></p>
+                <p className="text-gray-600">Reverse Charge: <span className="font-semibold text-slate-900">{invoice.reverseCharge || 'No'}</span></p>
               </div>
             </div>
           </div>
 
-          {/* Bill To Customer & Payment Details */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-3.5 rounded-[12px] border border-gray-200 mb-4 text-xs">
+          {/* Billed To (Buyer) & Settlement Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-[12px] border border-gray-200 mb-4 text-xs">
             <div>
               <p className="text-[9px] uppercase font-bold text-gray-500 tracking-wider">Billed To (Recipient / Customer)</p>
               <p className="font-bold text-sm text-slate-900 mt-0.5">{invoice.buyer.name}</p>
-              <p className="text-gray-700 text-[11px]">{invoice.buyer.phone} • {invoice.buyer.email}</p>
-              <p className="text-gray-800 font-medium text-[11px] mt-0.5">
-                State: {invoice.buyer.state} (Code: {invoice.buyer.stateCode})
+              <p className="text-gray-600 text-[11px]">{invoice.buyer.phone} • {invoice.buyer.email}</p>
+              <p className="text-gray-700 font-medium text-[11px] mt-0.5">
+                Place of Residence / State: <strong className="text-slate-900">{invoice.buyer.state}</strong> (Code: {invoice.buyer.stateCode})
               </p>
               {invoice.buyer.gstin ? (
-                <p className="font-mono text-[11px] font-bold text-blue-900 mt-0.5 bg-blue-50/80 px-1.5 py-0.5 rounded border border-blue-200 inline-block">
-                  Buyer GSTIN: {invoice.buyer.gstin} (B2B Tax Credit)
+                <p className="font-mono text-[11px] font-bold text-blue-800 mt-1 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 inline-block">
+                  Recipient GSTIN: {invoice.buyer.gstin}
                 </p>
               ) : (
-                <p className="text-[10px] text-gray-500 italic mt-0.5">B2C Retail Consumer (Unregistered)</p>
+                <p className="text-[10px] text-gray-500 italic mt-0.5">Type: B2C (Unregistered Consumer)</p>
               )}
             </div>
 
             <div>
-              <p className="text-[9px] uppercase font-bold text-gray-500 tracking-wider">Payment Status & Settlement</p>
-              <div className="mt-1 space-y-0.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-700">Status:</span>
-                  {invoiceStatus === 'Paid' && (
-                    <span className="font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded text-[11px] inline-flex items-center gap-1">
-                      <CheckCircle2 className="h-3 w-3 inline text-emerald-600" /> Fully Paid
-                    </span>
-                  )}
-                  {invoiceStatus === 'Pending' && (
-                    <span className="font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded text-[11px] inline-flex items-center gap-1">
-                      <Clock className="h-3 w-3 inline text-amber-600" /> Payment Pending
-                    </span>
-                  )}
-                  {invoiceStatus === 'Overdue' && (
-                    <span className="font-bold text-rose-800 bg-rose-100 px-2 py-0.5 rounded text-[11px] inline-flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3 inline text-rose-600" /> Overdue
-                    </span>
-                  )}
-                </div>
-                <p className="text-gray-700 text-[11px]">Payment Mode: <strong className="text-slate-900">{invoice.paymentDetails.mode}</strong></p>
-                {invoice.paymentDetails.transactionId && (
-                  <p className="text-gray-600 font-mono text-[10px]">Txn Ref: {invoice.paymentDetails.transactionId}</p>
+              <p className="text-[9px] uppercase font-bold text-gray-500 tracking-wider">Payment Details & Status</p>
+              <div className="mt-1 space-y-1">
+                <p className="font-semibold text-gray-900 text-xs">
+                  Payment Mode: <span className="font-mono text-royal-700">{invoice.paymentDetails.mode}</span>
+                </p>
+                <p className="text-gray-600 font-mono text-[11px]">
+                  Txn Ref: {invoice.paymentDetails.transactionId}
+                </p>
+                {status === 'Paid' ? (
+                  <p className="text-emerald-700 font-bold text-[11px] flex items-center gap-1 mt-1">
+                    <CheckCircle className="h-3.5 w-3.5 inline" /> Settled: {invoice.paymentDetails.paidDate}
+                  </p>
+                ) : status === 'Pending' ? (
+                  <p className="text-amber-700 font-bold text-[11px] flex items-center gap-1 mt-1">
+                    <Clock className="h-3.5 w-3.5 inline" /> Payment Pending (Due: {invoice.dueDate})
+                  </p>
+                ) : (
+                  <p className="text-rose-700 font-bold text-[11px] flex items-center gap-1 mt-1">
+                    <AlertCircle className="h-3.5 w-3.5 inline" /> Overdue (Past Due: {invoice.dueDate})
+                  </p>
                 )}
-                <p className="text-gray-600 text-[10px]">Supply Type: <strong className="text-slate-900">{invoice.isInterState ? 'Inter-State (IGST 18%)' : 'Intra-State (CGST 9% + SGST 9%)'}</strong></p>
               </div>
             </div>
           </div>
 
-          {/* Line Items Table */}
-          <div className="border border-gray-300 rounded-[10px] overflow-hidden mb-4 shadow-sm">
+          {/* Line Items Table with GST Breakdown */}
+          <div className="border border-gray-200 rounded-[10px] overflow-hidden mb-4">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-900 text-white font-semibold text-[10px] uppercase">
+              <thead className="bg-slate-900 text-white font-semibold text-[11px]">
                 <tr>
-                  <th className="p-2.5 text-center w-8">#</th>
-                  <th className="p-2.5">Description of Supply</th>
-                  <th className="p-2.5">HSN/SAC</th>
+                  <th className="p-2.5">#</th>
+                  <th className="p-2.5">Description of Service</th>
+                  <th className="p-2.5">SAC Code</th>
                   <th className="p-2.5 text-center">Qty</th>
-                  <th className="p-2.5 text-right">Taxable (₹)</th>
+                  <th className="p-2.5 text-right">Taxable Val (₹)</th>
                   {!invoice.isInterState ? (
                     <>
                       <th className="p-2.5 text-right">CGST (9%)</th>
@@ -242,18 +212,16 @@ export default function GSTInvoiceModal({ isOpen, onClose, order }: GSTInvoiceMo
                   ) : (
                     <th className="p-2.5 text-right">IGST (18%)</th>
                   )}
-                  <th className="p-2.5 text-right">Total (₹)</th>
+                  <th className="p-2.5 text-right">Total Amount (₹)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 text-gray-800 text-xs">
                 {invoice.items.map((it, idx) => (
-                  <tr key={idx} className="hover:bg-gray-50/50">
-                    <td className="p-2.5 text-center font-mono text-gray-500">{idx + 1}</td>
-                    <td className="p-2.5 font-semibold text-slate-900">
-                      {it.description}
-                    </td>
-                    <td className="p-2.5 font-mono text-[11px] text-gray-700">{it.sacCode}</td>
-                    <td className="p-2.5 text-center font-mono">{it.quantity}</td>
+                  <tr key={idx} className="hover:bg-slate-50">
+                    <td className="p-2.5 font-mono text-gray-500">{idx + 1}</td>
+                    <td className="p-2.5 font-semibold text-slate-900">{it.description}</td>
+                    <td className="p-2.5 font-mono text-[11px] text-royal-700 font-bold">{it.sacCode}</td>
+                    <td className="p-2.5 text-center">{it.quantity}</td>
                     <td className="p-2.5 text-right font-mono">₹{it.taxableValue.toFixed(2)}</td>
                     {!invoice.isInterState ? (
                       <>
@@ -270,88 +238,56 @@ export default function GSTInvoiceModal({ isOpen, onClose, order }: GSTInvoiceMo
             </table>
           </div>
 
-          {/* Amount In Words & Totals Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start mb-4 border-b border-gray-200 pb-4">
-            <div className="space-y-2 text-xs">
-              <div>
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Total Amount in Words:</p>
-                <p className="font-semibold text-slate-900 italic text-[11px] mt-0.5 bg-gray-50 p-2 rounded border border-gray-200">
-                  {invoice.amountInWords || numberToIndianWords(invoice.totalInvoiceValue)}
-                </p>
-              </div>
-
-              {/* Remittance Details */}
-              <div className="bg-slate-50 p-2.5 rounded-[10px] border border-gray-200 text-[11px] space-y-1">
-                <p className="font-bold text-slate-900 flex items-center justify-between">
-                  <span>Creator Remittance Details:</span>
-                  <button
-                    type="button"
-                    onClick={handleCopyUpi}
-                    className="text-royal-600 hover:text-royal-800 text-[10px] flex items-center gap-1 font-mono font-semibold"
-                  >
-                    {copiedUpi ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
-                    <span>{copiedUpi ? 'Copied' : 'Copy VPA'}</span>
-                  </button>
-                </p>
-                <p className="text-gray-700">UPI VPA: <strong className="font-mono text-slate-900">{activeCreator?.upiId || 'creator@okaxis'}</strong></p>
-                <p className="text-gray-600 text-[10px]">Electronic payment accepted via PhonePe, GPay, Paytm, Cards & Netbanking.</p>
-              </div>
+          {/* Tax Computation Summary */}
+          <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-4">
+            <div className="max-w-xs text-[10px] text-gray-500 space-y-1">
+              <p className="font-semibold text-gray-700">Notes & Terms:</p>
+              <p className="italic">{invoice.notes}</p>
+              <p className="text-[9px] text-gray-400 pt-1">
+                Certified electronic invoice issued in compliance with Rule 46 of CGST Rules 2017.
+              </p>
             </div>
 
-            {/* Calculations column */}
-            <div className="space-y-1 text-right text-xs">
-              <div className="flex justify-between text-gray-700">
-                <span>Taxable Amount (Base):</span>
+            <div className="w-full sm:w-64 space-y-1.5 text-right text-xs bg-slate-50 p-3.5 rounded-[12px] border border-gray-200">
+              <div className="flex justify-between text-gray-600">
+                <span>Taxable Value:</span>
                 <span className="font-mono font-medium">₹{invoice.taxableTotal.toFixed(2)}</span>
               </div>
               {!invoice.isInterState ? (
                 <>
-                  <div className="flex justify-between text-gray-700">
-                    <span>Central GST (CGST 9%):</span>
+                  <div className="flex justify-between text-gray-600">
+                    <span>CGST (9% Central):</span>
                     <span className="font-mono">₹{invoice.cgstAmount.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-gray-700">
-                    <span>State GST (SGST 9% - {invoice.creator.state}):</span>
+                  <div className="flex justify-between text-gray-600">
+                    <span>SGST (9% State):</span>
                     <span className="font-mono">₹{invoice.sgstAmount.toFixed(2)}</span>
                   </div>
                 </>
               ) : (
-                <div className="flex justify-between text-gray-700">
-                  <span>Integrated GST (IGST 18%):</span>
+                <div className="flex justify-between text-gray-600">
+                  <span>IGST (18% Integrated):</span>
                   <span className="font-mono">₹{invoice.igstAmount.toFixed(2)}</span>
                 </div>
               )}
-              <div className="flex justify-between text-gray-600 text-[11px] pt-1 border-t border-gray-200">
-                <span>Total Tax Amount:</span>
-                <span className="font-mono">
-                  ₹{(!invoice.isInterState ? invoice.cgstAmount + invoice.sgstAmount : invoice.igstAmount).toFixed(2)}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm font-bold text-slate-900 border-t-2 border-slate-900 pt-1.5">
+              <div className="flex justify-between text-xs font-bold text-slate-900 border-t-2 border-slate-900 pt-2">
                 <span>Total Invoice Value:</span>
-                <span className="font-mono text-royal-700">₹{invoice.totalInvoiceValue.toFixed(2)}</span>
+                <span className="font-mono text-sm text-royal-700">₹{invoice.totalInvoiceValue.toFixed(2)}</span>
               </div>
             </div>
           </div>
 
-          {/* Legal Notes & Digital Seal */}
-          <div className="flex flex-col sm:flex-row justify-between items-end gap-4 pt-1 text-[10px]">
-            <div className="max-w-md text-gray-500 space-y-0.5">
-              <p className="font-bold text-gray-700">Declaration & Terms:</p>
-              <p>• {invoice.terms || 'Supply of digital products and online coaching services.'}</p>
-              <p>• Reverse Charge Mechanism (RCM): <strong className="text-slate-800">No</strong></p>
-              <p className="text-royal-700 font-medium">✓ Digitally signed & verified via CreatorOS India Compliance Engine</p>
+          {/* Footer Digital Signature Seal */}
+          <div className="flex justify-between items-end border-t border-gray-200 pt-3 text-[10px]">
+            <div className="flex items-center gap-1.5 text-emerald-700 font-semibold">
+              <ShieldCheck className="h-4 w-4 text-emerald-600" />
+              <span>Digitally Authenticated • GST Compliance Verified via CreatorOS</span>
             </div>
-
-            <div className="text-center sm:text-right shrink-0">
-              <div className="h-7 font-serif italic text-slate-900 font-bold text-sm">{invoice.creator.name}</div>
-              <div className="border-t border-gray-400 pt-0.5 text-gray-700">
-                <p className="font-bold text-[10px]">{invoice.creator.businessName}</p>
-                <p className="text-[9px] text-gray-500">Authorized Signatory</p>
-              </div>
+            <div className="text-center">
+              <div className="h-6 font-serif italic text-slate-900 font-bold text-xs">{invoice.creator.name}</div>
+              <p className="border-t border-gray-400 pt-0.5 font-bold text-gray-700 text-[10px]">Authorized Signatory</p>
             </div>
           </div>
-
         </div>
 
       </div>

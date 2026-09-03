@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useRef } from 'react';
 import { useCreatorStore } from '@/lib/store';
+import { formatINR } from '@/lib/gst';
 import { 
   Sparkles, 
   Download, 
@@ -245,7 +246,7 @@ export default function InteractiveAIMediaKitPage() {
               <div className="flex justify-between text-xs font-medium">
                 <span className="text-slate-300">Audience Base:</span>
                 <span className="text-royal-400 font-mono font-bold">
-                  {followerCount.toLocaleString('en-IN')} Followers
+                  {formatINR(followerCount)} Followers
                 </span>
               </div>
               <input
@@ -410,11 +411,11 @@ export default function InteractiveAIMediaKitPage() {
               <div className="grid grid-cols-3 gap-3 pt-2 text-xs font-mono">
                 <div className="bg-black/40 p-2.5 rounded-[12px] border border-white/[0.06]">
                   <span className="text-[10px] text-slate-400 block">Avg Reel Plays</span>
-                  <span className="text-white font-bold">{intel.avgReelViews.toLocaleString('en-IN')}</span>
+                  <span className="text-white font-bold">{formatINR(intel.avgReelViews)}</span>
                 </div>
                 <div className="bg-black/40 p-2.5 rounded-[12px] border border-white/[0.06]">
                   <span className="text-[10px] text-slate-400 block">Avg YouTube Views</span>
-                  <span className="text-white font-bold">{intel.avgYoutubeViews.toLocaleString('en-IN')}</span>
+                  <span className="text-white font-bold">{formatINR(intel.avgYoutubeViews)}</span>
                 </div>
                 <div className="bg-black/40 p-2.5 rounded-[12px] border border-white/[0.06]">
                   <span className="text-[10px] text-slate-400 block">Bookmark Ratio</span>
@@ -637,7 +638,7 @@ export default function InteractiveAIMediaKitPage() {
                 </h3>
               </div>
               <span className="text-xs text-slate-400 font-mono">
-                Auto-calculated for {followerCount.toLocaleString()} {creatorNiche.split(' ')[0]} audience
+                Auto-calculated for {formatINR(followerCount)} {creatorNiche.split(' ')[0]} audience
               </span>
             </div>
 

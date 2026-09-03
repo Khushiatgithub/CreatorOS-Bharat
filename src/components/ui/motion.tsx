@@ -3,6 +3,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 
+import { formatINR, formatINRDecimal } from '@/lib/gst';
+
 /**
  * 1. Animated Number Counter with Easing
  */
@@ -55,8 +57,8 @@ export function AnimatedCounter({
   }, [value, duration, isInView]);
 
   const formatted = decimals > 0
-    ? displayValue.toLocaleString('en-IN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
-    : Math.round(displayValue).toLocaleString('en-IN');
+    ? formatINRDecimal(displayValue, decimals)
+    : formatINR(displayValue);
 
   return (
     <span ref={ref} className={className}>

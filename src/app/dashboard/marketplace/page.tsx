@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useCreatorStore } from '@/lib/store';
+import { formatINR } from '@/lib/gst';
 import { 
   Briefcase, 
   Sparkles, 
@@ -301,7 +302,7 @@ export default function BrandMarketplaceLiveBoard() {
                   </div>
                   <div className="text-right shrink-0">
                     <span className="font-display text-base font-bold text-emerald-400 font-mono">
-                      ₹{prop.proposedAmount.toLocaleString('en-IN')}
+                      ₹{formatINR(prop.proposedAmount)}
                     </span>
                     <p className="text-[10px] text-slate-500 font-mono">Timeline: {prop.timelineDays} Days • Escrow Protected</p>
                   </div>
@@ -413,7 +414,7 @@ export default function BrandMarketplaceLiveBoard() {
                         <div>
                           <p className="text-[10px] text-slate-500 uppercase font-bold font-mono">Sponsorship Budget</p>
                           <span className="font-display text-base font-extrabold text-white font-mono">
-                            ₹{campaign.budgetMin.toLocaleString('en-IN')} - ₹{campaign.budgetMax.toLocaleString('en-IN')}
+                            ₹{formatINR(campaign.budgetMin)} - ₹{formatINR(campaign.budgetMax)}
                           </span>
                         </div>
                         <div className="text-right">
@@ -524,7 +525,7 @@ export default function BrandMarketplaceLiveBoard() {
                       <div>
                         <span className="text-[10px] text-slate-400 block uppercase">Budget Range</span>
                         <span className="text-sm font-bold text-white">
-                          ₹{drawerBrief.budgetMin.toLocaleString('en-IN')} - ₹{drawerBrief.budgetMax.toLocaleString('en-IN')}
+                          ₹{formatINR(drawerBrief.budgetMin)} - ₹{formatINR(drawerBrief.budgetMax)}
                         </span>
                       </div>
                       <div>
@@ -619,7 +620,7 @@ export default function BrandMarketplaceLiveBoard() {
                     Proposal Submitted to {pitchBrief.brandName}!
                   </h3>
                   <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
-                    Your pitch of <strong className="text-emerald-400 font-mono">₹{proposedAmount.toLocaleString('en-IN')}</strong> and verified AI Media Kit have been delivered to the brand marketing team.
+                    Your pitch of <strong className="text-emerald-400 font-mono">₹{formatINR(proposedAmount)}</strong> and verified AI Media Kit have been delivered to the brand marketing team.
                   </p>
                   <p className="text-[11px] text-royal-400 font-mono pt-2">
                     Escrow Ref: ESC_{Date.now().toString().slice(-6)} • Notification updates will be sent to your WhatsApp.
@@ -636,7 +637,7 @@ export default function BrandMarketplaceLiveBoard() {
                         Submit Proposal: {pitchBrief.brandName}
                       </h3>
                       <p className="text-xs text-slate-400 font-mono">
-                        Budget: ₹{pitchBrief.budgetMin.toLocaleString()} - ₹{pitchBrief.budgetMax.toLocaleString()} • Match: {pitchBrief.matchScore}%
+                        Budget: ₹{formatINR(pitchBrief.budgetMin)} - ₹{formatINR(pitchBrief.budgetMax)} • Match: {pitchBrief.matchScore}%
                       </p>
                     </div>
                   </div>
@@ -699,7 +700,7 @@ export default function BrandMarketplaceLiveBoard() {
                     className="w-full rounded-[16px] bg-royal-600 hover:bg-royal-500 py-3 text-xs font-bold text-white shadow-royal flex items-center justify-center gap-2"
                   >
                     <Send className="h-4 w-4" />
-                    <span>Send Formal Sponsorship Proposal (₹{proposedAmount.toLocaleString('en-IN')})</span>
+                    <span>Send Formal Sponsorship Proposal (₹{formatINR(proposedAmount)})</span>
                   </RippleButton>
 
                 </form>

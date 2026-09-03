@@ -66,6 +66,34 @@ export const SAC_CODES = {
 };
 
 /**
+ * Deterministic Indian Currency & Number Formatter (Avoids SSR Hydration Mismatches)
+ */
+export function formatINR(val: number | string): string {
+  if (val === null || val === undefined || isNaN(Number(val))) return '0';
+  const num = Math.round(Number(val));
+  const isNegative = num < 0;
+  const absStr = Math.abs(num).toString();
+  
+  if (absStr.length <= 3) {
+    return isNegative ? `-${absStr}` : absStr;
+  }
+  
+  const lastThree = absStr.substring(absStr.length - 3);
+  const otherNumbers = absStr.substring(0, absStr.length - 3);
+  const formattedOther = otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ',');
+  const result = `${formattedOther},${lastThree}`;
+  return isNegative ? `-${result}` : result;
+}
+
+export function formatINRDecimal(val: number | string, decimals: number = 2): string {
+  if (val === null || val === undefined || isNaN(Number(val))) return '0.00';
+  const num = Number(val);
+  const parts = num.toFixed(decimals).split('.');
+  const integerPart = formatINR(parts[0]);
+  return decimals > 0 ? `${integerPart}.${parts[1]}` : integerPart;
+}
+
+/**
  * Validates Indian Goods & Services Tax Identification Number (GSTIN)
  * Format: 2 digits (State Code) + 10 chars (PAN) + 1 digit (Entity) + 'Z' + 1 char (Checksum)
  */

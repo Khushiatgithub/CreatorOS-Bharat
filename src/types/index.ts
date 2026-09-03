@@ -173,6 +173,8 @@ export interface Order {
   invoiceNumber: string;
   sacCode: string;
   status: 'completed' | 'pending' | 'failed' | 'refunded';
+  bookingDate?: string;
+  bookingTimeSlot?: string;
   deliverySentWhatsapp: boolean;
   deliverySentEmail: boolean;
 }

@@ -199,7 +199,7 @@ export default function StorefrontBuilderPage() {
                       >
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
-                            <span className="h-3.5 w-3.5 rounded-full" style={{ backgroundColor: th.primaryColor }} />
+                            <span className="h-3.5 w-3.5 rounded-full" style={{ backgroundColor: th.accentColor }} />
                             <span className="font-semibold text-xs text-white">{th.name}</span>
                           </div>
                           {isSelected && (

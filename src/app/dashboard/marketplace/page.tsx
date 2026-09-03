@@ -245,7 +245,9 @@ export default function BrandMarketplaceLiveBoard() {
                       <div className="flex items-center gap-1.5">
                         <h3 className="font-display text-base font-bold text-white">{campaign.brandName}</h3>
                         {campaign.verifiedBrand && (
-                          <ShieldCheck className="h-4 w-4 text-royal-400" title="Verified Sponsor" />
+                          <span title="Verified Sponsor">
+                            <ShieldCheck className="h-4 w-4 text-royal-400" />
+                          </span>
                         )}
                       </div>
                       <span className="inline-block rounded-md bg-white/[0.05] px-2 py-0.5 text-[10px] font-medium text-slate-300 font-mono mt-0.5">

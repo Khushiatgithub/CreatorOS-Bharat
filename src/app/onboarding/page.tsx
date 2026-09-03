@@ -92,7 +92,7 @@ const CREATOR_CATEGORIES = [
 
 export default function CreatorOnboardingWizard() {
   const router = useRouter();
-  const { activeCreator, updateCreator, addProduct, setActiveTheme } = useCreatorStore();
+  const { activeCreator, updateCreator, addProduct } = useCreatorStore();
 
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
 
@@ -152,11 +152,6 @@ export default function CreatorOnboardingWizard() {
         linkedin: socialLinkedin.startsWith('http') ? socialLinkedin : `https://${socialLinkedin}`,
       }
     });
-
-    const themeObj = THEMES.find((t) => t.id === selectedThemeId);
-    if (themeObj) {
-      setActiveTheme(themeObj);
-    }
 
     // Add first initial product
     if (productTitle.trim()) {
@@ -528,7 +523,7 @@ export default function CreatorOnboardingWizard() {
                             }`}
                           >
                             <span className="block text-xs font-bold text-white truncate">{th.name}</span>
-                            <span className="h-1.5 w-full rounded-full mt-1.5 block" style={{ backgroundColor: th.primaryColor }} />
+                            <span className="h-1.5 w-full rounded-full mt-1.5 block" style={{ backgroundColor: th.accentColor }} />
                           </button>
                         ))}
                       </div>

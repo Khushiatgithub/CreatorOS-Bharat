@@ -24,7 +24,7 @@ import {
   ExternalLink,
   Info
 } from 'lucide-react';
-import { INDIAN_STATES, calculateGST } from '@/lib/gst';
+import { INDIAN_STATES, calculateGST, SAC_CODES } from '@/lib/gst';
 import { generateUPIIntentUri, generateQRCodeMatrix } from '@/lib/upi';
 import { useCreatorStore } from '@/lib/store';
 import { ProductType, Order } from '@/types';
@@ -191,7 +191,9 @@ export default function UPICheckoutModal({
                     <h3 className="font-display text-sm sm:text-base font-bold text-white">
                       {payeeName}
                     </h3>
-                    <ShieldCheck className="h-4 w-4 text-emerald-400" title="Verified Indian Merchant" />
+                    <span title="Verified Indian Merchant">
+                      <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                    </span>
                   </div>
                   <p className="text-[11px] text-slate-400 flex items-center gap-1">
                     <span>Secured by</span>
@@ -242,7 +244,9 @@ export default function UPICheckoutModal({
                   <div className="mt-3 p-3.5 rounded-[16px] bg-black/40 border border-white/[0.08] text-xs space-y-2">
                     <div className="flex justify-between text-slate-300 font-mono text-[11px]">
                       <span>SAC Code:</span>
-                      <span className="text-royal-400 font-bold">{gstDetails.sacCode}</span>
+                      <span className="text-royal-400 font-bold">
+                        {SAC_CODES[item.type.toUpperCase() as keyof typeof SAC_CODES]?.code || '998431'}
+                      </span>
                     </div>
                     <div className="flex justify-between text-slate-300">
                       <span>Taxable Value (Base Price):</span>

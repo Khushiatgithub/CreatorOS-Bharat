@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useCreatorStore } from '@/lib/store';
 import GSTInvoiceModal from '@/components/invoice/GSTInvoiceModal';
+import AIBusinessCoachWidget from '@/components/dashboard/AIBusinessCoach';
 import { Order } from '@/types';
 import { 
   AnimatedCounter, 
@@ -233,6 +234,9 @@ export default function DashboardOverviewPage() {
           </HoverCard>
 
         </div>
+
+        {/* AI BUSINESS COACH & GROWTH ENGINE WIDGET */}
+        <AIBusinessCoachWidget />
 
         {/* STRIPE/LINEAR REVENUE SVG CHART & ANALYTICS WIDGET */}
         <div className="rounded-[20px] border border-white/[0.08] bg-[#0A0E1A]/90 p-6 shadow-glass-card space-y-4">

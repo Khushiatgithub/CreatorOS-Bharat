@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useCreatorStore } from '@/lib/store';
+import { useTheme } from '@/components/ui/ThemeProvider';
 import { 
   Sparkles, 
   ExternalLink, 
@@ -14,18 +15,21 @@ import {
   ShieldCheck, 
   UserCheck,
   Layers,
-  ArrowUpRight
+  ArrowUpRight,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 export default function Navbar() {
   const pathname = usePathname();
   const { creators, activeCreator, switchActiveCreator } = useCreatorStore();
+  const { theme, toggleTheme } = useTheme();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const isDashboard = pathname.startsWith('/dashboard');
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-white/[0.08] bg-[#05070B]/90 backdrop-blur-2xl">
+    <header className="sticky top-0 z-50 w-full border-b border-white/[0.08] bg-[#05070B]/90 dark:bg-[#05070B]/90 light:bg-white/90 backdrop-blur-2xl transition-colors duration-300">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         
         {/* Brand Logo - Linear/Stripe Inspired */}
@@ -85,9 +89,22 @@ export default function Navbar() {
           </nav>
         </div>
 
-        {/* Right side - Switcher & CTA */}
-        <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+        {/* Right side - Theme Toggle, Switcher & CTA */}
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           
+          {/* Theme Sun/Moon Toggle Button */}
+          <button
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            className="flex h-9 w-9 items-center justify-center rounded-[12px] border border-white/[0.1] bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] hover:text-white hover:border-royal-500/40 transition-all duration-300 btn-press"
+          >
+            {theme === 'dark' ? (
+              <Sun className="h-4 w-4 text-amber-400 transition-transform duration-300 hover:rotate-45" />
+            ) : (
+              <Moon className="h-4 w-4 text-royal-400 transition-transform duration-300 hover:-rotate-12" />
+            )}
+          </button>
+
           {/* Active Creator Switcher Pill */}
           <div className="relative">
             <button

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, Outfit, JetBrains_Mono } from 'next/font/google';
+import { ThemeProvider } from '@/components/ui/ThemeProvider';
 import './globals.css';
 
 const inter = Inter({
@@ -57,8 +58,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark scroll-smooth">
-      <body className={`${inter.variable} ${outfit.variable} ${jetbrainsMono.variable} min-h-screen bg-[#05070B] text-slate-100 antialiased font-sans selection:bg-royal-600 selection:text-white`}>
-        {children}
+      <body className={`${inter.variable} ${outfit.variable} ${jetbrainsMono.variable} min-h-screen bg-[#05070B] text-slate-100 antialiased font-sans selection:bg-royal-600 selection:text-white transition-colors duration-300`}>
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

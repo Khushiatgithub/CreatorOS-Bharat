@@ -11,7 +11,12 @@ import {
   ArrowUpRight, 
   CheckCircle2, 
   ShieldCheck, 
-  Building 
+  Building,
+  Sparkles,
+  Clock,
+  Target,
+  Award,
+  DollarSign
 } from 'lucide-react';
 import { formatINR, formatINRDecimal } from '@/lib/gst';
 import AIBusinessCoachWidget from '@/components/dashboard/AIBusinessCoach';
@@ -80,6 +85,111 @@ export default function AnalyticsPage() {
             </span>
           </motion.div>
         )}
+
+        {/* Top View Mode Switcher & Quick Navigation */}
+        <div className="flex items-center justify-between gap-3 overflow-x-auto no-scrollbar pb-1">
+          <div className="flex items-center gap-1.5 p-1 rounded-[14px] bg-white/[0.04] border border-white/[0.08]">
+            <button
+              onClick={() => {
+                const el = document.getElementById('ai-coach-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-[10px] text-xs font-semibold bg-royal-600/20 text-royal-300 border border-royal-500/30 hover:bg-royal-600/30 transition btn-press"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+              <span>Jump to AI Business Coach</span>
+            </button>
+            <span className="text-[11px] text-slate-400 px-2 font-mono hidden sm:inline">
+              6 Neural Levers Active
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold px-2.5 py-1 font-mono flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>NPCI IMPS Connected</span>
+            </span>
+          </div>
+        </div>
+
+        {/* AI TELEMETRY QUICK INSIGHT STRIP */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div 
+            onClick={() => {
+              const el = document.getElementById('ai-coach-section');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="p-3.5 rounded-[16px] bg-[#0A0E1A]/85 border border-pink-500/20 hover:border-pink-500/50 flex items-center gap-3 transition cursor-pointer shadow-glass-subtle group"
+          >
+            <div className="p-2 rounded-xl bg-pink-500/15 text-pink-400 shrink-0 group-hover:scale-105 transition-transform">
+              <Clock className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-slate-400 block font-mono">Best Post Time</span>
+                <span className="text-[9px] font-bold text-pink-400 font-mono">98% match</span>
+              </div>
+              <span className="font-bold text-white text-xs block group-hover:text-pink-300 transition-colors">Tue & Thu 7:30 PM</span>
+            </div>
+          </div>
+
+          <div 
+            onClick={() => {
+              const el = document.getElementById('ai-coach-section');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="p-3.5 rounded-[16px] bg-[#0A0E1A]/85 border border-amber-500/20 hover:border-amber-500/50 flex items-center gap-3 transition cursor-pointer shadow-glass-subtle group"
+          >
+            <div className="p-2 rounded-xl bg-amber-500/15 text-amber-400 shrink-0 group-hover:scale-105 transition-transform">
+              <Target className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-slate-400 block font-mono">30D Forecast</span>
+                <span className="text-[9px] font-bold text-amber-400 font-mono">92% conf</span>
+              </div>
+              <span className="font-bold text-amber-400 text-xs block group-hover:text-amber-300 transition-colors">₹1,85,000 (+32%)</span>
+            </div>
+          </div>
+
+          <div 
+            onClick={() => {
+              const el = document.getElementById('ai-coach-section');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="p-3.5 rounded-[16px] bg-[#0A0E1A]/85 border border-emerald-500/20 hover:border-emerald-500/50 flex items-center gap-3 transition cursor-pointer shadow-glass-subtle group"
+          >
+            <div className="p-2 rounded-xl bg-emerald-500/15 text-emerald-400 shrink-0 group-hover:scale-105 transition-transform">
+              <DollarSign className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-slate-400 block font-mono">Price Elasticity</span>
+                <span className="text-[9px] font-bold text-emerald-400 font-mono">94% match</span>
+              </div>
+              <span className="font-bold text-emerald-400 text-xs block group-hover:text-emerald-300 transition-colors">+₹18,400/mo ARR</span>
+            </div>
+          </div>
+
+          <div 
+            onClick={() => {
+              const el = document.getElementById('ai-coach-section');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="p-3.5 rounded-[16px] bg-[#0A0E1A]/85 border border-purple-500/20 hover:border-purple-500/50 flex items-center gap-3 transition cursor-pointer shadow-glass-subtle group"
+          >
+            <div className="p-2 rounded-xl bg-purple-500/15 text-purple-400 shrink-0 group-hover:scale-105 transition-transform">
+              <Award className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-slate-400 block font-mono">Growth Score</span>
+                <span className="text-[9px] font-bold text-purple-400 font-mono">95% rank</span>
+              </div>
+              <span className="font-bold text-purple-400 text-xs block group-hover:text-purple-300 transition-colors">94/100 (Top 2%)</span>
+            </div>
+          </div>
+        </div>
 
         {/* FUNNEL PERFORMANCE with Hover Lift & Animated Numbers */}
         <div className="rounded-[20px] border border-white/[0.08] bg-[#0A0E1A]/90 p-6 shadow-glass-card space-y-4">
@@ -196,8 +306,10 @@ export default function AnalyticsPage() {
 
         </div>
 
-        {/* AI BUSINESS COACH & GROWTH ENGINE */}
-        <AIBusinessCoachWidget />
+        {/* AI BUSINESS COACH & GROWTH ENGINE WIDGET */}
+        <div id="ai-coach-section" className="scroll-mt-6">
+          <AIBusinessCoachWidget />
+        </div>
 
       </div>
     </PageTransition>

@@ -28,21 +28,25 @@ import {
   PieChart, 
   Smartphone, 
   ShieldCheck, 
-  ArrowUpRight,
-  Calendar,
-  Layers,
-  Heart,
-  Bookmark,
-  BarChart3,
-  Globe,
-  Compass,
-  Tag,
-  Target,
-  Copy,
-  ExternalLink,
-  Printer,
-  ChevronRight,
-  Info
+  ArrowUpRight, 
+  Calendar, 
+  Layers, 
+  Heart, 
+  Bookmark, 
+  BarChart3, 
+  Globe, 
+  Compass, 
+  Tag, 
+  Target, 
+  Copy, 
+  ExternalLink, 
+  Printer, 
+  ChevronRight, 
+  Info,
+  Radio,
+  Eye,
+  SlidersHorizontal,
+  ChevronDown
 } from 'lucide-react';
 import { 
   AnimatedCounter, 
@@ -55,14 +59,25 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 // 7-day Indian audience activity data with peak algorithm windows (IST)
-const BEST_POSTING_SCHEDULE = [
-  { day: 'Mon', window: '08:00 PM - 09:30 PM IST', peakEngagement: 'High', score: 88, tip: 'Career roadmaps & weekly motivation' },
-  { day: 'Tue', window: '07:30 PM - 09:30 PM IST', peakEngagement: 'Golden Hour', score: 98, tip: 'Instagram Reels & algorithm surge' },
-  { day: 'Wed', window: '08:00 PM - 10:00 PM IST', peakEngagement: 'High', score: 90, tip: 'DSA problem breakdown carousels' },
-  { day: 'Thu', window: '07:30 PM - 09:30 PM IST', peakEngagement: 'Golden Hour', score: 96, tip: 'System design diagrams & tech tips' },
-  { day: 'Fri', window: '06:30 PM - 08:30 PM IST', peakEngagement: 'High', score: 84, tip: 'Weekend project repositories & code' },
-  { day: 'Sat', window: '11:00 AM - 01:30 PM IST', peakEngagement: 'Peak', score: 92, tip: 'Long-form YouTube videos & tutorials' },
-  { day: 'Sun', window: '07:00 PM - 09:30 PM IST', peakEngagement: 'Very High', score: 94, tip: 'Weekly recap, tech news & AMA' },
+interface PostingScheduleDay {
+  day: string;
+  dayFull: string;
+  window: string;
+  peakEngagement: 'Golden Hour' | 'Peak' | 'Very High' | 'High';
+  score: number;
+  multiplier: string;
+  bestFormat: string;
+  tip: string;
+}
+
+const BEST_POSTING_SCHEDULE: PostingScheduleDay[] = [
+  { day: 'Mon', dayFull: 'Monday', window: '08:00 PM - 09:30 PM IST', peakEngagement: 'High', score: 88, multiplier: '1.8x Reach', bestFormat: 'LinkedIn Post & Carousel', tip: 'Career roadmaps, interview prep & weekly motivation' },
+  { day: 'Tue', dayFull: 'Tuesday', window: '07:30 PM - 09:30 PM IST', peakEngagement: 'Golden Hour', score: 98, multiplier: '2.4x Viral Reach', bestFormat: 'Instagram Reel (30-45s)', tip: 'Algorithm surge window for fast-paced coding hacks' },
+  { day: 'Wed', dayFull: 'Wednesday', window: '08:00 PM - 10:00 PM IST', peakEngagement: 'High', score: 90, multiplier: '1.9x Reach', bestFormat: 'DSA Visual Carousels', tip: 'System design deep-dives and problem breakdown sheets' },
+  { day: 'Thu', dayFull: 'Thursday', window: '07:30 PM - 09:30 PM IST', peakEngagement: 'Golden Hour', score: 96, multiplier: '2.3x Viral Reach', bestFormat: 'Instagram Reel & Threads', tip: 'Tech salary roasts, FAANG interview stories & hot takes' },
+  { day: 'Fri', dayFull: 'Friday', window: '06:30 PM - 08:30 PM IST', peakEngagement: 'High', score: 85, multiplier: '1.7x Reach', bestFormat: 'GitHub Repos & Tool Stacks', tip: 'Weekend project repositories, starter kits & AI tools' },
+  { day: 'Sat', dayFull: 'Saturday', window: '11:00 AM - 01:30 PM IST', peakEngagement: 'Peak', score: 93, multiplier: '2.1x Reach', bestFormat: 'Long-Form YouTube Video', tip: '15-30m comprehensive tutorial masterclasses & code-alongs' },
+  { day: 'Sun', dayFull: 'Sunday', window: '07:00 PM - 09:30 PM IST', peakEngagement: 'Very High', score: 94, multiplier: '2.2x Reach', bestFormat: 'Weekly AMA & YouTube Live', tip: 'Community Q&A, tech news breakdown & week ahead preview' },
 ];
 
 // Historical 30-day view trends for smooth SVG chart
@@ -82,8 +97,8 @@ export default function InteractiveAIMediaKitPage() {
 
   // Interactive Simulation State
   const [followerCount, setFollowerCount] = useState<number>(245000);
-  const [primaryPlatform, setPrimaryPlatform] = useState<'all' | 'instagram' | 'youtube' | 'linkedin'>('all');
   const [creatorNiche, setCreatorNiche] = useState<string>('Software Engineering & Tech');
+  const [selectedDayIndex, setSelectedDayIndex] = useState<number>(1); // Default Tuesday (Golden Hour)
   const [isAuditing, setIsAuditing] = useState<boolean>(false);
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
   const [exportingPDF, setExportingPDF] = useState<boolean>(false);
@@ -97,13 +112,15 @@ export default function InteractiveAIMediaKitPage() {
     const nicheMultiplier = 
       creatorNiche === 'Software Engineering & Tech' ? 1.25 :
       creatorNiche === 'FinTech & Personal Finance' ? 1.35 :
-      creatorNiche === 'AI & Productivity SaaS' ? 1.40 : 1.15;
+      creatorNiche === 'AI & Productivity SaaS' ? 1.40 :
+      creatorNiche === 'Upskilling & Career Coaching' ? 1.20 : 1.15;
 
     // Engagement rate calculation
     const engagementRate = Number((base > 800000 ? 5.6 : base > 200000 ? 7.8 : 9.6).toFixed(1));
     const avgReelViews = Math.round(base * 0.68);
     const avgYoutubeViews = Math.round(base * 0.42);
     const avgStoryViews = Math.round(base * 0.19);
+    const avgLinkedinImpressions = Math.round(base * 0.35);
     const monthlyImpressions = `${(base * 3.2 / 1000000).toFixed(1)}M+`;
 
     // Indian CPM calculations (INR per 1,000 impressions)
@@ -127,6 +144,7 @@ export default function InteractiveAIMediaKitPage() {
       avgReelViews,
       avgYoutubeViews,
       avgStoryViews,
+      avgLinkedinImpressions,
       cpmRange: `₹${baseCPM} - ₹${highCPM}`,
       brandCompatibility,
       saveRate: 19.2,
@@ -174,14 +192,15 @@ export default function InteractiveAIMediaKitPage() {
       const canvas = await html2canvas(pdfRef.current, {
         scale: 2,
         useCORS: true,
-        backgroundColor: '#05070B'
+        backgroundColor: '#05070B',
+        logging: false
       });
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`${activeCreator?.username || 'creator'}-AI-Media-Kit.pdf`);
+      pdf.save(`${activeCreator?.username || 'creator'}-AI-Media-Kit-2026.pdf`);
     } catch (err) {
       console.error('PDF export failed', err);
     } finally {
@@ -189,11 +208,15 @@ export default function InteractiveAIMediaKitPage() {
     }
   };
 
+  const selectedDay = BEST_POSTING_SCHEDULE[selectedDayIndex];
+
   return (
     <PageTransition>
       <div className="space-y-6 font-sans">
         
+        {/* ========================================================================= */}
         {/* TOP EXECUTIVE HEADER */}
+        {/* ========================================================================= */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-white/[0.08] pb-5">
           <div>
             <h1 className="font-display text-2xl font-bold tracking-tight text-white flex items-center gap-2">
@@ -203,7 +226,7 @@ export default function InteractiveAIMediaKitPage() {
               </span>
             </h1>
             <p className="text-xs text-slate-400 mt-1">
-              Real-time engagement telemetry, Indian metro demographics, algorithm peak windows (IST), CPM benchmarks, and AI rate cards.
+              Interactive audience city splits, gender & age distributions, IST algorithm peak windows, brand safety gauge, and dynamic AI collaboration pricing.
             </p>
           </div>
 
@@ -222,20 +245,22 @@ export default function InteractiveAIMediaKitPage() {
               className="rounded-[14px] bg-royal-600 hover:bg-royal-500 px-4 py-2 text-xs font-bold text-white shadow-royal flex items-center gap-1.5 disabled:opacity-50"
             >
               <Download className="h-3.5 w-3.5" />
-              <span>{exportingPDF ? 'Generating PDF...' : 'Export PDF Media Kit'}</span>
+              <span>{exportingPDF ? 'Rendering PDF...' : 'Download PDF Media Kit'}</span>
             </RippleButton>
           </div>
         </div>
 
+        {/* ========================================================================= */}
         {/* INTERACTIVE AUDIENCE SIMULATION SLIDER & NICHE PICKER */}
-        <div className="rounded-[20px] border border-royal-500/25 bg-gradient-to-r from-[#0C1226] via-[#0E152E] to-[#0A0E1A] p-5 sm:p-6 shadow-glass-card space-y-4">
+        {/* ========================================================================= */}
+        <div className="rounded-[24px] border border-royal-500/25 bg-gradient-to-r from-[#0C1226] via-[#0E152E] to-[#0A0E1A] p-5 sm:p-6 shadow-glass-card space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Sliders className="h-4 w-4 text-royal-400" />
+              <SlidersHorizontal className="h-4 w-4 text-royal-400" />
               <h3 className="font-display text-sm font-bold text-white">Interactive Audience Simulation Engine</h3>
             </div>
-            <span className="text-[10px] text-royal-300 font-mono bg-royal-600/20 px-2 py-0.5 rounded border border-royal-500/30">
-              Live AI Re-calibration
+            <span className="text-[10px] text-royal-300 font-mono bg-royal-600/20 px-2.5 py-0.5 rounded-full border border-royal-500/30">
+              ⚡ Real-time Dynamic Recalibration
             </span>
           </div>
 
@@ -244,7 +269,7 @@ export default function InteractiveAIMediaKitPage() {
             {/* Follower Slider */}
             <div className="md:col-span-5 space-y-1.5">
               <div className="flex justify-between text-xs font-medium">
-                <span className="text-slate-300">Audience Base:</span>
+                <span className="text-slate-300">Audience Base Reach:</span>
                 <span className="text-royal-400 font-mono font-bold">
                   {formatINR(followerCount)} Followers
                 </span>
@@ -258,6 +283,12 @@ export default function InteractiveAIMediaKitPage() {
                 onChange={(e) => setFollowerCount(Number(e.target.value))}
                 className="w-full accent-royal-500 cursor-pointer h-2 bg-white/10 rounded-lg"
               />
+              <div className="flex justify-between text-[10px] text-slate-500 font-mono">
+                <span>25K</span>
+                <span>500K</span>
+                <span>1M</span>
+                <span>2M+</span>
+              </div>
             </div>
 
             {/* Niche Selector */}
@@ -266,13 +297,13 @@ export default function InteractiveAIMediaKitPage() {
               <select
                 value={creatorNiche}
                 onChange={(e) => setCreatorNiche(e.target.value)}
-                className="w-full rounded-[12px] border border-white/[0.1] bg-black/50 px-3 py-1.5 text-xs text-white focus:border-royal-500 focus:outline-none"
+                className="w-full rounded-[12px] border border-white/[0.1] bg-black/50 px-3 py-2 text-xs text-white focus:border-royal-500 focus:outline-none"
               >
-                <option value="Software Engineering & Tech">Software Engineering & Tech</option>
-                <option value="FinTech & Personal Finance">FinTech & Personal Finance</option>
-                <option value="AI & Productivity SaaS">AI & Productivity SaaS</option>
-                <option value="Upskilling & Career Coaching">Upskilling & Career Coaching</option>
-                <option value="Design & Creator Tools">Design & Creator Tools</option>
+                <option value="Software Engineering & Tech">Software Engineering & Tech (1.25x CPM)</option>
+                <option value="FinTech & Personal Finance">FinTech & Personal Finance (1.35x CPM)</option>
+                <option value="AI & Productivity SaaS">AI & Productivity SaaS (1.40x CPM)</option>
+                <option value="Upskilling & Career Coaching">Upskilling & Career Coaching (1.20x CPM)</option>
+                <option value="Design & Creator Tools">Design & Creator Tools (1.15x CPM)</option>
               </select>
             </div>
 
@@ -283,7 +314,7 @@ export default function InteractiveAIMediaKitPage() {
                 className="w-full rounded-[14px] bg-royal-600 hover:bg-royal-500 py-2.5 text-xs font-bold text-white shadow-royal flex items-center justify-center gap-2"
               >
                 <RefreshCw className={`h-3.5 w-3.5 ${isAuditing ? 'animate-spin' : ''}`} />
-                <span>{isAuditing ? 'Auditing Neural Graph...' : 'Re-calculate Intelligence'}</span>
+                <span>{isAuditing ? 'Syncing Neural Graph...' : 'Recalculate Intelligence'}</span>
               </RippleButton>
             </div>
 
@@ -294,6 +325,50 @@ export default function InteractiveAIMediaKitPage() {
         {/* EXPORTABLE MEDIA KIT VIEWPORT */}
         {/* ========================================================================= */}
         <div ref={pdfRef} className="space-y-6">
+
+          {/* CREATOR IDENTITY HERO STRIP (Included in PDF) */}
+          <div className="rounded-[24px] border border-white/[0.08] bg-gradient-to-r from-[#070D1F] via-[#0E1738] to-[#0A0D17] p-5 sm:p-6 shadow-glass-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <img
+                  src={activeCreator?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'}
+                  alt={activeCreator?.name || 'Creator'}
+                  className="h-16 w-16 rounded-[20px] object-cover ring-2 ring-royal-500/50 p-0.5 bg-black"
+                />
+                <span className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-emerald-500 border-2 border-[#0A0D17] flex items-center justify-center text-[10px] text-white">
+                  ✓
+                </span>
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="font-display text-lg sm:text-xl font-bold text-white">
+                    {activeCreator?.name || 'Aarav Sharma'}
+                  </h2>
+                  <span className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold text-emerald-400 font-mono">
+                    Verified Expert
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 mt-0.5">
+                  @{activeCreator?.username || 'aarav.tech'} • {creatorNiche}
+                </p>
+                <p className="text-[11px] text-slate-400 flex items-center gap-1.5 mt-1 font-mono">
+                  <MapPin className="h-3 w-3 text-royal-400" />
+                  <span>{activeCreator?.state || 'Bangalore, India'}</span>
+                  <span>•</span>
+                  <span>Active Verified CreatorOS Partnership</span>
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 border-white/[0.08] pt-3 sm:pt-0">
+              <div className="text-left sm:text-right">
+                <span className="text-[10px] uppercase font-bold text-slate-400 font-mono block">Estimated Valuation</span>
+                <span className="font-display text-xl font-extrabold text-emerald-400 font-mono">
+                  ₹{formatINR(intel.rates.bundle)}/mo
+                </span>
+              </div>
+            </div>
+          </div>
 
           {/* SECTION 1: KEY PERFORMANCE TELEMETRY TILES */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -348,11 +423,11 @@ export default function InteractiveAIMediaKitPage() {
 
           </div>
 
-          {/* SECTION 2: INTERACTIVE CHARTS (ENGAGEMENT TRENDS & BRAND COMPATIBILITY) */}
+          {/* SECTION 2: ANIMATED CHARTS (30-DAY VELOCITY CURVE & BRAND COMPATIBILITY GAUGE) */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             
-            {/* Animated 30-Day View & Engagement Curve (7 cols) */}
-            <div className="lg:col-span-7 rounded-[20px] border border-white/[0.08] bg-[#0A0E1A]/90 p-6 shadow-glass-card space-y-4">
+            {/* Animated 30-Day Growth & Viral Velocity Curve (7 cols) */}
+            <div className="lg:col-span-7 rounded-[22px] border border-white/[0.08] bg-[#0A0E1A]/90 p-6 shadow-glass-card space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-display text-base font-bold text-white flex items-center gap-2">
@@ -367,13 +442,18 @@ export default function InteractiveAIMediaKitPage() {
               </div>
 
               {/* SVG Area Chart */}
-              <div className="pt-4">
+              <div className="pt-3">
                 <div className="relative h-44 w-full">
                   <svg className="w-full h-full overflow-visible" viewBox="0 0 500 150" preserveAspectRatio="none">
                     <defs>
                       <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="#2563EB" stopOpacity="0.45" />
                         <stop offset="100%" stopColor="#2563EB" stopOpacity="0.0" />
+                      </linearGradient>
+                      <linearGradient id="strokeGradient" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stopColor="#2563EB" />
+                        <stop offset="50%" stopColor="#60A5FA" />
+                        <stop offset="100%" stopColor="#10B981" />
                       </linearGradient>
                     </defs>
 
@@ -387,16 +467,16 @@ export default function InteractiveAIMediaKitPage() {
                     <path
                       d="M 0,130 Q 75,100 150,110 T 300,60 T 420,35 T 500,10"
                       fill="none"
-                      stroke="#3B82F6"
+                      stroke="url(#strokeGradient)"
                       strokeWidth="3.5"
                       strokeLinecap="round"
                     />
 
                     {/* Highlight Nodes */}
-                    <circle cx="150" cy="110" r="4" fill="#60A5FA" />
-                    <circle cx="300" cy="60" r="4" fill="#60A5FA" />
-                    <circle cx="420" cy="35" r="4" fill="#60A5FA" />
-                    <circle cx="500" cy="10" r="5" fill="#10B981" />
+                    <circle cx="150" cy="110" r="4.5" fill="#60A5FA" stroke="#0A0E1A" strokeWidth="2" />
+                    <circle cx="300" cy="60" r="4.5" fill="#60A5FA" stroke="#0A0E1A" strokeWidth="2" />
+                    <circle cx="420" cy="35" r="4.5" fill="#60A5FA" stroke="#0A0E1A" strokeWidth="2" />
+                    <circle cx="500" cy="10" r="6" fill="#10B981" stroke="#ffffff" strokeWidth="2" />
                   </svg>
                 </div>
 
@@ -408,7 +488,7 @@ export default function InteractiveAIMediaKitPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3 pt-2 text-xs font-mono">
+              <div className="grid grid-cols-3 gap-3 pt-1 text-xs font-mono">
                 <div className="bg-black/40 p-2.5 rounded-[12px] border border-white/[0.06]">
                   <span className="text-[10px] text-slate-400 block">Avg Reel Plays</span>
                   <span className="text-white font-bold">{formatINR(intel.avgReelViews)}</span>
@@ -426,13 +506,18 @@ export default function InteractiveAIMediaKitPage() {
             </div>
 
             {/* Brand Compatibility Radar & Category Breakdown (5 cols) */}
-            <div className="lg:col-span-5 rounded-[20px] border border-white/[0.08] bg-[#0A0E1A]/90 p-6 shadow-glass-card space-y-4">
-              <div>
-                <h3 className="font-display text-base font-bold text-white flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4 text-emerald-400" />
-                  <span>Sponsor Category Compatibility</span>
-                </h3>
-                <p className="text-xs text-slate-400">AI neural rating for brand sponsorship alignment</p>
+            <div className="lg:col-span-5 rounded-[22px] border border-white/[0.08] bg-[#0A0E1A]/90 p-6 shadow-glass-card space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-display text-base font-bold text-white flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                    <span>Brand Compatibility Score</span>
+                  </h3>
+                  <p className="text-xs text-slate-400">AI neural matchmaking across Indian tech sponsors</p>
+                </div>
+                <div className="flex items-center justify-center h-10 w-10 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-mono font-bold text-xs">
+                  {intel.brandCompatibility}%
+                </div>
               </div>
 
               <div className="space-y-3">
@@ -464,7 +549,7 @@ export default function InteractiveAIMediaKitPage() {
               <div className="p-3 rounded-[14px] bg-emerald-950/20 border border-emerald-500/30 flex items-center gap-3">
                 <CheckCircle className="h-5 w-5 text-emerald-400 shrink-0" />
                 <p className="text-[11px] text-emerald-200">
-                  <strong>Zero-Controversy Certified:</strong> 100% brand-safe creator profile with clean organic comment sentiment.
+                  <strong>Zero-Controversy Certified:</strong> 100% brand-safe creator profile with clean organic comment sentiment (98.4% positive).
                 </p>
               </div>
             </div>
@@ -474,43 +559,54 @@ export default function InteractiveAIMediaKitPage() {
           {/* SECTION 3: AUDIENCE DEMOGRAPHICS, AGE & INDIAN METROS */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             
-            {/* Age & Gender Distribution (6 cols) */}
-            <div className="lg:col-span-6 rounded-[20px] border border-white/[0.08] bg-[#0A0E1A]/90 p-6 shadow-glass-card space-y-5">
+            {/* Age & Gender Distribution with Donut & Bars (6 cols) */}
+            <div className="lg:col-span-6 rounded-[22px] border border-white/[0.08] bg-[#0A0E1A]/90 p-6 shadow-glass-card space-y-5">
               <div>
                 <h3 className="font-display text-base font-bold text-white flex items-center gap-2">
                   <Users className="h-4 w-4 text-royal-400" />
-                  <span>Audience Age & Gender Split</span>
+                  <span>Gender & Age Distribution</span>
                 </h3>
                 <p className="text-xs text-slate-400">Verified demographic cluster across tech enthusiasts and developers</p>
               </div>
 
               {/* Gender Split Visual Donut / Multi-track */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs font-semibold">
-                  <span className="text-slate-300">Gender Ratio:</span>
-                  <span className="text-royal-300 font-mono">72% Male • 26% Female • 2% Other</span>
+              <div className="p-4 rounded-[18px] bg-black/40 border border-white/[0.06] space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-slate-200">Gender Ratio Analysis</span>
+                  <span className="text-[10px] text-slate-400 font-mono">100% Verified</span>
                 </div>
-                <div className="h-3.5 w-full rounded-full bg-white/[0.06] overflow-hidden flex">
+
+                <div className="h-4 w-full rounded-full bg-white/[0.06] overflow-hidden flex shadow-inner">
                   <div style={{ width: '72%' }} className="bg-gradient-to-r from-royal-600 to-blue-500 h-full" title="72% Male" />
                   <div style={{ width: '26%' }} className="bg-gradient-to-r from-pink-500 to-rose-400 h-full" title="26% Female" />
-                  <div style={{ width: '2%' }} className="bg-amber-400 h-full" title="2% Other" />
+                  <div style={{ width: '2%' }} className="bg-amber-400 h-full" title="2% Non-Binary / Other" />
                 </div>
-                <div className="flex items-center gap-4 text-[10px] text-slate-400 pt-1 font-mono">
-                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-royal-500" /> Male (72%)</span>
-                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-pink-500" /> Female (26%)</span>
-                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-400" /> Other (2%)</span>
+
+                <div className="grid grid-cols-3 gap-2 text-center text-xs font-mono pt-1">
+                  <div className="p-2 rounded-[10px] bg-royal-600/10 border border-royal-500/20">
+                    <span className="text-royal-300 font-bold block text-sm">72%</span>
+                    <span className="text-[10px] text-slate-400">Male Engineers</span>
+                  </div>
+                  <div className="p-2 rounded-[10px] bg-pink-600/10 border border-pink-500/20">
+                    <span className="text-pink-300 font-bold block text-sm">26%</span>
+                    <span className="text-[10px] text-slate-400">Female Techies</span>
+                  </div>
+                  <div className="p-2 rounded-[10px] bg-amber-600/10 border border-amber-500/20">
+                    <span className="text-amber-300 font-bold block text-sm">2%</span>
+                    <span className="text-[10px] text-slate-400">Other / Non-Binary</span>
+                  </div>
                 </div>
               </div>
 
               {/* Age Bracket Stacked Progress Bars */}
-              <div className="space-y-3 pt-2 border-t border-white/[0.06]">
-                <span className="text-[10px] uppercase font-bold text-slate-400 font-mono">Age Bracket Spread:</span>
+              <div className="space-y-3 pt-1">
+                <span className="text-[10px] uppercase font-bold text-slate-400 font-mono block">Age Bracket Spread:</span>
 
                 {[
                   { label: '18 - 24 Years (College / Freshers)', percentage: 54, color: 'from-royal-600 to-royal-400' },
                   { label: '25 - 34 Years (Working SDEs / Professionals)', percentage: 36, color: 'from-blue-500 to-cyan-400' },
                   { label: '35 - 44 Years (Tech Leads & Managers)', percentage: 8, color: 'from-indigo-500 to-purple-400' },
-                  { label: '45+ Years (Executives)', percentage: 2, color: 'from-slate-500 to-slate-400' },
+                  { label: '45+ Years (Staff / Executives)', percentage: 2, color: 'from-slate-500 to-slate-400' },
                 ].map((bracket, idx) => (
                   <div key={idx} className="space-y-1">
                     <div className="flex justify-between text-xs">
@@ -531,32 +627,41 @@ export default function InteractiveAIMediaKitPage() {
               </div>
             </div>
 
-            {/* Top Indian Cities (6 cols) */}
-            <div className="lg:col-span-6 rounded-[20px] border border-white/[0.08] bg-[#0A0E1A]/90 p-6 shadow-glass-card space-y-4">
-              <div>
-                <h3 className="font-display text-base font-bold text-white flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-royal-400" />
-                  <span>Top Indian Cities & Purchasing Metros</span>
-                </h3>
-                <p className="text-xs text-slate-400">High concentration in India's highest tech purchasing hubs</p>
+            {/* Audience Cities & Purchasing Metros (6 cols) */}
+            <div className="lg:col-span-6 rounded-[22px] border border-white/[0.08] bg-[#0A0E1A]/90 p-6 shadow-glass-card space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-display text-base font-bold text-white flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-royal-400" />
+                    <span>Audience Cities & Indian Metros</span>
+                  </h3>
+                  <p className="text-xs text-slate-400">High concentration in India's highest tech purchasing hubs</p>
+                </div>
+                <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                  90% Tier-1
+                </span>
               </div>
 
               <div className="space-y-3">
                 {[
-                  { city: 'Bengaluru (Silicon Valley of India)', percentage: 38 },
-                  { city: 'Delhi NCR (Gurugram / Noida IT Corridor)', percentage: 24 },
-                  { city: 'Hyderabad (Cyberabad Hi-Tech City)', percentage: 16 },
-                  { city: 'Mumbai & Pune (Western Financial & Tech Belt)', percentage: 12 },
-                  { city: 'Tier 2 & 3 Emerging Hubs (Kochi, Indore, Jaipur)', percentage: 10 },
+                  { city: 'Bengaluru (Silicon Valley of India)', percentage: 38, tier: 'Tier-1 Tech Hub' },
+                  { city: 'Delhi NCR (Gurugram / Noida IT Corridor)', percentage: 24, tier: 'Tier-1 Capital' },
+                  { city: 'Hyderabad (Cyberabad Hi-Tech City)', percentage: 16, tier: 'Tier-1 Tech Hub' },
+                  { city: 'Mumbai & Pune (Western Financial & IT Belt)', percentage: 12, tier: 'Tier-1 Financial' },
+                  { city: 'Chennai & Kolkata (Automotive & Software Corridor)', percentage: 6, tier: 'Tier-1 Metros' },
+                  { city: 'Tier 2 & 3 Emerging Hubs (Kochi, Indore, Jaipur, Ahmedabad)', percentage: 4, tier: 'Emerging' },
                 ].map((c, idx) => (
                   <div key={idx} className="space-y-1">
                     <div className="flex justify-between text-xs">
-                      <span className="text-slate-300 font-medium">{c.city}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-slate-300 font-medium">{c.city}</span>
+                        <span className="text-[9px] text-slate-500 font-mono">({c.tier})</span>
+                      </div>
                       <span className="font-bold text-white font-mono">{c.percentage}%</span>
                     </div>
                     <div className="h-2 w-full rounded-full bg-white/[0.06] overflow-hidden">
                       <motion.div
-                        className="h-full rounded-full bg-gradient-to-r from-royal-600 to-blue-400"
+                        className="h-full rounded-full bg-gradient-to-r from-royal-600 via-blue-500 to-emerald-400"
                         initial={{ width: 0 }}
                         whileInView={{ width: `${c.percentage}%` }}
                         viewport={{ once: true }}
@@ -570,19 +675,19 @@ export default function InteractiveAIMediaKitPage() {
               <div className="pt-3 border-t border-white/[0.08] space-y-2 text-xs text-slate-300">
                 <div className="flex justify-between">
                   <span>Tier-1 Metro Purchasing Power:</span>
-                  <span className="font-mono font-bold text-emerald-400">90% Concentration</span>
+                  <span className="font-mono font-bold text-emerald-400">High Disposable Income</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Audience Device Split:</span>
-                  <span className="font-mono text-royal-300 font-bold">Android (70%) • iOS (30%)</span>
+                  <span className="font-mono text-royal-300 font-bold">Android (70%) • iOS / Mac (30%)</span>
                 </div>
               </div>
             </div>
 
           </div>
 
-          {/* SECTION 4: BEST POSTING TIME (IST) ⏰ */}
-          <div className="rounded-[20px] border border-white/[0.08] bg-[#0A0E1A]/90 p-6 shadow-glass-card space-y-4">
+          {/* SECTION 4: BEST POSTING TIME (IST ALGORITHM HEATMAP & INTERACTIVE SELECTOR) */}
+          <div className="rounded-[22px] border border-white/[0.08] bg-[#0A0E1A]/90 p-6 shadow-glass-card space-y-5">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-2 border-b border-white/[0.06]">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-royal-400 font-mono flex items-center gap-1.5">
@@ -590,55 +695,98 @@ export default function InteractiveAIMediaKitPage() {
                   <span>Indian Algorithm Peak Heatmap</span>
                 </span>
                 <h3 className="font-display text-base font-bold text-white mt-0.5">
-                  Optimal Posting Schedule (Indian Standard Time)
+                  Optimal Posting Schedule (Indian Standard Time - IST)
                 </h3>
               </div>
-              <span className="text-xs text-emerald-400 font-mono font-semibold bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-full">
-                Golden Peak: Tue & Thu (07:30 PM - 09:30 PM IST)
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-emerald-400 font-mono font-semibold bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-full">
+                  🔥 Golden Peaks: Tue & Thu (07:30 PM - 09:30 PM IST)
+                </span>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-2.5">
-              {BEST_POSTING_SCHEDULE.map((sched, idx) => (
-                <HoverCard
-                  hoverY={-2}
-                  key={idx}
-                  className={`p-3.5 rounded-[16px] border text-left flex flex-col justify-between space-y-2 ${
-                    sched.peakEngagement.includes('Golden')
-                      ? 'border-royal-500 bg-royal-600/15 shadow-royal-sm ring-1 ring-royal-500/40'
-                      : 'border-white/[0.08] bg-white/[0.03]'
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-display text-sm font-bold text-white">{sched.day}</span>
-                      <span className={`text-[9px] font-bold font-mono px-1.5 py-0.5 rounded ${
-                        sched.peakEngagement.includes('Golden') ? 'bg-royal-600 text-white' : 'bg-white/[0.06] text-slate-400'
-                      }`}>
-                        {sched.score}%
-                      </span>
+            {/* Interactive Day Cards Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
+              {BEST_POSTING_SCHEDULE.map((sched, idx) => {
+                const isSelected = selectedDayIndex === idx;
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setSelectedDayIndex(idx)}
+                    className={`p-3.5 rounded-[16px] border text-left flex flex-col justify-between space-y-2 transition btn-press ${
+                      isSelected
+                        ? 'border-royal-500 bg-royal-600/20 shadow-royal-sm ring-2 ring-royal-500/50'
+                        : sched.peakEngagement === 'Golden Hour'
+                        ? 'border-royal-500/50 bg-royal-600/10 hover:border-royal-400'
+                        : 'border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.05]'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-display text-sm font-bold text-white">{sched.day}</span>
+                        <span className={`text-[9px] font-bold font-mono px-1.5 py-0.5 rounded ${
+                          sched.peakEngagement === 'Golden Hour' ? 'bg-royal-600 text-white' : 'bg-white/[0.08] text-slate-400'
+                        }`}>
+                          {sched.score}%
+                        </span>
+                      </div>
+                      <p className="text-[10px] font-mono text-royal-300 font-semibold truncate">{sched.window}</p>
                     </div>
-                    <p className="text-[11px] font-mono text-royal-300 font-semibold">{sched.window}</p>
-                  </div>
-                  <p className="text-[10px] text-slate-400 line-clamp-2">{sched.tip}</p>
-                </HoverCard>
-              ))}
+                    <span className="text-[9px] text-emerald-400 font-mono font-medium">{sched.multiplier}</span>
+                  </button>
+                );
+              })}
             </div>
+
+            {/* Selected Day Deep Dive Intelligence Box */}
+            <motion.div
+              key={selectedDayIndex}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="p-4 rounded-[18px] bg-gradient-to-r from-royal-950/40 via-[#0E152E] to-black/40 border border-royal-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+            >
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-display text-sm font-bold text-white">
+                    {selectedDay.dayFull} Recommended Window:
+                  </span>
+                  <span className="font-mono text-xs font-bold text-royal-400 bg-royal-600/20 px-2.5 py-0.5 rounded">
+                    {selectedDay.window}
+                  </span>
+                  <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded border border-emerald-500/30">
+                    {selectedDay.peakEngagement}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300">
+                  <strong>Recommended Format:</strong> {selectedDay.bestFormat} — {selectedDay.tip}.
+                </p>
+              </div>
+
+              <div className="text-right shrink-0">
+                <span className="text-[10px] font-mono text-slate-400 block">Algorithm Velocity</span>
+                <span className="font-display text-lg font-extrabold text-emerald-400 font-mono">
+                  {selectedDay.multiplier}
+                </span>
+              </div>
+            </motion.div>
           </div>
 
-          {/* SECTION 5: SUGGESTED COLLABORATION PRICING & RATE CARD */}
-          <div className="rounded-[20px] border border-white/[0.08] bg-[#0A0E1A]/90 p-6 shadow-glass-card space-y-4">
+          {/* SECTION 5: AI SUGGESTED COLLABORATION PRICING & RATE CARDS */}
+          <div className="rounded-[22px] border border-white/[0.08] bg-[#0A0E1A]/90 p-6 shadow-glass-card space-y-5">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-2 border-b border-white/[0.06]">
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-royal-400 font-mono">
-                  Sponsorship Rate Card
+                <span className="text-[10px] font-bold uppercase tracking-wider text-royal-400 font-mono flex items-center gap-1.5">
+                  <DollarSign className="h-3.5 w-3.5" />
+                  <span>Sponsorship Rate Card</span>
                 </span>
                 <h3 className="font-display text-base font-bold text-white mt-0.5">
-                  AI Suggested Deliverable Pricing (INR ₹)
+                  AI Suggested Collaboration Deliverable Pricing (INR ₹)
                 </h3>
               </div>
-              <span className="text-xs text-slate-400 font-mono">
-                Auto-calculated for {formatINR(followerCount)} {creatorNiche.split(' ')[0]} audience
+              <span className="text-xs text-slate-400 font-mono bg-white/[0.04] px-3 py-1 rounded-full border border-white/[0.06]">
+                Calibrated for {formatINR(followerCount)} {creatorNiche.split(' ')[0]} audience
               </span>
             </div>
 
@@ -688,7 +836,7 @@ export default function InteractiveAIMediaKitPage() {
                 </div>
                 <div>
                   <h4 className="font-bold text-xs text-white">Dedicated Masterclass Video (10-15m)</h4>
-                  <p className="text-[10px] text-slate-400 mt-0.5">End-to-end tutorial & deep dive with branding</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">End-to-end tutorial & deep dive with custom branding</p>
                 </div>
                 <div className="font-display text-xl font-extrabold text-white font-mono pt-2 border-t border-white/[0.06]">
                   <AnimatedCounter value={intel.rates.ytDedicated} prefix="₹" />
@@ -705,7 +853,7 @@ export default function InteractiveAIMediaKitPage() {
                 </div>
                 <div>
                   <h4 className="font-bold text-xs text-white">LinkedIn Executive Post</h4>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Reaching senior Indian engineers, CTOs & founders</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Reaching senior Indian engineers, CTOs & tech founders</p>
                 </div>
                 <div className="font-display text-xl font-extrabold text-white font-mono pt-2 border-t border-white/[0.06]">
                   <AnimatedCounter value={intel.rates.linkedin} prefix="₹" />
@@ -735,7 +883,7 @@ export default function InteractiveAIMediaKitPage() {
                   <div className="p-2 rounded-[10px] bg-royal-500/20 text-royal-300 border border-royal-500/30">
                     <Sparkles className="h-4 w-4" />
                   </div>
-                  <span className="text-[10px] font-bold text-amber-300 font-mono">15% BUNDLE DISCOUNT</span>
+                  <span className="text-[10px] font-bold text-amber-300 font-mono">15% BUNDLE SAVINGS</span>
                 </div>
                 <div>
                   <h4 className="font-bold text-xs text-white">360° Omnichannel Tech Launch Bundle</h4>
@@ -769,7 +917,7 @@ export default function InteractiveAIMediaKitPage() {
                 <h3 className="font-display text-base font-bold text-white">Share Live Media Kit URL</h3>
               </div>
               <p className="text-xs text-slate-400 mb-4">
-                Send this verified link to brands and agencies to pitch sponsorships.
+                Send this verified intelligence URL to brand managers and agencies to pitch sponsorships.
               </p>
 
               <div className="p-3 rounded-[14px] bg-black/50 border border-white/[0.1] flex items-center justify-between gap-2 mb-4">
@@ -796,7 +944,7 @@ export default function InteractiveAIMediaKitPage() {
                   onClick={handleExportPDF}
                   className="w-full rounded-[14px] border border-white/[0.1] bg-white/[0.04] hover:bg-white/[0.08] py-2.5 text-xs font-semibold text-slate-300"
                 >
-                  Export PDF instead
+                  Download PDF Media Kit
                 </button>
               </div>
             </div>
@@ -807,3 +955,4 @@ export default function InteractiveAIMediaKitPage() {
     </PageTransition>
   );
 }
+

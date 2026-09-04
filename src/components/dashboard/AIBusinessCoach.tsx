@@ -204,7 +204,7 @@ const INSIGHTS_DATA: InsightItem[] = [
   {
     id: 'insight_product',
     category: 'product',
-    title: 'Best Performing Asset: System Design Blueprint (14.8% CR)',
+    title: 'Highest Converting Product: System Design Blueprint (14.8% CR)',
     subtitle: 'Conversion Funnel Champion',
     icon: Zap,
     iconBg: 'bg-royal-600/15',
@@ -512,7 +512,7 @@ export default function AIBusinessCoachWidget({
               { id: 'forecast', label: '📈 Revenue Forecast' },
               { id: 'pricing', label: '💰 Price Optimization' },
               { id: 'retention', label: '👥 Returning Customers' },
-              { id: 'product', label: '⚡ Best Performing Product' },
+              { id: 'product', label: '⚡ Highest Converting Product' },
               { id: 'growth', label: '🏆 Weekly Growth Score' },
             ].map((tab) => (
               <button

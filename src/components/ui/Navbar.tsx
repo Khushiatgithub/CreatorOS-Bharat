@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
 import { useCreatorStore } from '@/lib/store';
 import { useTheme } from '@/components/ui/ThemeProvider';
 import { 
@@ -17,7 +18,9 @@ import {
   Layers,
   ArrowUpRight,
   Sun,
-  Moon
+  Moon,
+  LogIn,
+  User
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -89,7 +92,7 @@ export default function Navbar() {
           </nav>
         </div>
 
-        {/* Right side - Theme Toggle, Switcher & CTA */}
+        {/* Right side - Theme Toggle, Switcher, Clerk Auth & CTA */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           
           {/* Theme Sun/Moon Toggle Button */}
@@ -159,7 +162,7 @@ export default function Navbar() {
                     </button>
                   ))}
 
-                  <div className="mt-2 pt-2 border-t border-white/[0.08]">
+                  <div className="mt-2 pt-2 border-t border-white/[0.08] space-y-1">
                     <Link
                       href="/onboarding"
                       className="w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-royal-400 hover:bg-royal-600/10 transition"
@@ -169,6 +172,16 @@ export default function Navbar() {
                         <span>Launch Onboarding Wizard</span>
                       </span>
                       <span className="text-[10px] font-mono bg-royal-600/20 px-1.5 py-0.5 rounded">3 Steps</span>
+                    </Link>
+
+                    <Link
+                      href="/dashboard/profile"
+                      className="w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/[0.06] transition"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <User className="h-3.5 w-3.5 text-slate-400" />
+                        <span>Account & Security</span>
+                      </span>
                     </Link>
                   </div>
                 </div>
@@ -186,14 +199,50 @@ export default function Navbar() {
             <ArrowUpRight className="h-3.5 w-3.5 text-royal-400" />
           </Link>
 
-          {/* Creator Studio Link */}
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2 rounded-[14px] bg-gradient-to-r from-royal-600 to-royal-700 px-4 py-2 text-xs font-semibold text-white shadow-royal hover:brightness-110 transition btn-press whitespace-nowrap shrink-0"
-          >
-            <LayoutDashboard className="h-3.5 w-3.5" />
-            <span>{isDashboard ? 'Studio Active' : 'Studio'}</span>
-          </Link>
+          {/* CLERK AUTHENTICATION ACTIONS */}
+          <SignedIn>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-2 rounded-[14px] bg-gradient-to-r from-royal-600 to-royal-700 px-4 py-2 text-xs font-semibold text-white shadow-royal hover:brightness-110 transition btn-press whitespace-nowrap shrink-0"
+              >
+                <LayoutDashboard className="h-3.5 w-3.5" />
+                <span>{isDashboard ? 'Studio Active' : 'Studio'}</span>
+              </Link>
+              
+              <UserButton 
+                afterSignOutUrl="/"
+                userProfileMode="navigation"
+                userProfileUrl="/dashboard/profile"
+                appearance={{
+                  elements: {
+                    userButtonAvatarBox: 'h-8 w-8 ring-2 ring-royal-500/50 rounded-full',
+                    userButtonPopoverCard: 'bg-[#0A0D17] border border-white/[0.12] text-white shadow-2xl',
+                    userButtonPopoverFooter: 'hidden'
+                  }
+                }}
+              />
+            </div>
+          </SignedIn>
+
+          <SignedOut>
+            <div className="flex items-center gap-1.5">
+              <Link
+                href="/sign-in"
+                className="flex items-center gap-1.5 rounded-[14px] border border-white/[0.1] bg-white/[0.04] hover:bg-white/[0.08] px-3.5 py-2 text-xs font-medium text-slate-200 hover:text-white transition btn-press whitespace-nowrap shrink-0"
+              >
+                <LogIn className="h-3.5 w-3.5 text-royal-400" />
+                <span>Sign In</span>
+              </Link>
+
+              <Link
+                href="/sign-up"
+                className="flex items-center gap-2 rounded-[14px] bg-gradient-to-r from-royal-600 to-royal-700 px-4 py-2 text-xs font-semibold text-white shadow-royal hover:brightness-110 transition btn-press whitespace-nowrap shrink-0"
+              >
+                <span>Get Started</span>
+              </Link>
+            </div>
+          </SignedOut>
 
         </div>
 

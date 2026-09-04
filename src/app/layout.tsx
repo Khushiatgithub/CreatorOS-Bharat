@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, Outfit, JetBrains_Mono } from 'next/font/google';
+import { ClerkProvider } from '@clerk/nextjs';
+import { dark } from '@clerk/themes';
 import { ThemeProvider } from '@/components/ui/ThemeProvider';
 import './globals.css';
 
@@ -28,10 +30,10 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'CreatorOS India — The All-in-One Operating System for Indian Creators',
+  title: 'CreatorOS Bharat — The All-in-One Operating System for Indian Creators',
   description: 'Sell notes, courses, notion templates, and 1:1 mentorship with instant UPI checkout, automated GST invoices, and WhatsApp delivery.',
   keywords: [
-    'CreatorOS India',
+    'CreatorOS Bharat',
     'Stan Store India',
     'Gumroad India UPI',
     'Topmate alternative',
@@ -42,10 +44,10 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: 'CreatorOS Team' }],
   openGraph: {
-    title: 'CreatorOS India — Monetize Your Audience with 1-Click UPI',
+    title: 'CreatorOS Bharat — Monetize Your Audience with 1-Click UPI',
     description: 'The premier bio-link storefront, digital product engine, and course platform built for Bharat creators.',
     url: 'https://creatoros.in',
-    siteName: 'CreatorOS India',
+    siteName: 'CreatorOS Bharat',
     locale: 'en_IN',
     type: 'website',
   },
@@ -57,12 +59,25 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark scroll-smooth">
-      <body className={`${inter.variable} ${outfit.variable} ${jetbrainsMono.variable} min-h-screen bg-[#05070B] text-slate-100 antialiased font-sans selection:bg-royal-600 selection:text-white transition-colors duration-300`}>
-        <ThemeProvider>
-          {children}
-        </ThemeProvider>
-      </body>
-    </html>
+    <ClerkProvider
+      appearance={{
+        baseTheme: dark,
+        variables: {
+          colorPrimary: '#2563EB',
+          colorBackground: '#0A0D17',
+          colorText: '#F8FAFC',
+          colorInputBackground: '#05070B',
+          colorInputText: '#FFFFFF',
+        }
+      }}
+    >
+      <html lang="en" className="dark scroll-smooth">
+        <body className={`${inter.variable} ${outfit.variable} ${jetbrainsMono.variable} min-h-screen bg-[#05070B] text-slate-100 antialiased font-sans selection:bg-royal-600 selection:text-white transition-colors duration-300`}>
+          <ThemeProvider>
+            {children}
+          </ThemeProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

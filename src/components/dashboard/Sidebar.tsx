@@ -16,7 +16,8 @@ import {
   BarChart3, 
   ShieldCheck, 
   Zap, 
-  ArrowUpRight 
+  ArrowUpRight,
+  User
 } from 'lucide-react';
 import { useCreatorStore } from '@/lib/store';
 
@@ -30,7 +31,8 @@ const NAV_ITEMS = [
   { href: '/dashboard/media-kit', label: 'AI Media Kit', icon: Sparkles, highlight: true },
   { href: '/dashboard/marketplace', label: 'Brand Marketplace', icon: Briefcase, badge: 'Deals' },
   { href: '/dashboard/gst-invoices', label: 'GST Invoices', icon: Receipt },
-  { href: '/dashboard/analytics', label: 'Analytics & Payouts', icon: BarChart3 }
+  { href: '/dashboard/analytics', label: 'Analytics & Payouts', icon: BarChart3 },
+  { href: '/dashboard/profile', label: 'Account & Security', icon: User }
 ];
 
 export default function Sidebar() {

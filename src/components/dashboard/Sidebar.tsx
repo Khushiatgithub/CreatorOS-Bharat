@@ -17,8 +17,10 @@ import {
   ShieldCheck, 
   Zap, 
   ArrowUpRight,
-  User
+  User,
+  LogOut
 } from 'lucide-react';
+import { SignOutButton, SignedIn } from '@clerk/nextjs';
 import { useCreatorStore } from '@/lib/store';
 
 const NAV_ITEMS = [
@@ -103,7 +105,7 @@ export default function Sidebar() {
           );
         })}
 
-        <div className="pt-2">
+        <div className="pt-2 space-y-1">
           <Link
             href="/onboarding"
             className="flex items-center justify-between rounded-[14px] px-3.5 py-2.5 text-xs font-semibold text-royal-400 bg-royal-600/10 border border-royal-500/25 hover:bg-royal-600/20 transition"
@@ -114,24 +116,35 @@ export default function Sidebar() {
             </div>
             <span className="text-[10px] font-mono bg-royal-600/30 text-royal-300 px-1.5 py-0.5 rounded">3 Steps</span>
           </Link>
+
+          <SignedIn>
+            <SignOutButton redirectUrl="/">
+              <button className="w-full flex items-center gap-2.5 rounded-[14px] px-3.5 py-2 text-xs font-medium text-slate-400 hover:bg-rose-500/10 hover:text-rose-400 border border-transparent hover:border-rose-500/20 transition">
+                <LogOut className="h-4 w-4" />
+                <span>Sign Out</span>
+              </button>
+            </SignOutButton>
+          </SignedIn>
         </div>
       </div>
 
       {/* Instant IMPS Payout Status Box - 20px rounded */}
-      <div className="mt-auto rounded-[20px] border border-royal-500/25 bg-gradient-to-b from-[#0E1529] to-[#080C18] p-4 text-xs shadow-glass-subtle">
-        <div className="flex items-center justify-between text-royal-400 font-semibold text-[11px] mb-1.5">
-          <span className="flex items-center gap-1.5">
-            <Zap className="h-3 w-3 fill-royal-400 text-royal-400" />
-            <span>UPI Instant Settlement</span>
-          </span>
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+      <div className="mt-auto space-y-2">
+        <div className="rounded-[20px] border border-royal-500/25 bg-gradient-to-b from-[#0E1529] to-[#080C18] p-3.5 text-xs shadow-glass-subtle">
+          <div className="flex items-center justify-between text-royal-400 font-semibold text-[11px] mb-1">
+            <span className="flex items-center gap-1.5">
+              <Zap className="h-3 w-3 fill-royal-400 text-royal-400" />
+              <span>UPI Settlement Active</span>
+            </span>
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          </div>
+          <p className="text-[11px] text-slate-300 truncate">
+            <span className="text-slate-400">Bank:</span> <span className="font-mono text-white font-medium">{activeCreator?.bankAccount.bankName}</span>
+          </p>
+          <p className="text-[10px] text-slate-400 mt-0.5 font-mono truncate">
+            {activeCreator?.bankAccount.accountNumberMasked}
+          </p>
         </div>
-        <p className="text-[11px] text-slate-300">
-          <span className="text-slate-400">Bank:</span> <span className="font-mono text-white font-medium">{activeCreator?.bankAccount.bankName}</span>
-        </p>
-        <p className="text-[10px] text-slate-400 mt-1 font-mono">
-          {activeCreator?.bankAccount.accountNumberMasked}
-        </p>
       </div>
 
     </aside>

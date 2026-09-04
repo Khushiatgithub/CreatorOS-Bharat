@@ -309,6 +309,15 @@ export default function UPICheckoutModal({
         };
 
         const rzpInstance = new (window as any).Razorpay(options);
+        
+        rzpInstance.on('payment.failed', function (response: any) {
+          console.error('Razorpay payment failed:', response.error);
+          const failureReason = response.error?.description || 'Transaction declined by bank or UPI network';
+          const failureCode = response.error?.code || 'PAYMENT_FAILED';
+          setErrorMessage(`${failureReason} (${failureCode})`);
+          setStep('form');
+        });
+
         rzpInstance.open();
       } else {
         // Direct in-modal verification simulation (reliable in development / test environments)
@@ -1066,6 +1075,15 @@ export default function UPICheckoutModal({
                   <FileText className="h-4 w-4 text-royal-400" />
                   <span>View Official GST Tax Invoice ({completedOrder.invoiceNumber})</span>
                 </RippleButton>
+
+                {/* View Dedicated Full-Page Receipt */}
+                <a
+                  href={`/payment/success?payment_id=${completedOrder.razorpayPaymentId || completedOrder.upiRefId}&order_id=${completedOrder.razorpayOrderId || completedOrder.orderNumber}&title=${encodeURIComponent(completedOrder.itemTitle)}&amount=${completedOrder.totalAmount}&name=${encodeURIComponent(completedOrder.buyerName)}&phone=${encodeURIComponent(completedOrder.buyerPhone)}&invoice=${encodeURIComponent(completedOrder.invoiceNumber)}${completedOrder.downloadUrl ? `&download_url=${encodeURIComponent(completedOrder.downloadUrl)}` : ''}`}
+                  className="w-full rounded-[16px] border border-royal-500/30 bg-royal-600/10 hover:bg-royal-600/20 py-2.5 text-xs font-medium text-royal-300 flex items-center justify-center gap-1.5 transition text-center"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  <span>Open Full-Page Dedicated Receipt</span>
+                </a>
               </div>
 
               <button

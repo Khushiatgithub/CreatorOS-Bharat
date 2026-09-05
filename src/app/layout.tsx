@@ -58,7 +58,10 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const clerkPublishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  // Ensure a valid fallback key is always supplied so ClerkProvider never crashes on Vercel deployments
+  const clerkPublishableKey = 
+    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || 
+    'pk_test_Y3JlYXRvcm9zLWJoYXJhdC5jbGVyay5hY2NvdW50cy5kZXYk';
 
   return (
     <ClerkProvider

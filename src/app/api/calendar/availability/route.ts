@@ -23,7 +23,13 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { creatorId = 'creator_aarav', availability, bufferMinutes = 15 } = body;
+    const {
+      creatorId = 'creator_aarav',
+      availability,
+      bufferMinutes = 15,
+      timezone = 'Asia/Kolkata',
+      blockedHolidays = []
+    } = body;
 
     if (!Array.isArray(availability)) {
       return NextResponse.json(
@@ -32,14 +38,22 @@ export async function POST(req: Request) {
       );
     }
 
-    await CalendarAvailabilityModel.save(creatorId, availability, bufferMinutes);
+    await CalendarAvailabilityModel.save(
+      creatorId,
+      availability,
+      bufferMinutes,
+      timezone,
+      blockedHolidays
+    );
 
     return NextResponse.json({
       success: true,
-      message: 'Weekly availability and buffer saved successfully.',
+      message: 'Weekly availability, buffer time, timezone, and blocked holidays saved successfully to PostgreSQL.',
       data: {
         availability,
-        bufferMinutes
+        bufferMinutes,
+        timezone,
+        blockedHolidays
       }
     });
   } catch (error: any) {

@@ -20,7 +20,9 @@ import {
   SubscriptionPayment,
   GoogleCalendarIntegration,
   DayAvailability,
-  CalendarMeeting
+  CalendarMeeting,
+  BlockedHoliday,
+  SupportedTimezone
 } from '@/types';
 
 export const THEMES: StoreTheme[] = [
@@ -2652,6 +2654,40 @@ export const INITIAL_WEEKLY_AVAILABILITY: DayAvailability[] = [
     isEnabled: false,
     timeRanges: []
   }
+];
+
+export const INITIAL_BLOCKED_HOLIDAYS: BlockedHoliday[] = [
+  {
+    id: 'hol_1',
+    date: '2026-10-02',
+    name: 'Gandhi Jayanti',
+    reason: 'National Holiday'
+  },
+  {
+    id: 'hol_2',
+    date: '2026-11-08',
+    name: 'Diwali Festival',
+    reason: 'Public Holiday'
+  },
+  {
+    id: 'hol_3',
+    date: '2026-12-25',
+    name: 'Christmas Day',
+    reason: 'Holiday'
+  }
+];
+
+export const SUPPORTED_TIMEZONES: SupportedTimezone[] = [
+  { id: 'Asia/Kolkata', label: 'India Standard Time (IST)', offset: 'UTC+05:30', region: 'India (Default)' },
+  { id: 'Asia/Dubai', label: 'Gulf Standard Time (GST)', offset: 'UTC+04:00', region: 'Middle East' },
+  { id: 'Asia/Singapore', label: 'Singapore Time (SGT)', offset: 'UTC+08:00', region: 'Asia-Pacific' },
+  { id: 'Asia/Tokyo', label: 'Japan Standard Time (JST)', offset: 'UTC+09:00', region: 'Japan' },
+  { id: 'Europe/London', label: 'Greenwich / British Time (GMT/BST)', offset: 'UTC+00:00', region: 'Europe / UK' },
+  { id: 'Europe/Berlin', label: 'Central European Time (CET)', offset: 'UTC+01:00', region: 'Europe / Germany' },
+  { id: 'America/New_York', label: 'Eastern Time (EST / EDT)', offset: 'UTC-05:00', region: 'US & Canada' },
+  { id: 'America/Chicago', label: 'Central Time (CST / CDT)', offset: 'UTC-06:00', region: 'US & Canada' },
+  { id: 'America/Los_Angeles', label: 'Pacific Time (PST / PDT)', offset: 'UTC-08:00', region: 'US & Canada' },
+  { id: 'Australia/Sydney', label: 'Australian Eastern Time (AEST)', offset: 'UTC+10:00', region: 'Australia' }
 ];
 
 export const INITIAL_CALENDAR_MEETINGS: CalendarMeeting[] = [

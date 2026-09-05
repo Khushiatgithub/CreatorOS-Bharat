@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ShieldCheck, 
   MapPin, 
@@ -35,7 +35,8 @@ import {
   Flame,
   Globe,
   Radio,
-  X
+  X,
+  AlertCircle
 } from 'lucide-react';
 import { Creator, StoreTheme, DigitalProduct, Course, BookingService, ProductType } from '@/types';
 import UPICheckoutModal from '@/components/checkout/UPICheckoutModal';
@@ -125,7 +126,7 @@ export default function StorefrontContent({
   bookingServices,
   isMobilePreview = false
 }: StorefrontContentProps) {
-  const { isSlotBooked } = useCreatorStore();
+  const { isSlotBooked, isDateBlocked, calendarTimezone } = useCreatorStore();
   const [activeTab, setActiveTab] = useState<'all' | 'memberships' | 'sessions' | 'courses' | 'products' | 'communities' | 'reviews'>('all');
   
   // Checkout modal
@@ -157,9 +158,20 @@ export default function StorefrontContent({
 
   const handleOpenBookingSlot = (service: BookingService) => {
     setBookingModalService(service);
-    const availableSlot = service.timeSlots.find((s) => !isSlotBooked(selectedDate, s, creator.id)) || service.timeSlots[0] || '07:00 PM';
-    setSelectedSlot(availableSlot);
+    const availableSlots = service.timeSlots.filter((s) => !isSlotBooked(selectedDate, s, creator.id));
+    const firstAvailable = availableSlots[0] || service.timeSlots[0] || '07:00 PM';
+    setSelectedSlot(firstAvailable);
   };
+
+  // Sync selectedSlot when date or modal changes
+  useEffect(() => {
+    if (bookingModalService) {
+      const openSlots = bookingModalService.timeSlots.filter((s) => !isSlotBooked(selectedDate, s, creator.id));
+      if (openSlots.length > 0 && !openSlots.includes(selectedSlot)) {
+        setSelectedSlot(openSlots[0]);
+      }
+    }
+  }, [selectedDate, bookingModalService, isSlotBooked]);
 
   const handleProceedBookingToCheckout = () => {
     if (!bookingModalService) return;
@@ -998,53 +1010,107 @@ export default function StorefrontContent({
 
             {/* Date choices */}
             <div>
-              <label className="block text-[11px] font-semibold text-slate-300 mb-1.5">Select Preferred Date</label>
-              <div className="grid grid-cols-3 gap-2">
-                {['Today', 'Tomorrow', 'This Saturday'].map((d) => (
-                  <button
-                    key={d}
-                    type="button"
-                    onClick={() => setSelectedDate(d)}
-                    className={`py-2.5 rounded-[14px] text-xs font-medium border transition btn-press ${
-                      selectedDate === d
-                        ? 'border-royal-500 bg-royal-600/20 text-royal-300 font-bold shadow-royal-sm'
-                        : 'border-white/[0.08] bg-white/[0.03] text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {d}
-                  </button>
-                ))}
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-[11px] font-semibold text-slate-300">Select Preferred Date</label>
+                <span className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
+                  <Globe className="h-3 w-3 text-royal-400" />
+                  {calendarTimezone || 'Asia/Kolkata'}
+                </span>
               </div>
-            </div>
-
-            {/* Slot choices */}
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-300 mb-1.5">Select Time Slot (IST)</label>
-              <div className="grid grid-cols-2 gap-2">
-                {bookingModalService.timeSlots.map((slot) => {
-                  const isBooked = isSlotBooked(selectedDate, slot, creator.id);
+              <div className="grid grid-cols-3 gap-2">
+                {['Today', 'Tomorrow', 'This Saturday'].map((d) => {
+                  const dateBlocked = isDateBlocked(d, creator.id);
                   return (
                     <button
-                      key={slot}
+                      key={d}
                       type="button"
-                      disabled={isBooked}
-                      onClick={() => !isBooked && setSelectedSlot(slot)}
-                      className={`py-2.5 rounded-[14px] text-xs font-medium border transition flex items-center justify-center gap-1.5 btn-press ${
-                        isBooked
-                          ? 'border-white/[0.04] bg-white/[0.01] text-slate-500 line-through opacity-50 cursor-not-allowed'
-                          : selectedSlot === slot
-                          ? 'border-royal-500 bg-royal-600/25 text-white font-bold shadow-royal-sm'
-                          : 'border-white/[0.08] bg-white/[0.03] text-slate-300 hover:border-white/[0.15]'
+                      onClick={() => setSelectedDate(d)}
+                      className={`py-2.5 rounded-[14px] text-xs font-medium border transition btn-press flex flex-col items-center justify-center gap-0.5 ${
+                        selectedDate === d
+                          ? 'border-royal-500 bg-royal-600/20 text-royal-300 font-bold shadow-royal-sm'
+                          : dateBlocked.isBlocked
+                          ? 'border-rose-500/20 bg-rose-500/5 text-slate-400 hover:text-slate-200'
+                          : 'border-white/[0.08] bg-white/[0.03] text-slate-400 hover:text-white'
                       }`}
-                      title={isBooked ? 'This slot has already been booked and blocked.' : `Select ${slot}`}
                     >
-                      <Clock className={`h-3.5 w-3.5 ${isBooked ? 'text-slate-600' : 'text-royal-400'}`} />
-                      <span>{slot}</span>
-                      {isBooked && <span className="text-[10px] text-rose-400 font-mono font-semibold ml-0.5">(Booked)</span>}
+                      <span>{d}</span>
+                      {dateBlocked.isBlocked && (
+                        <span className="text-[9px] font-mono text-rose-400 font-medium">Off/Holiday</span>
+                      )}
                     </button>
                   );
                 })}
               </div>
+            </div>
+
+            {/* Slot choices: Booked slots automatically disappear */}
+            <div>
+              {(() => {
+                const dateBlocked = isDateBlocked(selectedDate, creator.id);
+                const openSlots = bookingModalService.timeSlots.filter(
+                  (slot) => !isSlotBooked(selectedDate, slot, creator.id)
+                );
+
+                if (dateBlocked.isBlocked) {
+                  return (
+                    <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-3.5 text-center space-y-1 my-2">
+                      <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-rose-300">
+                        <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
+                        <span>Date Blocked ({dateBlocked.reason || 'Holiday / Day Off'})</span>
+                      </div>
+                      <p className="text-[11px] text-rose-200/70">
+                        The creator is unavailable on {selectedDate}. Please select another date to view open slots.
+                      </p>
+                    </div>
+                  );
+                }
+
+                if (openSlots.length === 0) {
+                  return (
+                    <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-center space-y-1 my-2">
+                      <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-amber-300">
+                        <Clock className="h-4 w-4 shrink-0 text-amber-400" />
+                        <span>All Slots Booked</span>
+                      </div>
+                      <p className="text-[11px] text-amber-200/70">
+                        All consultation slots for {selectedDate} have been taken. Please choose another date.
+                      </p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-[11px] font-semibold text-slate-300">
+                        Available Time Slots
+                      </label>
+                      <span className="text-[10px] text-emerald-400 font-mono font-medium flex items-center gap-1">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        {openSlots.length} open slot{openSlots.length > 1 ? 's' : ''}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      {openSlots.map((slot) => (
+                        <button
+                          key={slot}
+                          type="button"
+                          onClick={() => setSelectedSlot(slot)}
+                          className={`py-2.5 rounded-[14px] text-xs font-medium border transition flex items-center justify-center gap-1.5 btn-press ${
+                            selectedSlot === slot
+                              ? 'border-royal-500 bg-royal-600/25 text-white font-bold shadow-royal-sm ring-1 ring-royal-400'
+                              : 'border-white/[0.08] bg-white/[0.03] text-slate-200 hover:border-royal-500/40 hover:bg-white/[0.06]'
+                          }`}
+                        >
+                          <Clock className={`h-3.5 w-3.5 ${selectedSlot === slot ? 'text-royal-400' : 'text-emerald-400'}`} />
+                          <span className="font-mono">{slot}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="flex items-center gap-3 pt-3 border-t border-white/[0.08]">
@@ -1055,13 +1121,24 @@ export default function StorefrontContent({
               >
                 Cancel
               </button>
-              <RippleButton
-                type="button"
-                onClick={handleProceedBookingToCheckout}
-                className="flex-1 py-2.5 rounded-[14px] bg-royal-600 hover:bg-royal-500 text-xs font-bold text-white shadow-royal"
-              >
-                Book Now (₹{bookingModalService.price})
-              </RippleButton>
+              {(() => {
+                const dateBlocked = isDateBlocked(selectedDate, creator.id);
+                const openSlots = bookingModalService.timeSlots.filter(
+                  (slot) => !isSlotBooked(selectedDate, slot, creator.id)
+                );
+                const canBook = !dateBlocked.isBlocked && openSlots.length > 0 && selectedSlot && openSlots.includes(selectedSlot);
+
+                return (
+                  <RippleButton
+                    type="button"
+                    disabled={!canBook}
+                    onClick={handleProceedBookingToCheckout}
+                    className="flex-1 py-2.5 rounded-[14px] bg-royal-600 hover:bg-royal-500 text-xs font-bold text-white shadow-royal disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Book Now (₹{bookingModalService.price})
+                  </RippleButton>
+                );
+              })()}
             </div>
           </motion.div>
         </div>

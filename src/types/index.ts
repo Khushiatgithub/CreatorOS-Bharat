@@ -645,5 +645,26 @@ export interface CalendarMeeting {
   createdAt: string;
 }
 
+export interface BlockedHoliday {
+  id: string;
+  date: string; // 'YYYY-MM-DD' or formatted string
+  name: string; // e.g. "Diwali Festival", "Personal Leave"
+  reason?: string;
+}
+
+export interface SupportedTimezone {
+  id: string;
+  label: string;
+  offset: string;
+  region: string;
+}
+
+export interface CreatorAvailabilitySettings {
+  availability: DayAvailability[];
+  bufferMinutes: number; // 15 | 30 | 60
+  timezone: string; // e.g. 'Asia/Kolkata'
+  blockedHolidays: BlockedHoliday[];
+}
+
 
 

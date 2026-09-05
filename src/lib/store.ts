@@ -23,9 +23,11 @@ import {
   SubscriptionPayment,
   MembershipMetrics,
   GoogleCalendarIntegration,
+  DayOfWeek,
   DayAvailability,
   CalendarMeeting,
-  MeetingStatus
+  MeetingStatus,
+  BlockedHoliday
 } from '@/types';
 import {
   INITIAL_CREATORS,
@@ -45,6 +47,7 @@ import {
   INITIAL_SUBSCRIPTION_PAYMENTS,
   INITIAL_GOOGLE_CALENDAR,
   INITIAL_WEEKLY_AVAILABILITY,
+  INITIAL_BLOCKED_HOLIDAYS,
   INITIAL_CALENDAR_MEETINGS,
   THEMES
 } from './mock-data';
@@ -72,6 +75,8 @@ const STORAGE_KEYS = {
   GOOGLE_CALENDAR: 'creatoros_google_calendar',
   WEEKLY_AVAILABILITY: 'creatoros_weekly_availability',
   BUFFER_MINUTES: 'creatoros_buffer_minutes',
+  CALENDAR_TIMEZONE: 'creatoros_calendar_timezone',
+  BLOCKED_HOLIDAYS: 'creatoros_blocked_holidays',
   CALENDAR_MEETINGS: 'creatoros_calendar_meetings'
 };
 
@@ -98,6 +103,8 @@ export function useCreatorStore() {
   const [googleCalendar, setGoogleCalendar] = useState<GoogleCalendarIntegration>(INITIAL_GOOGLE_CALENDAR);
   const [weeklyAvailability, setWeeklyAvailability] = useState<DayAvailability[]>(INITIAL_WEEKLY_AVAILABILITY);
   const [bufferMinutes, setBufferMinutes] = useState<number>(15);
+  const [calendarTimezone, setCalendarTimezone] = useState<string>('Asia/Kolkata');
+  const [blockedHolidays, setBlockedHolidays] = useState<BlockedHoliday[]>(INITIAL_BLOCKED_HOLIDAYS);
   const [calendarMeetings, setCalendarMeetings] = useState<CalendarMeeting[]>(INITIAL_CALENDAR_MEETINGS);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -167,6 +174,12 @@ export function useCreatorStore() {
       const savedBuffer = localStorage.getItem(STORAGE_KEYS.BUFFER_MINUTES);
       if (savedBuffer) setBufferMinutes(JSON.parse(savedBuffer));
 
+      const savedTz = localStorage.getItem(STORAGE_KEYS.CALENDAR_TIMEZONE);
+      if (savedTz) setCalendarTimezone(JSON.parse(savedTz));
+
+      const savedHolidays = localStorage.getItem(STORAGE_KEYS.BLOCKED_HOLIDAYS);
+      if (savedHolidays) setBlockedHolidays(JSON.parse(savedHolidays));
+
       const savedMeetings = localStorage.getItem(STORAGE_KEYS.CALENDAR_MEETINGS);
       if (savedMeetings) setCalendarMeetings(JSON.parse(savedMeetings));
     } catch (e) {
@@ -189,6 +202,8 @@ export function useCreatorStore() {
         if (d.success && d.data) {
           if (d.data.availability) setWeeklyAvailability(d.data.availability);
           if (d.data.bufferMinutes) setBufferMinutes(d.data.bufferMinutes);
+          if (d.data.timezone) setCalendarTimezone(d.data.timezone);
+          if (d.data.blockedHolidays) setBlockedHolidays(d.data.blockedHolidays);
         }
       })
       .catch((e) => console.warn('Availability sync error:', e));
@@ -1653,7 +1668,73 @@ export function useCreatorStore() {
     }).catch((e) => console.warn('Background GCal disconnect sync:', e));
   };
 
-  const updateWeeklyAvailability = (newAvailability: DayAvailability[], newBuffer?: number) => {
+  const updateCalendarTimezone = (newTz: string) => {
+    setCalendarTimezone(newTz);
+    saveState(STORAGE_KEYS.CALENDAR_TIMEZONE, newTz);
+  };
+
+  const addBlockedHoliday = (holiday: Omit<BlockedHoliday, 'id'>) => {
+    const newHol: BlockedHoliday = {
+      ...holiday,
+      id: `hol_${Date.now()}`
+    };
+    setBlockedHolidays((prev) => {
+      const next = [newHol, ...prev];
+      saveState(STORAGE_KEYS.BLOCKED_HOLIDAYS, next);
+      return next;
+    });
+    return newHol;
+  };
+
+  const removeBlockedHoliday = (holidayId: string) => {
+    setBlockedHolidays((prev) => {
+      const next = prev.filter((h) => h.id !== holidayId);
+      saveState(STORAGE_KEYS.BLOCKED_HOLIDAYS, next);
+      return next;
+    });
+  };
+
+  const saveAllAvailability = async (
+    availabilityToSave: DayAvailability[] = weeklyAvailability,
+    bufferToSave: number = bufferMinutes,
+    timezoneToSave: string = calendarTimezone,
+    holidaysToSave: BlockedHoliday[] = blockedHolidays
+  ) => {
+    setWeeklyAvailability(availabilityToSave);
+    setBufferMinutes(bufferToSave);
+    setCalendarTimezone(timezoneToSave);
+    setBlockedHolidays(holidaysToSave);
+
+    saveState(STORAGE_KEYS.WEEKLY_AVAILABILITY, availabilityToSave);
+    saveState(STORAGE_KEYS.BUFFER_MINUTES, bufferToSave);
+    saveState(STORAGE_KEYS.CALENDAR_TIMEZONE, timezoneToSave);
+    saveState(STORAGE_KEYS.BLOCKED_HOLIDAYS, holidaysToSave);
+
+    try {
+      const res = await fetch('/api/calendar/availability', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          creatorId: activeCreatorId,
+          availability: availabilityToSave,
+          bufferMinutes: bufferToSave,
+          timezone: timezoneToSave,
+          blockedHolidays: holidaysToSave
+        })
+      });
+      return await res.json();
+    } catch (e) {
+      console.warn('Background availability sync error:', e);
+      return { success: true };
+    }
+  };
+
+  const updateWeeklyAvailability = (
+    newAvailability: DayAvailability[],
+    newBuffer?: number,
+    newTimezone?: string,
+    newHolidays?: BlockedHoliday[]
+  ) => {
     setWeeklyAvailability(newAvailability);
     saveState(STORAGE_KEYS.WEEKLY_AVAILABILITY, newAvailability);
 
@@ -1663,13 +1744,27 @@ export function useCreatorStore() {
       saveState(STORAGE_KEYS.BUFFER_MINUTES, newBuffer);
     }
 
+    const tzToUse = newTimezone || calendarTimezone;
+    if (newTimezone) {
+      setCalendarTimezone(newTimezone);
+      saveState(STORAGE_KEYS.CALENDAR_TIMEZONE, newTimezone);
+    }
+
+    const holidaysToUse = newHolidays || blockedHolidays;
+    if (newHolidays) {
+      setBlockedHolidays(newHolidays);
+      saveState(STORAGE_KEYS.BLOCKED_HOLIDAYS, newHolidays);
+    }
+
     fetch('/api/calendar/availability', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         creatorId: activeCreatorId,
         availability: newAvailability,
-        bufferMinutes: bufferToUse
+        bufferMinutes: bufferToUse,
+        timezone: tzToUse,
+        blockedHolidays: holidaysToUse
       })
     }).catch((e) => console.warn('Background availability sync:', e));
   };
@@ -1684,7 +1779,9 @@ export function useCreatorStore() {
       body: JSON.stringify({
         creatorId: activeCreatorId,
         availability: weeklyAvailability,
-        bufferMinutes: buffer
+        bufferMinutes: buffer,
+        timezone: calendarTimezone,
+        blockedHolidays
       })
     }).catch((e) => console.warn('Background buffer sync:', e));
   };
@@ -1695,6 +1792,7 @@ export function useCreatorStore() {
       ...meeting,
       id,
       creatorId: meeting.creatorId || activeCreatorId,
+      timezone: meeting.timezone || calendarTimezone,
       createdAt: new Date().toISOString().split('T')[0]
     };
 
@@ -1732,8 +1830,70 @@ export function useCreatorStore() {
     }).catch((e) => console.warn('Background meeting status sync:', e));
   };
 
+  const isDateBlocked = (dateStr: string, creatorIdToMatch?: string): { isBlocked: boolean; reason?: string } => {
+    if (!dateStr) return { isBlocked: false };
+    const lower = dateStr.toLowerCase().trim();
+
+    // 1. Check blocked holidays
+    const matchedHoliday = blockedHolidays.find((h) => {
+      const hDate = (h.date || '').toLowerCase().trim();
+      if (hDate === lower || lower.includes(hDate) || hDate.includes(lower)) return true;
+      const now = new Date();
+      if (lower.includes('today')) {
+        const todayISO = now.toISOString().split('T')[0];
+        if (hDate === todayISO) return true;
+      } else if (lower.includes('tomorrow')) {
+        const tomorrow = new Date(now.getTime() + 86400000);
+        const tomorrowISO = tomorrow.toISOString().split('T')[0];
+        if (hDate === tomorrowISO) return true;
+      }
+      return false;
+    });
+
+    if (matchedHoliday) {
+      return { isBlocked: true, reason: `Holiday: ${matchedHoliday.name}` };
+    }
+
+    // 2. Check if day of week is enabled in weeklyAvailability
+    const dayNames: DayOfWeek[] = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    let targetDayOfWeek: DayOfWeek | null = null;
+
+    if (lower.includes('monday')) targetDayOfWeek = 'Monday';
+    else if (lower.includes('tuesday')) targetDayOfWeek = 'Tuesday';
+    else if (lower.includes('wednesday')) targetDayOfWeek = 'Wednesday';
+    else if (lower.includes('thursday')) targetDayOfWeek = 'Thursday';
+    else if (lower.includes('friday')) targetDayOfWeek = 'Friday';
+    else if (lower.includes('saturday')) targetDayOfWeek = 'Saturday';
+    else if (lower.includes('sunday')) targetDayOfWeek = 'Sunday';
+    else if (lower.includes('today')) {
+      targetDayOfWeek = dayNames[new Date().getDay()];
+    } else if (lower.includes('tomorrow')) {
+      const tomorrow = new Date(Date.now() + 86400000);
+      targetDayOfWeek = dayNames[tomorrow.getDay()];
+    } else {
+      const parsed = new Date(dateStr);
+      if (!isNaN(parsed.getTime())) {
+        targetDayOfWeek = dayNames[parsed.getDay()];
+      }
+    }
+
+    if (targetDayOfWeek) {
+      const dayAvail = weeklyAvailability.find((d) => d.day === targetDayOfWeek);
+      if (dayAvail && (!dayAvail.isEnabled || dayAvail.timeRanges.length === 0)) {
+        return { isBlocked: true, reason: `Day Off (${targetDayOfWeek})` };
+      }
+    }
+
+    return { isBlocked: false };
+  };
+
   const isSlotBooked = (date: string, timeSlot: string, creatorIdToMatch?: string): boolean => {
     const targetCreator = creatorIdToMatch || activeCreatorId;
+
+    // Check if entire date is blocked
+    const dateBlock = isDateBlocked(date, targetCreator);
+    if (dateBlock.isBlocked) return true;
+
     const isDateMatch = (d1: string, d2: string) => {
       if (!d1 || !d2) return false;
       const s1 = d1.toLowerCase().trim();
@@ -1792,6 +1952,8 @@ export function useCreatorStore() {
     setGoogleCalendar(INITIAL_GOOGLE_CALENDAR);
     setWeeklyAvailability(INITIAL_WEEKLY_AVAILABILITY);
     setBufferMinutes(15);
+    setCalendarTimezone('Asia/Kolkata');
+    setBlockedHolidays(INITIAL_BLOCKED_HOLIDAYS);
     setCalendarMeetings(INITIAL_CALENDAR_MEETINGS);
     setAppointments([]);
     if (typeof window !== 'undefined') {
@@ -1839,6 +2001,8 @@ export function useCreatorStore() {
     googleCalendar,
     weeklyAvailability,
     bufferMinutes,
+    calendarTimezone,
+    blockedHolidays,
     calendarMeetings: calendarMeetings.filter((m) => m.creatorId === activeCreatorId || activeCreatorId === 'all'),
     allCalendarMeetings: calendarMeetings,
     // Actions
@@ -1883,8 +2047,13 @@ export function useCreatorStore() {
     disconnectGoogleCalendar,
     updateWeeklyAvailability,
     updateBufferMinutes,
+    updateCalendarTimezone,
+    addBlockedHoliday,
+    removeBlockedHoliday,
+    saveAllAvailability,
     createCalendarMeeting,
     updateMeetingStatus,
+    isDateBlocked,
     isSlotBooked
   };
 }

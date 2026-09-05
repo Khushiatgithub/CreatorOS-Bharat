@@ -29,10 +29,22 @@ import {
   Zap,
   ArrowRight,
   LogOut,
-  Radio
+  Radio,
+  CalendarOff,
+  Sun,
+  Moon,
+  Info
 } from 'lucide-react';
 import { PageTransition, HoverCard, RippleButton } from '@/components/ui/motion';
-import { DayOfWeek, DayAvailability, CalendarMeeting, MeetingStatus } from '@/types';
+import { 
+  DayOfWeek, 
+  DayAvailability, 
+  CalendarMeeting, 
+  MeetingStatus, 
+  BlockedHoliday, 
+  SupportedTimezone 
+} from '@/types';
+import { SUPPORTED_TIMEZONES, INITIAL_BLOCKED_HOLIDAYS } from '@/lib/mock-data';
 
 // Official Google Calendar SVG Multi-color Icon
 const GoogleCalendarIcon = ({ className = 'h-8 w-8' }: { className?: string }) => (
@@ -70,12 +82,18 @@ export default function CalendarPage() {
     googleCalendar, 
     weeklyAvailability, 
     bufferMinutes, 
+    calendarTimezone,
+    blockedHolidays,
     calendarMeetings,
     connectGoogleCalendar,
     syncGoogleCalendar,
     disconnectGoogleCalendar,
     updateWeeklyAvailability,
     updateBufferMinutes,
+    updateCalendarTimezone,
+    addBlockedHoliday,
+    removeBlockedHoliday,
+    saveAllAvailability,
     createCalendarMeeting,
     updateMeetingStatus
   } = useCreatorStore();
@@ -83,6 +101,9 @@ export default function CalendarPage() {
   // Local state for interactive editing of schedule
   const [localAvailability, setLocalAvailability] = useState<DayAvailability[]>(weeklyAvailability);
   const [selectedBuffer, setSelectedBuffer] = useState<number>(bufferMinutes || 15);
+  const [selectedTimezone, setSelectedTimezone] = useState<string>(calendarTimezone || 'Asia/Kolkata');
+  const [localHolidays, setLocalHolidays] = useState<BlockedHoliday[]>(blockedHolidays || INITIAL_BLOCKED_HOLIDAYS);
+  
   const [isSavingAvailability, setIsSavingAvailability] = useState(false);
   const [availabilitySaveSuccess, setAvailabilitySaveSuccess] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -93,9 +114,17 @@ export default function CalendarPage() {
   const [isDisconnectModalOpen, setIsDisconnectModalOpen] = useState(false);
   const [connectEmailInput, setConnectEmailInput] = useState(googleCalendar?.accountEmail || 'creator.aarav@gmail.com');
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [isHolidayModalOpen, setIsHolidayModalOpen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [meetingFilter, setMeetingFilter] = useState<'all' | 'confirmed' | 'upcoming' | 'completed'>('all');
   const [oauthBanner, setOauthBanner] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // New Holiday form state
+  const [newHolidayForm, setNewHolidayForm] = useState({
+    date: new Date().toISOString().split('T')[0],
+    name: '',
+    reason: 'Public Holiday'
+  });
 
   // New Meeting form state
   const [newMeeting, setNewMeeting] = useState({
@@ -124,7 +153,6 @@ export default function CalendarPage() {
         type: 'success',
         message: `Google Calendar OAuth connected successfully for ${emailConnected}! Tokens saved securely with 256-bit encryption.`
       });
-      // Clean query parameters
       setTimeout(() => {
         router.replace('/dashboard/calendar');
       }, 1000);
@@ -136,7 +164,7 @@ export default function CalendarPage() {
     }
   }, [searchParams]);
 
-  // Keep local availability synced when store changes
+  // Keep local state synced when store changes
   useEffect(() => {
     if (weeklyAvailability && weeklyAvailability.length > 0) {
       setLocalAvailability(weeklyAvailability);
@@ -148,6 +176,18 @@ export default function CalendarPage() {
       setSelectedBuffer(bufferMinutes);
     }
   }, [bufferMinutes]);
+
+  useEffect(() => {
+    if (calendarTimezone) {
+      setSelectedTimezone(calendarTimezone);
+    }
+  }, [calendarTimezone]);
+
+  useEffect(() => {
+    if (blockedHolidays) {
+      setLocalHolidays(blockedHolidays);
+    }
+  }, [blockedHolidays]);
 
   // Handlers for weekly availability
   const toggleDay = (dayName: DayOfWeek) => {
@@ -243,20 +283,55 @@ export default function CalendarPage() {
         return d;
       })
     );
+    setSyncToastMessage("Copied Monday's schedule to Tuesday through Friday!");
+    setTimeout(() => setSyncToastMessage(null), 3000);
+  };
+
+  // Holiday management handlers
+  const handleAddHoliday = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newHolidayForm.date || !newHolidayForm.name) return;
+
+    const newHol = addBlockedHoliday({
+      date: newHolidayForm.date,
+      name: newHolidayForm.name.trim(),
+      reason: newHolidayForm.reason.trim() || 'Holiday'
+    });
+
+    setLocalHolidays((prev) => [newHol, ...prev]);
+    setIsHolidayModalOpen(false);
+    setNewHolidayForm({
+      date: new Date().toISOString().split('T')[0],
+      name: '',
+      reason: 'Public Holiday'
+    });
+
+    setSyncToastMessage(`Blocked ${newHol.name} (${newHol.date}). No slots will be bookable on this date.`);
+    setTimeout(() => setSyncToastMessage(null), 3500);
+  };
+
+  const handleRemoveHoliday = (id: string, name: string) => {
+    removeBlockedHoliday(id);
+    setLocalHolidays((prev) => prev.filter((h) => h.id !== id));
+    setSyncToastMessage(`Unblocked ${name}. Date is now open for bookings.`);
+    setTimeout(() => setSyncToastMessage(null), 3000);
   };
 
   const handleSaveAvailability = async () => {
     setIsSavingAvailability(true);
-    updateWeeklyAvailability(localAvailability, selectedBuffer);
+    await saveAllAvailability(localAvailability, selectedBuffer, selectedTimezone, localHolidays);
     setTimeout(() => {
       setIsSavingAvailability(false);
       setAvailabilitySaveSuccess(true);
-      setTimeout(() => setAvailabilitySaveSuccess(false), 3000);
+      setSyncToastMessage('Availability settings & holidays saved to PostgreSQL database!');
+      setTimeout(() => {
+        setAvailabilitySaveSuccess(false);
+        setSyncToastMessage(null);
+      }, 3500);
     }, 400);
   };
 
   const handleStartGoogleOAuth = () => {
-    // Initiate OAuth flow via API route
     window.location.href = `/api/calendar/google/auth?creatorId=creator_aarav`;
   };
 
@@ -304,7 +379,8 @@ export default function CalendarPage() {
       durationMinutes: newMeeting.durationMinutes,
       meetingStatus: 'confirmed',
       meetingUrl: newMeeting.meetingUrl || 'https://meet.google.com/new',
-      topic: newMeeting.topic
+      topic: newMeeting.topic,
+      timezone: selectedTimezone
     });
 
     setIsScheduleModalOpen(false);
@@ -330,6 +406,8 @@ export default function CalendarPage() {
     if (meetingFilter === 'all') return true;
     return m.meetingStatus === meetingFilter;
   });
+
+  const activeTzInfo = SUPPORTED_TIMEZONES.find((t) => t.id === selectedTimezone) || SUPPORTED_TIMEZONES[0];
 
   return (
     <PageTransition>
@@ -357,9 +435,9 @@ export default function CalendarPage() {
 
         {/* Sync Toast Notification */}
         {syncToastMessage && (
-          <div className="p-3.5 rounded-2xl bg-royal-600/20 border border-royal-500/30 text-royal-200 text-xs font-semibold flex items-center justify-between gap-3 animate-fade-in">
+          <div className="p-3.5 rounded-2xl bg-royal-600/20 border border-royal-500/30 text-royal-200 text-xs font-semibold flex items-center justify-between gap-3 animate-fade-in shadow-royal-sm">
             <div className="flex items-center gap-2">
-              <Zap className="h-4 w-4 text-royal-400 shrink-0" />
+              <Zap className="h-4 w-4 text-royal-400 shrink-0 animate-pulse" />
               <span>{syncToastMessage}</span>
             </div>
             <button onClick={() => setSyncToastMessage(null)} className="text-slate-400 hover:text-white">
@@ -383,15 +461,15 @@ export default function CalendarPage() {
               </h1>
             </div>
             <p className="text-sm text-slate-300 mt-1 font-medium">
-              Manage your availability and meetings
+              Manage your availability, working days, timezones, and meetings
             </p>
           </div>
 
           {/* Header Action Badges & Buttons */}
           <div className="flex flex-wrap items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 rounded-xl bg-white/[0.03] border border-white/[0.08] px-3 py-1.5 text-xs text-slate-300 font-mono">
+            <div className="flex items-center gap-2 rounded-xl bg-white/[0.03] border border-white/[0.08] px-3 py-1.5 text-xs text-slate-300 font-mono">
               <Globe className="h-3.5 w-3.5 text-royal-400" />
-              <span>IST (UTC+05:30)</span>
+              <span>{activeTzInfo.label.split(' ')[0]} ({activeTzInfo.offset})</span>
             </div>
 
             <button
@@ -417,10 +495,9 @@ export default function CalendarPage() {
         </div>
 
         {/* ========================================================================= */}
-        {/* SECTION 2: GOOGLE CALENDAR CARD (UPGRADED OAUTH & ENCRYPTION) */}
+        {/* SECTION 2: GOOGLE CALENDAR CARD (OAUTH & ENCRYPTION) */}
         {/* ========================================================================= */}
         <div className="rounded-[22px] border border-white/[0.1] bg-gradient-to-br from-[#0B0F1C] via-[#0E1424] to-[#080B14] p-6 shadow-2xl relative overflow-hidden group">
-          {/* Subtle Ambient Glow */}
           <div className="absolute top-0 right-0 w-96 h-96 bg-royal-600/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
           
           <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -437,7 +514,6 @@ export default function CalendarPage() {
                     Google Calendar
                   </h3>
                   
-                  {/* Connection Status Badge */}
                   {googleCalendar?.isConnected ? (
                     <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-bold shadow-sm">
                       <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -449,46 +525,34 @@ export default function CalendarPage() {
                       Disconnected
                     </span>
                   )}
-
-                  {/* Security Badge */}
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-royal-600/15 border border-royal-500/25 text-royal-300 text-[10px] font-mono font-semibold">
-                    <Lock className="h-3 w-3 text-royal-400" />
-                    AES-256 Encrypted
-                  </span>
                 </div>
 
-                {/* Connected Account Email & Real-time status */}
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-300">
-                  {googleCalendar?.isConnected ? (
-                    <>
-                      <span className="flex items-center gap-1.5 text-white font-mono font-medium">
-                        <Mail className="h-3.5 w-3.5 text-royal-400" />
-                        {googleCalendar.accountEmail}
-                      </span>
-                      <span className="text-slate-500 hidden sm:inline">•</span>
-                      <span className="text-slate-400 flex items-center gap-1">
-                        <Clock className="h-3 w-3 text-slate-500" />
-                        Last synced: <span className="text-slate-200 font-medium">{googleCalendar.lastSyncedAt || 'Just now'}</span>
-                      </span>
-                    </>
-                  ) : (
-                    <span className="text-slate-400">
-                      Connect via Google OAuth to enable 2-way sync, avoid booking clashes, and auto-generate Google Meet links.
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
+                  <div className="flex items-center gap-1.5">
+                    <User className="h-3.5 w-3.5 text-slate-500" />
+                    <span className="text-slate-300 font-mono">
+                      {googleCalendar?.isConnected ? (googleCalendar.accountEmail || 'creator.aarav@gmail.com') : 'No account connected'}
                     </span>
+                  </div>
+
+                  {googleCalendar?.isConnected && (
+                    <div className="flex items-center gap-1.5 text-slate-400">
+                      <Clock className="h-3.5 w-3.5 text-slate-500" />
+                      <span>Last Synced: <strong className="text-slate-300">{googleCalendar.lastSyncedAt || 'Just now'}</strong></span>
+                    </div>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Right Action: Connect / Sync / Disconnect Buttons */}
-            <div className="flex items-center gap-3 shrink-0">
+            {/* Right Action: Sync Now & Connect/Disconnect */}
+            <div className="flex flex-wrap items-center gap-3">
               {googleCalendar?.isConnected ? (
                 <>
                   <button
                     onClick={handleForceSync}
                     disabled={isSyncing}
-                    title="Force sync latest Google Calendar events"
-                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-slate-200 hover:text-white border border-white/[0.1] text-xs font-semibold transition btn-press disabled:opacity-50"
+                    className="inline-flex items-center gap-2 rounded-xl border border-white/[0.1] bg-[#0E1322] hover:bg-white/[0.08] px-4 py-2.5 text-xs font-semibold text-slate-200 transition btn-press disabled:opacity-50"
                   >
                     <RefreshCw className={`h-3.5 w-3.5 text-royal-400 ${isSyncing ? 'animate-spin' : ''}`} />
                     <span>{isSyncing ? 'Syncing...' : 'Sync Now'}</span>
@@ -496,28 +560,28 @@ export default function CalendarPage() {
 
                   <button
                     onClick={() => setIsDisconnectModalOpen(true)}
-                    className="px-3.5 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-rose-500/30 text-xs font-semibold transition btn-press"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-rose-500/20 bg-rose-500/10 hover:bg-rose-500/20 px-3.5 py-2.5 text-xs font-semibold text-rose-300 transition btn-press"
                   >
-                    Disconnect
+                    <LogOut className="h-3.5 w-3.5" />
+                    <span>Disconnect</span>
                   </button>
                 </>
               ) : (
                 <div className="flex items-center gap-2">
                   <button
+                    onClick={() => setIsConnectModalOpen(true)}
+                    className="inline-flex items-center gap-2 rounded-xl border border-white/[0.1] bg-white/[0.04] hover:bg-white/[0.08] px-3.5 py-2.5 text-xs font-semibold text-slate-300 transition"
+                  >
+                    Custom Email
+                  </button>
+                  <RippleButton
                     onClick={handleStartGoogleOAuth}
-                    className="px-4 py-2.5 rounded-xl bg-royal-600 hover:bg-royal-500 text-white shadow-royal text-xs font-bold transition flex items-center gap-2 btn-press"
+                    className="rounded-xl bg-royal-600 hover:bg-royal-500 px-5 py-2.5 text-xs font-bold text-white shadow-royal inline-flex items-center gap-2 btn-press"
                   >
                     <GoogleCalendarIcon className="h-4 w-4" />
                     <span>Connect Google Calendar</span>
-                  </button>
-
-                  <button
-                    onClick={() => setIsConnectModalOpen(true)}
-                    title="Quick connect or enter custom Google email"
-                    className="p-2.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.09] text-slate-300 border border-white/[0.08] transition"
-                  >
-                    <Sliders className="h-4 w-4" />
-                  </button>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </RippleButton>
                 </div>
               )}
             </div>
@@ -536,68 +600,134 @@ export default function CalendarPage() {
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-              <span>Prevents conflicts with personal calendar blocks</span>
+              <span>Booked slots automatically disappear from booking page</span>
             </div>
           </div>
         </div>
 
         {/* ========================================================================= */}
-        {/* SECTION 3: WEEKLY AVAILABILITY */}
+        {/* SECTION 3: WEEKLY AVAILABILITY & CONFIGURATION */}
         {/* ========================================================================= */}
-        <div className="rounded-[22px] border border-white/[0.1] bg-[#0A0E1A]/95 p-6 shadow-glass-card space-y-6">
+        <div className="rounded-[22px] border border-white/[0.1] bg-[#0A0E1A]/95 p-6 shadow-glass-card space-y-7">
           
-          {/* Section Header with Buffer & Quick Fill */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-5">
+          {/* Section Header */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/[0.08] pb-5">
             <div>
               <h2 className="font-display text-xl font-bold text-white flex items-center gap-2">
                 <CalendarDays className="h-5 w-5 text-royal-400" />
-                <span>Weekly Availability</span>
+                <span>Weekly Availability & Working Hours</span>
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
-                Set your working hours for each day and buffer time between consecutive calls.
+                Toggle your working days, add multiple time ranges, choose timezone, buffer time, and block holidays.
               </p>
             </div>
 
-            {/* Buffer Selection (15, 30, 60 mins) */}
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2 bg-[#060913] border border-white/[0.08] rounded-2xl p-1.5">
-                <span className="text-[11px] font-semibold text-slate-400 pl-2 pr-1 flex items-center gap-1">
-                  <Clock className="h-3 w-3 text-royal-400" />
-                  Buffer:
-                </span>
+            {/* Quick Actions */}
+            <div className="flex flex-wrap items-center gap-2.5">
+              <button
+                onClick={applyMondayToAllWeekdays}
+                title="Copy Monday's slots to Tue-Fri"
+                className="px-3.5 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs font-semibold text-slate-300 hover:text-white transition btn-press flex items-center gap-1.5"
+              >
+                <Copy className="h-3.5 w-3.5 text-royal-400" />
+                <span>Copy Mon to Weekdays</span>
+              </button>
+
+              <RippleButton
+                onClick={handleSaveAvailability}
+                disabled={isSavingAvailability}
+                className="px-5 py-2 rounded-xl bg-royal-600 hover:bg-royal-500 text-white font-bold text-xs shadow-royal flex items-center gap-2 disabled:opacity-50"
+              >
+                {isSavingAvailability ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="h-4 w-4" />
+                    <span>Save Availability</span>
+                  </>
+                )}
+              </RippleButton>
+            </div>
+          </div>
+
+          {/* Controls Bar: Timezone Selector & Buffer Time */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-2xl bg-[#060913] border border-white/[0.08]">
+            
+            {/* Timezone Selector */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                <Globe className="h-3.5 w-3.5 text-royal-400" />
+                <span>Calendar Timezone</span>
+              </label>
+              <div className="relative">
+                <select
+                  value={selectedTimezone}
+                  onChange={(e) => {
+                    setSelectedTimezone(e.target.value);
+                    updateCalendarTimezone(e.target.value);
+                  }}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#0B0F1C] border border-white/[0.1] text-white text-xs font-medium focus:outline-none focus:border-royal-500 font-mono cursor-pointer"
+                >
+                  {SUPPORTED_TIMEZONES.map((tz) => (
+                    <option key={tz.id} value={tz.id} className="bg-[#0B0F1C] text-white">
+                      {tz.label} ({tz.offset}) — {tz.region}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <p className="text-[11px] text-slate-400">
+                All booking slots and Google Meet calendar invites will automatically convert to the student&apos;s local timezone.
+              </p>
+            </div>
+
+            {/* Buffer Time Selector (15, 30, 60 mins) */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5 text-emerald-400" />
+                <span>Buffer Time Between Calls</span>
+              </label>
+              <div className="grid grid-cols-3 gap-2">
                 {[15, 30, 60].map((mins) => {
                   const isActive = selectedBuffer === mins;
                   return (
                     <button
                       key={mins}
+                      type="button"
                       onClick={() => {
                         setSelectedBuffer(mins);
                         updateBufferMinutes(mins);
                       }}
-                      className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+                      className={`py-2.5 rounded-xl text-xs font-bold transition-all border flex items-center justify-center gap-1.5 ${
                         isActive
-                          ? 'bg-royal-600 text-white shadow-royal'
-                          : 'text-slate-400 hover:text-white hover:bg-white/[0.05]'
+                          ? 'bg-royal-600 border-royal-500 text-white shadow-royal'
+                          : 'bg-[#0B0F1C] border-white/[0.08] text-slate-400 hover:text-white hover:border-white/[0.15]'
                       }`}
                     >
-                      {mins} mins
+                      <Clock className={`h-3 w-3 ${isActive ? 'text-white' : 'text-royal-400'}`} />
+                      <span>{mins} mins</span>
                     </button>
                   );
                 })}
               </div>
-
-              <button
-                onClick={applyMondayToAllWeekdays}
-                title="Copy Monday's slots to Tue-Fri"
-                className="px-3 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs font-semibold text-slate-300 hover:text-white transition btn-press"
-              >
-                Copy Mon to Weekdays
-              </button>
+              <p className="text-[11px] text-slate-400">
+                Adds a rest and preparation buffer between consecutive student consultation meetings.
+              </p>
             </div>
+
           </div>
 
-          {/* Days List (Monday to Sunday) */}
-          <div className="space-y-3.5">
+          {/* Working Days List (Monday to Sunday) */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between px-1 text-xs font-bold text-slate-300">
+              <span>Working Days & Multiple Availability Ranges</span>
+              <span className="text-[11px] text-slate-400 font-normal">
+                Toggle days on/off to open or block bookings
+              </span>
+            </div>
+
             {DAYS_ORDER.map((dayName) => {
               const dayData = localAvailability.find((d) => d.day === dayName) || {
                 day: dayName,
@@ -612,19 +742,19 @@ export default function CalendarPage() {
                   key={dayName}
                   className={`rounded-2xl border transition-all duration-200 p-4 ${
                     isEnabled
-                      ? 'bg-[#0E1322]/80 border-white/[0.08] hover:border-royal-500/30'
+                      ? 'bg-[#0E1322]/85 border-white/[0.08] hover:border-royal-500/30'
                       : 'bg-black/25 border-white/[0.04] opacity-60'
                   }`}
                 >
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     
                     {/* Day Name and Toggle */}
-                    <div className="flex items-center gap-3.5 min-w-[160px]">
+                    <div className="flex items-center gap-3.5 min-w-[170px]">
                       <button
                         type="button"
                         onClick={() => toggleDay(dayName)}
                         className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                          isEnabled ? 'bg-royal-600' : 'bg-slate-700'
+                          isEnabled ? 'bg-royal-600 shadow-royal-sm' : 'bg-slate-700'
                         }`}
                       >
                         <span
@@ -635,11 +765,11 @@ export default function CalendarPage() {
                       </button>
 
                       <div>
-                        <h4 className={`font-semibold text-sm ${isEnabled ? 'text-white' : 'text-slate-400'}`}>
+                        <h4 className={`font-bold text-sm ${isEnabled ? 'text-white' : 'text-slate-400'}`}>
                           {dayName}
                         </h4>
                         <span className="text-[11px] font-mono text-slate-400">
-                          {isEnabled ? `${dayData.timeRanges.length} active slot(s)` : 'Unavailable / Day Off'}
+                          {isEnabled ? `${dayData.timeRanges.length} range(s) active` : 'Day Off / Unavailable'}
                         </span>
                       </div>
                     </div>
@@ -653,6 +783,8 @@ export default function CalendarPage() {
                               key={range.id || idx}
                               className="flex items-center gap-2 bg-[#060812] border border-white/[0.08] rounded-xl px-3 py-1.5 shadow-inner"
                             >
+                              <span className="text-[10px] font-mono font-bold text-royal-400">#{idx + 1}</span>
+
                               {/* Start Time Input */}
                               <input
                                 type="time"
@@ -677,7 +809,7 @@ export default function CalendarPage() {
                                   type="button"
                                   onClick={() => removeTimeRange(dayName, range.id)}
                                   className="ml-1 text-slate-500 hover:text-rose-400 transition"
-                                  title="Remove time slot"
+                                  title="Remove time range"
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
                                 </button>
@@ -689,7 +821,7 @@ export default function CalendarPage() {
                           <button
                             type="button"
                             onClick={() => addTimeRange(dayName)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-dashed border-royal-500/40 hover:border-royal-400 bg-royal-600/10 hover:bg-royal-600/20 text-royal-300 text-xs font-semibold transition"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-dashed border-royal-500/40 hover:border-royal-400 bg-royal-600/10 hover:bg-royal-600/20 text-royal-300 text-xs font-semibold transition btn-press"
                           >
                             <Plus className="h-3.5 w-3.5" />
                             <span>Add Range</span>
@@ -715,11 +847,84 @@ export default function CalendarPage() {
             })}
           </div>
 
+          {/* ========================================================================= */}
+          {/* SUB-SECTION: HOLIDAY & DATE BLOCKING */}
+          {/* ========================================================================= */}
+          <div className="rounded-2xl border border-white/[0.08] bg-[#070A14] p-5 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400">
+                  <CalendarOff className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-display text-base font-bold text-white flex items-center gap-2">
+                    <span>Holiday & Date Blocking</span>
+                    <span className="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[10px] font-mono font-bold">
+                      {localHolidays.length} Blocked
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Block specific dates or festivals so no student can book sessions on these days.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsHolidayModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/30 text-rose-300 text-xs font-semibold transition btn-press self-start sm:self-auto"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>Block Date / Holiday</span>
+              </button>
+            </div>
+
+            {/* Blocked Holidays List */}
+            {localHolidays.length === 0 ? (
+              <div className="p-4 rounded-xl border border-dashed border-white/[0.06] text-center text-xs text-slate-500">
+                No holidays or dates currently blocked. Click &quot;Block Date / Holiday&quot; to add one.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {localHolidays.map((holiday) => (
+                  <div
+                    key={holiday.id}
+                    className="p-3.5 rounded-xl bg-[#0B0F1C] border border-white/[0.06] flex items-center justify-between gap-3 group hover:border-rose-500/30 transition"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-white">{holiday.name}</span>
+                        {holiday.reason && (
+                          <span className="text-[10px] px-2 py-0.2 rounded bg-white/[0.05] text-slate-400 border border-white/[0.05]">
+                            {holiday.reason}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] font-mono text-rose-400 flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {holiday.date}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveHoliday(holiday.id, holiday.name)}
+                      className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition"
+                      title="Unblock date"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Save Availability Action Bar */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-white/[0.08]">
             <div className="flex items-center gap-2 text-xs text-slate-400">
               <ShieldCheck className="h-4 w-4 text-royal-400 shrink-0" />
-              <span>Saved changes instantly sync to PostgreSQL and your storefront booking widget.</span>
+              <span>Saved changes instantly sync to PostgreSQL and booked slots disappear from storefront.</span>
             </div>
 
             <div className="flex items-center gap-3">
@@ -896,7 +1101,7 @@ export default function CalendarPage() {
                         <div className="flex items-center justify-between text-[11px] px-2 py-1 rounded-lg bg-white/[0.02] border border-white/[0.03] text-slate-400 font-mono">
                           <span className="flex items-center gap-1 text-royal-300">
                             <Globe className="h-3 w-3 text-royal-400" />
-                            {meeting.timezone || 'Asia/Kolkata'} (IST UTC+05:30)
+                            {meeting.timezone || selectedTimezone}
                           </span>
                           <span className="text-[10px] text-slate-500 font-sans">
                             Both creator & student invited
@@ -1246,6 +1451,116 @@ export default function CalendarPage() {
                     className="px-5 py-2 rounded-xl bg-royal-600 hover:bg-royal-500 text-white text-xs font-bold shadow-royal"
                   >
                     Save & Sync to Google Calendar
+                  </RippleButton>
+                </div>
+
+              </form>
+
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* MODAL 4: BLOCK DATE / HOLIDAY */}
+        {/* ========================================================================= */}
+        {isHolidayModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+            <div className="w-full max-w-md rounded-[24px] border border-white/[0.12] bg-[#0B0F1C] p-6 shadow-2xl space-y-5 text-white">
+              
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400">
+                    <CalendarOff className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-display font-bold text-lg text-white">
+                      Block Date or Holiday
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      Prevent students from booking sessions on this date
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsHolidayModalOpen(false)}
+                  className="p-1.5 rounded-lg hover:bg-white/[0.08] text-slate-400 hover:text-white"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleAddHoliday} className="space-y-4 text-xs">
+                
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    Select Date to Block *
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={newHolidayForm.date}
+                    onChange={(e) => setNewHolidayForm({ ...newHolidayForm, date: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#060913] border border-white/[0.1] text-white focus:outline-none focus:border-rose-500 font-mono cursor-pointer"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    Holiday / Off-Day Title *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newHolidayForm.name}
+                    onChange={(e) => setNewHolidayForm({ ...newHolidayForm, name: e.target.value })}
+                    placeholder="e.g. Diwali Festival, Personal Vacation, Hackathon Day"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#060913] border border-white/[0.1] text-white focus:outline-none focus:border-rose-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    Category / Reason
+                  </label>
+                  <input
+                    type="text"
+                    value={newHolidayForm.reason}
+                    onChange={(e) => setNewHolidayForm({ ...newHolidayForm, reason: e.target.value })}
+                    placeholder="e.g. National Holiday, Vacation, Family Event"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#060913] border border-white/[0.1] text-white focus:outline-none focus:border-rose-500"
+                  />
+                </div>
+
+                {/* Quick Presets */}
+                <div className="space-y-1.5">
+                  <span className="text-[11px] text-slate-400 font-medium">Quick Presets:</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {['National Holiday', 'Festival', 'Personal Vacation', 'Conference', 'Exam Prep'].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setNewHolidayForm({ ...newHolidayForm, reason: preset })}
+                        className="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-[11px] text-slate-300 border border-white/[0.06] transition"
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/[0.08]">
+                  <button
+                    type="button"
+                    onClick={() => setIsHolidayModalOpen(false)}
+                    className="px-4 py-2 rounded-xl border border-white/[0.1] text-slate-300 hover:bg-white/[0.06] text-xs font-semibold"
+                  >
+                    Cancel
+                  </button>
+                  <RippleButton
+                    type="submit"
+                    className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-lg shadow-rose-950/50"
+                  >
+                    Block This Date
                   </RippleButton>
                 </div>
 

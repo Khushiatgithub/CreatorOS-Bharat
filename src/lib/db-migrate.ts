@@ -110,7 +110,11 @@ export async function runDatabaseMigrations(): Promise<{ success: boolean; messa
     `ALTER TABLE appointments ADD COLUMN IF NOT EXISTS google_event_id TEXT;`,
     `ALTER TABLE appointments ADD COLUMN IF NOT EXISTS timezone VARCHAR(64) DEFAULT 'Asia/Kolkata';`,
     `CREATE INDEX IF NOT EXISTS idx_cal_meetings_event_id ON calendar_meetings(google_event_id);`,
-    `CREATE INDEX IF NOT EXISTS idx_appointments_event_id ON appointments(google_event_id);`
+    `CREATE INDEX IF NOT EXISTS idx_appointments_event_id ON appointments(google_event_id);`,
+
+    // 12. Migration 007: Calendar Availability Timezone & Blocked Holidays
+    `ALTER TABLE calendar_availability ADD COLUMN IF NOT EXISTS timezone VARCHAR(64) DEFAULT 'Asia/Kolkata';`,
+    `ALTER TABLE calendar_availability ADD COLUMN IF NOT EXISTS blocked_holidays JSONB DEFAULT '[]'::jsonb;`
   ];
 
   try {

@@ -27,66 +27,90 @@ export async function POST(request: NextRequest) {
       tagline,
       description,
       coverUrl,
+      coverImage,
       type = 'paid',
+      price,
+      billingCycle = 'monthly',
+      billing_cycle,
       monthlyPrice = 0,
       yearlyPrice = 0,
       benefits = [],
       isPopular = false,
+      is_popular,
       isActive = true,
+      communityAccess = true,
+      coursesAccess = false,
+      liveSessionsAccess = false,
       badgeText,
       badgeColor,
       inviteCode
     } = body;
 
-    if (!name || !slug) {
+    if (!name) {
       return NextResponse.json(
-        { success: false, error: 'Name and slug are required' },
+        { success: false, error: 'Plan name is required' },
         { status: 400 }
       );
     }
+
+    const planSlug = slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const finalBillingCycle = billing_cycle || billingCycle || 'monthly';
+    const finalPopular = is_popular !== undefined ? is_popular : isPopular;
+    const finalCover = coverImage || coverUrl || 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80';
+    const finalPrice = price !== undefined ? Number(price) : (finalBillingCycle === 'yearly' ? (yearlyPrice || monthlyPrice * 10) : (monthlyPrice || 799));
 
     let razorpayPlanIdMonthly: string | undefined;
     let razorpayPlanIdYearly: string | undefined;
 
     // Create server plans if paid
     if (type === 'paid') {
-      if (monthlyPrice > 0) {
-        const rzpMonthly = await createRazorpaySubscriptionPlanServer({
-          name: `${name} (Monthly)`,
-          amount: monthlyPrice,
-          period: 'monthly',
-          description: tagline || description
-        });
-        razorpayPlanIdMonthly = rzpMonthly.id;
-      }
+      try {
+        if (finalBillingCycle === 'monthly' || monthlyPrice > 0) {
+          const rzpMonthly = await createRazorpaySubscriptionPlanServer({
+            name: `${name} (Monthly)`,
+            amount: finalBillingCycle === 'monthly' ? finalPrice : (monthlyPrice || Math.round(finalPrice / 10)),
+            period: 'monthly',
+            description: tagline || description
+          });
+          razorpayPlanIdMonthly = rzpMonthly.id;
+        }
 
-      if (yearlyPrice > 0) {
-        const rzpYearly = await createRazorpaySubscriptionPlanServer({
-          name: `${name} (Yearly)`,
-          amount: yearlyPrice,
-          period: 'yearly',
-          description: tagline || description
-        });
-        razorpayPlanIdYearly = rzpYearly.id;
+        if (finalBillingCycle === 'yearly' || yearlyPrice > 0) {
+          const rzpYearly = await createRazorpaySubscriptionPlanServer({
+            name: `${name} (Yearly)`,
+            amount: finalBillingCycle === 'yearly' ? finalPrice : (yearlyPrice || finalPrice * 10),
+            period: 'yearly',
+            description: tagline || description
+          });
+          razorpayPlanIdYearly = rzpYearly.id;
+        }
+      } catch (err) {
+        console.warn('Razorpay plan creation fallback:', err);
       }
     }
 
     const newPlan = await SubscriptionPlanModel.create({
       creatorId,
       name,
-      slug,
-      tagline: tagline || '',
+      slug: planSlug,
+      tagline: tagline || description || '',
       description: description || '',
-      coverUrl,
+      coverUrl: finalCover,
+      coverImage: finalCover,
       type,
-      monthlyPrice,
-      yearlyPrice,
+      price: finalPrice,
+      billingCycle: finalBillingCycle,
+      monthlyPrice: finalBillingCycle === 'monthly' ? finalPrice : (monthlyPrice || Math.round(finalPrice / 10)),
+      yearlyPrice: finalBillingCycle === 'yearly' ? finalPrice : (yearlyPrice || finalPrice * 10),
       benefits,
-      isPopular,
+      isPopular: finalPopular,
       isActive,
+      communityAccess,
+      coursesAccess,
+      liveSessionsAccess,
       razorpayPlanIdMonthly,
       razorpayPlanIdYearly,
-      badgeText,
+      badgeText: finalPopular ? (badgeText || 'Most Popular') : undefined,
       badgeColor,
       inviteCode
     });

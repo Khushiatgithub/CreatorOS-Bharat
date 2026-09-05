@@ -514,11 +514,16 @@ export interface SubscriptionPlan {
   description: string;
   coverUrl?: string;
   type: SubscriptionPlanType;
+  billingCycle?: SubscriptionBillingCycle;
+  price?: number;
   monthlyPrice: number; // ₹ INR (0 for free)
   yearlyPrice: number;  // ₹ INR (with discount)
   benefits: string[];
   isPopular?: boolean;
   isActive: boolean;
+  communityAccess?: boolean;
+  coursesAccess?: boolean;
+  liveSessionsAccess?: boolean;
   memberCount: number;
   razorpayPlanIdMonthly?: string;
   razorpayPlanIdYearly?: string;

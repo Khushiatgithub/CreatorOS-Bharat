@@ -24,6 +24,9 @@ export interface CalendarEventPayload {
   endDateTime: string;   // ISO string e.g. 2026-09-06T17:15:00+05:30
   attendeeEmail: string;
   attendeeName?: string;
+  creatorEmail?: string;
+  creatorName?: string;
+  timeZone?: string;
   createMeetConference?: boolean;
 }
 
@@ -196,16 +199,120 @@ export async function refreshGoogleAccessToken(encryptedRefreshToken: string): P
 }
 
 /**
+ * Helper to parse natural booking dates & time slots (e.g., "Tomorrow", "Mon, Sep 8, 2026", "11:00 AM - 12:00 PM")
+ * into valid ISO 8601 strings with IST (+05:30) timezone offset.
+ */
+export function parseBookingDateTimeToISO(
+  bookingDate: string = 'Tomorrow',
+  bookingTimeSlot: string = '04:00 PM - 04:45 PM',
+  durationMinutes: number = 45
+): { startISO: string; endISO: string } {
+  const now = new Date();
+  let targetDate = new Date();
+
+  const lowerDate = (bookingDate || '').toLowerCase().trim();
+  if (lowerDate.includes('today')) {
+    targetDate = new Date();
+  } else if (lowerDate.includes('tomorrow')) {
+    targetDate = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  } else if (lowerDate.includes('saturday')) {
+    const day = now.getDay();
+    const daysUntilSaturday = (6 - day + 7) % 7 || 7;
+    targetDate = new Date(now.getTime() + daysUntilSaturday * 24 * 60 * 60 * 1000);
+  } else if (lowerDate.includes('sunday')) {
+    const day = now.getDay();
+    const daysUntilSunday = (7 - day) % 7 || 7;
+    targetDate = new Date(now.getTime() + daysUntilSunday * 24 * 60 * 60 * 1000);
+  } else {
+    const parsed = new Date(bookingDate);
+    if (!isNaN(parsed.getTime())) {
+      targetDate = parsed;
+    } else {
+      targetDate = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    }
+  }
+
+  // Parse time slot: e.g. "11:00 AM", "04:30 PM", "11:00 AM - 12:00 PM", "16:00"
+  let startHour = 16;
+  let startMinute = 0;
+  let endHour = 16;
+  let endMinute = 45;
+
+  const slotStr = bookingTimeSlot || '04:00 PM - 04:45 PM';
+  const timeMatch = slotStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+  if (timeMatch) {
+    let hour = parseInt(timeMatch[1], 10);
+    const minute = parseInt(timeMatch[2], 10);
+    const meridiem = (timeMatch[3] || '').toUpperCase();
+
+    if (meridiem === 'PM' && hour < 12) hour += 12;
+    if (meridiem === 'AM' && hour === 12) hour = 0;
+
+    startHour = hour;
+    startMinute = minute;
+  }
+
+  // Check if an end time is specified in range (e.g. "04:00 PM - 05:00 PM")
+  const parts = slotStr.split('-');
+  if (parts.length > 1) {
+    const endMatch = parts[1].match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+    if (endMatch) {
+      let hour = parseInt(endMatch[1], 10);
+      const minute = parseInt(endMatch[2], 10);
+      const meridiem = (endMatch[3] || '').toUpperCase();
+
+      if (meridiem === 'PM' && hour < 12) hour += 12;
+      if (meridiem === 'AM' && hour === 12) hour = 0;
+
+      endHour = hour;
+      endMinute = minute;
+    }
+  } else {
+    const totalMinutes = startHour * 60 + startMinute + durationMinutes;
+    endHour = Math.floor(totalMinutes / 60) % 24;
+    endMinute = totalMinutes % 60;
+  }
+
+  const yyyy = targetDate.getFullYear();
+  const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
+  const dd = String(targetDate.getDate()).padStart(2, '0');
+
+  const startHH = String(startHour).padStart(2, '0');
+  const startMM = String(startMinute).padStart(2, '0');
+  const endHH = String(endHour).padStart(2, '0');
+  const endMM = String(endMinute).padStart(2, '0');
+
+  const startISO = `${yyyy}-${mm}-${dd}T${startHH}:${startMM}:00+05:30`;
+  const endISO = `${yyyy}-${mm}-${dd}T${endHH}:${endMM}:00+05:30`;
+
+  return { startISO, endISO };
+}
+
+/**
  * Creates an event in Google Calendar with auto-generated Google Meet URL
+ * and invites both the Creator and Student.
  */
 export async function createGoogleCalendarEvent(
   encryptedAccessToken: string,
   event: CalendarEventPayload
 ): Promise<{ eventId: string; meetUrl: string; htmlLink: string }> {
   const accessToken = decryptToken(encryptedAccessToken);
+  const timeZone = event.timeZone || 'Asia/Kolkata';
+
+  // Format a rich description containing meeting details, participants, and timezone
+  const detailedDescription = [
+    `Meeting Title: ${event.summary}`,
+    '--------------------------------------------------',
+    `Host (Creator): ${event.creatorName || 'Creator'} (${event.creatorEmail || 'creator@creatoros.in'})`,
+    `Student: ${event.attendeeName || 'Student'} (${event.attendeeEmail})`,
+    `Timezone: ${timeZone} (IST UTC+05:30)`,
+    '--------------------------------------------------',
+    event.description ? `Agenda & Notes:\n${event.description}` : '1:1 Mentorship Session booked via CreatorOS Bharat.',
+    '\nGoogle Meet video consultation link is generated below.'
+  ].join('\n');
 
   // If mock/simulation token
-  if (!accessToken || accessToken.startsWith('ya29.mock_')) {
+  if (!accessToken || accessToken.startsWith('ya29.mock_') || accessToken.startsWith('mock_')) {
     const randomMeetCode = `${Math.random().toString(36).substring(2, 5)}-${Math.random().toString(36).substring(2, 6)}-${Math.random().toString(36).substring(2, 5)}`;
     return {
       eventId: `gevent_${Date.now()}`,
@@ -214,20 +321,36 @@ export async function createGoogleCalendarEvent(
     };
   }
 
+  // Invite BOTH student and creator
+  const attendees: Array<{ email: string; displayName?: string; organizer?: boolean; responseStatus?: string }> = [];
+  if (event.attendeeEmail) {
+    attendees.push({
+      email: event.attendeeEmail,
+      displayName: event.attendeeName || 'Student',
+      responseStatus: 'needsAction'
+    });
+  }
+  if (event.creatorEmail) {
+    attendees.push({
+      email: event.creatorEmail,
+      displayName: event.creatorName || 'Creator',
+      organizer: true,
+      responseStatus: 'accepted'
+    });
+  }
+
   const requestBody: any = {
     summary: event.summary,
-    description: event.description || '1:1 Session booked via CreatorOS Bharat',
+    description: detailedDescription,
     start: {
       dateTime: event.startDateTime,
-      timeZone: 'Asia/Kolkata'
+      timeZone: timeZone
     },
     end: {
       dateTime: event.endDateTime,
-      timeZone: 'Asia/Kolkata'
+      timeZone: timeZone
     },
-    attendees: [
-      { email: event.attendeeEmail, displayName: event.attendeeName }
-    ],
+    attendees,
     reminders: {
       useDefault: false,
       overrides: [
@@ -247,7 +370,7 @@ export async function createGoogleCalendarEvent(
   }
 
   const res = await fetch(
-    'https://www.googleapis.com/calendar/v3/calendars/primary/events?conferenceDataVersion=1',
+    'https://www.googleapis.com/calendar/v3/calendars/primary/events?conferenceDataVersion=1&sendUpdates=all',
     {
       method: 'POST',
       headers: {

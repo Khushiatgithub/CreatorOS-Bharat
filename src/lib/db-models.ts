@@ -526,8 +526,47 @@ export const BookingModel = {
       }));
     }
     return [];
+  },
+
+  async createAppointment(apt: BookingAppointment): Promise<BookingAppointment> {
+    try {
+      await query(
+        `INSERT INTO appointments (
+          id, booking_id, user_id, service_title, buyer_name, buyer_email, buyer_phone,
+          date, time_slot, meet_url, amount_paid, order_id, status, notes, google_event_id, timezone, created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        ON CONFLICT (id) DO UPDATE SET
+          meet_url = EXCLUDED.meet_url,
+          google_event_id = EXCLUDED.google_event_id,
+          status = EXCLUDED.status`,
+        [
+          apt.id,
+          apt.serviceId,
+          apt.creatorId,
+          apt.serviceTitle,
+          apt.buyerName,
+          apt.buyerEmail,
+          apt.buyerPhone,
+          apt.date,
+          apt.timeSlot,
+          apt.meetUrl,
+          apt.amountPaid,
+          apt.orderId,
+          apt.status || 'confirmed',
+          apt.notes || null,
+          apt.googleEventId || null,
+          apt.timeZone || 'Asia/Kolkata',
+          apt.createdAt || new Date().toISOString()
+        ]
+      );
+    } catch (err) {
+      console.warn('PostgreSQL appointments insert fallback:', err);
+    }
+    return apt;
   }
 };
+
+export const AppointmentModel = BookingModel;
 
 // ============================================================================
 // 6. CAMPAIGN MODEL (Marketplace Briefs & Proposals)
@@ -1392,6 +1431,7 @@ export const CalendarMeetingModel = {
         meetingUrl: row.meeting_url || 'https://meet.google.com/new',
         googleEventId: row.google_event_id || undefined,
         topic: row.topic || undefined,
+        timezone: row.timezone || 'Asia/Kolkata',
         createdAt: row.created_at ? new Date(row.created_at).toISOString().split('T')[0] : '2026-09-05'
       }));
     }
@@ -1402,37 +1442,48 @@ export const CalendarMeetingModel = {
   async create(meeting: Omit<CalendarMeeting, 'id' | 'createdAt'> & { id?: string }): Promise<CalendarMeeting> {
     const id = meeting.id || `meet_${Date.now()}`;
     const now = new Date().toISOString();
+    const timezone = meeting.timezone || 'Asia/Kolkata';
 
     const newMeeting: CalendarMeeting = {
       ...meeting,
       id,
+      timezone,
       createdAt: now.split('T')[0]
     };
 
-    await query(
-      `INSERT INTO calendar_meetings (
-        id, creator_id, student_name, student_email, student_avatar, student_phone,
-        meeting_title, meeting_date, meeting_time, duration_minutes, meeting_status,
-        meeting_url, google_event_id, topic, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
-      [
-        id,
-        meeting.creatorId || 'creator_aarav',
-        meeting.studentName,
-        meeting.studentEmail,
-        meeting.studentAvatar || null,
-        meeting.studentPhone || null,
-        meeting.meetingTitle,
-        meeting.meetingDate,
-        meeting.meetingTime,
-        meeting.durationMinutes || 45,
-        meeting.meetingStatus || 'confirmed',
-        meeting.meetingUrl,
-        meeting.googleEventId || null,
-        meeting.topic || null,
-        now
-      ]
-    );
+    try {
+      await query(
+        `INSERT INTO calendar_meetings (
+          id, creator_id, student_name, student_email, student_avatar, student_phone,
+          meeting_title, meeting_date, meeting_time, duration_minutes, meeting_status,
+          meeting_url, google_event_id, topic, timezone, created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        ON CONFLICT (id) DO UPDATE SET
+          meeting_url = EXCLUDED.meeting_url,
+          google_event_id = EXCLUDED.google_event_id,
+          meeting_status = EXCLUDED.meeting_status`,
+        [
+          id,
+          meeting.creatorId || 'creator_aarav',
+          meeting.studentName,
+          meeting.studentEmail,
+          meeting.studentAvatar || null,
+          meeting.studentPhone || null,
+          meeting.meetingTitle,
+          meeting.meetingDate,
+          meeting.meetingTime,
+          meeting.durationMinutes || 45,
+          meeting.meetingStatus || 'confirmed',
+          meeting.meetingUrl,
+          meeting.googleEventId || null,
+          meeting.topic || null,
+          timezone,
+          now
+        ]
+      );
+    } catch (dbErr) {
+      console.warn('PostgreSQL calendar_meetings insert fallback:', dbErr);
+    }
 
     return newMeeting;
   },

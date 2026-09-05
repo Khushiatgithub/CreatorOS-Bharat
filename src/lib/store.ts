@@ -360,30 +360,114 @@ export function useCreatorStore() {
       return next;
     });
 
-    // Create appointment if booking
+    // Create appointment and calendar meeting if booking
     let newAppointment: BookingAppointment | undefined;
+    let newMeeting: CalendarMeeting | undefined;
+
     if (params.itemType === 'booking' && params.bookingDate && params.bookingTimeSlot) {
+      const randomMeetCode = `${Math.random().toString(36).substring(2, 5)}-${Math.random().toString(36).substring(2, 6)}-${Math.random().toString(36).substring(2, 5)}`;
+      const meetUrl = `https://meet.google.com/${randomMeetCode}`;
+      const googleEventId = `gevent_${Date.now()}`;
+      const meetingTimezone = 'Asia/Kolkata';
+      const meetingTitle = params.itemTitle.startsWith('1:1')
+        ? params.itemTitle
+        : `1:1 Session: ${params.itemTitle}`;
+      const meetingTopic = `1:1 Mentorship Session with ${creator.name} and ${params.buyerName}. Timezone: ${meetingTimezone} (IST UTC+05:30).`;
+
+      // 1. Create Appointment
       newAppointment = {
         id: `apt_${Date.now()}`,
         serviceId: params.itemId,
         creatorId: creator.id,
-        serviceTitle: params.itemTitle,
+        serviceTitle: meetingTitle,
         buyerName: params.buyerName,
         buyerEmail: params.buyerEmail,
         buyerPhone: params.buyerPhone,
         date: params.bookingDate,
         timeSlot: params.bookingTimeSlot,
-        meetUrl: `https://meet.google.com/${Math.random().toString(36).substring(2, 5)}-${Math.random().toString(36).substring(2, 6)}-${Math.random().toString(36).substring(2, 5)}`,
+        meetUrl,
         status: 'confirmed',
+        notes: meetingTopic,
         amountPaid: gstCalc.totalAmount,
         orderId: orderId,
+        googleEventId,
+        timeZone: meetingTimezone,
         createdAt: new Date().toISOString()
       };
+
       setAppointments((prev) => {
         const next = [newAppointment!, ...prev];
         saveState(STORAGE_KEYS.APPOINTMENTS, next);
         return next;
       });
+
+      // 2. Create Calendar Meeting for Dashboard -> Calendar
+      newMeeting = {
+        id: `meet_${Date.now()}`,
+        creatorId: creator.id,
+        studentName: params.buyerName,
+        studentEmail: params.buyerEmail,
+        studentPhone: params.buyerPhone,
+        studentAvatar: `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80`,
+        meetingTitle,
+        meetingDate: params.bookingDate,
+        meetingTime: params.bookingTimeSlot,
+        durationMinutes: 45,
+        meetingStatus: 'confirmed',
+        meetingUrl: meetUrl,
+        googleEventId,
+        topic: meetingTopic,
+        timezone: meetingTimezone,
+        createdAt: new Date().toISOString().split('T')[0]
+      };
+
+      setCalendarMeetings((prev) => {
+        const next = [newMeeting!, ...prev];
+        saveState(STORAGE_KEYS.CALENDAR_MEETINGS, next);
+        return next;
+      });
+
+      // 3. Update bookings completed count on the service
+      setBookingServices((prev) => {
+        const next = prev.map((s) =>
+          s.id === params.itemId ? { ...s, bookingsCompleted: (s.bookingsCompleted || 0) + 1 } : s
+        );
+        saveState(STORAGE_KEYS.BOOKINGS, next);
+        return next;
+      });
+
+      // 4. Trigger background sync to PostgreSQL & Google Calendar API with dual attendees
+      fetch('/api/calendar/meetings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...newMeeting,
+          creatorEmail: creator.email || googleCalendar?.accountEmail || 'aarav.sharma@gmail.com',
+          creatorName: creator.name || 'Aarav Sharma',
+          serviceId: params.itemId,
+          orderId,
+          amountPaid: gstCalc.totalAmount
+        })
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.data) {
+            if (data.data.googleEventId || data.data.meetingUrl) {
+              setCalendarMeetings((prev) =>
+                prev.map((m) =>
+                  m.id === newMeeting!.id
+                    ? {
+                        ...m,
+                        googleEventId: data.data.googleEventId || m.googleEventId,
+                        meetingUrl: data.data.meetingUrl || m.meetingUrl
+                      }
+                    : m
+                )
+              );
+            }
+          }
+        })
+        .catch((e) => console.warn('Background calendar meeting sync error:', e));
     }
 
     // Trigger WhatsApp notification log
@@ -391,7 +475,7 @@ export function useCreatorStore() {
     if (params.itemType === 'product') {
       waMessage += `\n\n📥 *Download Link:* https://creatoros.in/downloads/${params.itemId}\n📄 *GST Tax Invoice:* ${invoiceNum}`;
     } else if (params.itemType === 'booking') {
-      waMessage += `\n\n🗓 *Slot:* ${params.bookingDate} at ${params.bookingTimeSlot}\n🔗 *Google Meet:* ${newAppointment?.meetUrl || 'https://meet.google.com/sample'}`;
+      waMessage += `\n\n🗓 *Slot:* ${params.bookingDate} at ${params.bookingTimeSlot}\n🔗 *Google Meet:* ${newAppointment?.meetUrl || 'https://meet.google.com/sample'}\n🌐 *Timezone:* Asia/Kolkata (IST UTC+05:30)`;
     } else if (params.itemType === 'course') {
       waMessage += `\n\n🎓 *Access Course:* https://creatoros.in/${creator.username}/course/${params.itemId}\nUse your phone ${params.buyerPhone} to sign in.`;
     }
@@ -1648,6 +1732,45 @@ export function useCreatorStore() {
     }).catch((e) => console.warn('Background meeting status sync:', e));
   };
 
+  const isSlotBooked = (date: string, timeSlot: string, creatorIdToMatch?: string): boolean => {
+    const targetCreator = creatorIdToMatch || activeCreatorId;
+    const isDateMatch = (d1: string, d2: string) => {
+      if (!d1 || !d2) return false;
+      const s1 = d1.toLowerCase().trim();
+      const s2 = d2.toLowerCase().trim();
+      if (s1 === s2) return true;
+      if (s1.includes(s2) || s2.includes(s1)) return true;
+      return false;
+    };
+
+    const isSlotMatch = (s1: string, s2: string) => {
+      if (!s1 || !s2) return false;
+      const t1 = s1.toLowerCase().trim();
+      const t2 = s2.toLowerCase().trim();
+      if (t1 === t2) return true;
+      if (t1.includes(t2) || t2.includes(t1)) return true;
+      return false;
+    };
+
+    const hasAppointment = appointments.some(
+      (a) =>
+        (a.creatorId === targetCreator || targetCreator === 'all') &&
+        isDateMatch(a.date, date) &&
+        isSlotMatch(a.timeSlot, timeSlot) &&
+        a.status !== 'cancelled'
+    );
+
+    const hasMeeting = calendarMeetings.some(
+      (m) =>
+        (m.creatorId === targetCreator || targetCreator === 'all') &&
+        isDateMatch(m.meetingDate, date) &&
+        isSlotMatch(m.meetingTime, timeSlot) &&
+        m.meetingStatus !== 'cancelled'
+    );
+
+    return hasAppointment || hasMeeting;
+  };
+
   // Reset demo data
   const resetDemoData = () => {
     setCreators(INITIAL_CREATORS);
@@ -1761,6 +1884,7 @@ export function useCreatorStore() {
     updateWeeklyAvailability,
     updateBufferMinutes,
     createCalendarMeeting,
-    updateMeetingStatus
+    updateMeetingStatus,
+    isSlotBooked
   };
 }

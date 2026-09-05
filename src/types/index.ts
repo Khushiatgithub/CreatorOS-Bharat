@@ -37,6 +37,7 @@ export interface Creator {
   location: string;
   socials: CreatorSocials;
   themeId: string;
+  email?: string;
   upiId: string;
   upiName: string;
   gstNumber?: string;
@@ -145,6 +146,8 @@ export interface BookingAppointment {
   notes?: string;
   amountPaid: number;
   orderId: string;
+  googleEventId?: string;
+  timeZone?: string;
   createdAt: string;
 }
 
@@ -638,6 +641,7 @@ export interface CalendarMeeting {
   meetingUrl: string;
   googleEventId?: string;
   topic?: string;
+  timezone?: string;
   createdAt: string;
 }
 

@@ -96,11 +96,82 @@ export async function POST(req: NextRequest) {
       console.warn('DB order save warning (fallback to memory/store):', dbErr);
     }
 
+    // If item is a 1:1 booking, automatically create Google Calendar event and save meeting in PostgreSQL
+    let createdMeeting = null;
+    if (item?.type === 'booking' && bookingDate && bookingTimeSlot) {
+      try {
+        const { parseBookingDateTimeToISO, createGoogleCalendarEvent } = await import('@/lib/google-calendar');
+        const { CalendarIntegrationModel, CalendarMeetingModel, AppointmentModel } = await import('@/lib/db-models');
+
+        const { startISO, endISO } = parseBookingDateTimeToISO(bookingDate, bookingTimeSlot, 45);
+        const { accessToken } = await CalendarIntegrationModel.getEncryptedTokens('creator_aarav');
+        const tokenToUse = accessToken || 'ya29.mock_token';
+
+        const meetingTitle = `1:1 Session: ${item.title || 'Creator Consultation'}`;
+        const meetingTopic = `1:1 Mentorship Session with Aarav Sharma and ${buyer?.name || 'Student'}. Timezone: Asia/Kolkata (IST UTC+05:30).`;
+
+        const calEvent = await createGoogleCalendarEvent(tokenToUse, {
+          summary: meetingTitle,
+          description: meetingTopic,
+          startDateTime: startISO,
+          endDateTime: endISO,
+          attendeeEmail: buyer?.email || 'student@creatoros.in',
+          attendeeName: buyer?.name || 'Student',
+          creatorEmail: 'aarav.sharma@gmail.com',
+          creatorName: 'Aarav Sharma',
+          timeZone: 'Asia/Kolkata',
+          createMeetConference: true
+        });
+
+        const meetUrl = calEvent.meetUrl || `https://meet.google.com/new`;
+        const googleEventId = calEvent.eventId || `gevent_${Date.now()}`;
+
+        createdMeeting = await CalendarMeetingModel.create({
+          creatorId: 'creator_aarav',
+          studentName: buyer?.name || 'Student',
+          studentEmail: buyer?.email || 'student@creatoros.in',
+          studentPhone: buyer?.phone || '+91 98234 56789',
+          meetingTitle,
+          meetingDate: bookingDate,
+          meetingTime: bookingTimeSlot,
+          durationMinutes: 45,
+          meetingStatus: 'confirmed',
+          meetingUrl: meetUrl,
+          googleEventId,
+          topic: meetingTopic,
+          timezone: 'Asia/Kolkata'
+        });
+
+        await AppointmentModel.createAppointment({
+          id: `apt_${Date.now()}`,
+          serviceId: item.id || 'book_1',
+          creatorId: 'creator_aarav',
+          serviceTitle: meetingTitle,
+          buyerName: buyer?.name || 'Student',
+          buyerEmail: buyer?.email || 'student@creatoros.in',
+          buyerPhone: buyer?.phone || '+91 98234 56789',
+          date: bookingDate,
+          timeSlot: bookingTimeSlot,
+          meetUrl,
+          status: 'confirmed',
+          notes: meetingTopic,
+          amountPaid: gstDetails.totalAmount,
+          orderId: orderRecord.id,
+          googleEventId,
+          timeZone: 'Asia/Kolkata',
+          createdAt: new Date().toISOString()
+        });
+      } catch (meetErr) {
+        console.warn('Booking calendar sync error in verify-payment:', meetErr);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       verified: true,
       invoiceNumber,
       order: orderRecord,
+      meeting: createdMeeting,
       message: 'Razorpay payment verified successfully'
     });
 

@@ -103,7 +103,14 @@ export async function runDatabaseMigrations(): Promise<{ success: boolean; messa
     `ALTER TABLE calendar_integrations ADD COLUMN IF NOT EXISTS token_expiry TIMESTAMP WITH TIME ZONE;`,
     `ALTER TABLE calendar_integrations ADD COLUMN IF NOT EXISTS scope TEXT;`,
     `ALTER TABLE calendar_integrations ADD COLUMN IF NOT EXISTS google_calendar_id TEXT DEFAULT 'primary';`,
-    `ALTER TABLE calendar_integrations ADD COLUMN IF NOT EXISTS auto_generate_meet BOOLEAN DEFAULT TRUE;`
+    `ALTER TABLE calendar_integrations ADD COLUMN IF NOT EXISTS auto_generate_meet BOOLEAN DEFAULT TRUE;`,
+
+    // 11. Migration 006: Booking Calendar Event Sync & Timezone Support
+    `ALTER TABLE calendar_meetings ADD COLUMN IF NOT EXISTS timezone VARCHAR(64) DEFAULT 'Asia/Kolkata';`,
+    `ALTER TABLE appointments ADD COLUMN IF NOT EXISTS google_event_id TEXT;`,
+    `ALTER TABLE appointments ADD COLUMN IF NOT EXISTS timezone VARCHAR(64) DEFAULT 'Asia/Kolkata';`,
+    `CREATE INDEX IF NOT EXISTS idx_cal_meetings_event_id ON calendar_meetings(google_event_id);`,
+    `CREATE INDEX IF NOT EXISTS idx_appointments_event_id ON appointments(google_event_id);`
   ];
 
   try {

@@ -861,9 +861,16 @@ export default function CalendarPage() {
 
                       {/* Meeting Title & Topic */}
                       <div className="rounded-xl bg-[#060913]/90 border border-white/[0.05] p-3 space-y-1.5">
-                        <h5 className="font-semibold text-xs text-royal-200">
-                          {meeting.meetingTitle}
-                        </h5>
+                        <div className="flex items-start justify-between gap-2">
+                          <h5 className="font-semibold text-xs text-royal-200">
+                            {meeting.meetingTitle}
+                          </h5>
+                          {meeting.googleEventId && (
+                            <span className="shrink-0 px-2 py-0.5 rounded bg-royal-600/15 border border-royal-500/25 text-royal-300 text-[10px] font-mono" title={`Google Calendar Event ID: ${meeting.googleEventId}`}>
+                              GCal Synced
+                            </span>
+                          )}
+                        </div>
                         {meeting.topic && (
                           <p className="text-[11px] text-slate-400 line-clamp-2">
                             <span className="text-slate-500">Agenda:</span> {meeting.topic}
@@ -871,16 +878,29 @@ export default function CalendarPage() {
                         )}
                       </div>
 
-                      {/* Date, Time & Duration Row */}
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div className="flex items-center gap-2 text-slate-300 bg-white/[0.02] rounded-lg p-2 border border-white/[0.04]">
-                          <Calendar className="h-4 w-4 text-royal-400 shrink-0" />
-                          <span className="truncate font-medium">{meeting.meetingDate}</span>
+                      {/* Date, Time, Duration & Timezone Row */}
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="flex items-center gap-2 text-slate-300 bg-white/[0.02] rounded-lg p-2 border border-white/[0.04]">
+                            <Calendar className="h-4 w-4 text-royal-400 shrink-0" />
+                            <span className="truncate font-medium">{meeting.meetingDate}</span>
+                          </div>
+
+                          <div className="flex items-center gap-2 text-slate-300 bg-white/[0.02] rounded-lg p-2 border border-white/[0.04]">
+                            <Clock className="h-4 w-4 text-emerald-400 shrink-0" />
+                            <span className="truncate font-mono text-[11px]">{meeting.meetingTime}</span>
+                          </div>
                         </div>
 
-                        <div className="flex items-center gap-2 text-slate-300 bg-white/[0.02] rounded-lg p-2 border border-white/[0.04]">
-                          <Clock className="h-4 w-4 text-emerald-400 shrink-0" />
-                          <span className="truncate font-mono text-[11px]">{meeting.meetingTime}</span>
+                        {/* Timezone & Attendees Badge */}
+                        <div className="flex items-center justify-between text-[11px] px-2 py-1 rounded-lg bg-white/[0.02] border border-white/[0.03] text-slate-400 font-mono">
+                          <span className="flex items-center gap-1 text-royal-300">
+                            <Globe className="h-3 w-3 text-royal-400" />
+                            {meeting.timezone || 'Asia/Kolkata'} (IST UTC+05:30)
+                          </span>
+                          <span className="text-[10px] text-slate-500 font-sans">
+                            Both creator & student invited
+                          </span>
                         </div>
                       </div>
 

@@ -42,6 +42,7 @@ import UPICheckoutModal from '@/components/checkout/UPICheckoutModal';
 import MembershipPricingSection from '@/components/storefront/MembershipPricingSection';
 import { AnimatedCounter, RippleButton, HoverCard } from '@/components/ui/motion';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useCreatorStore } from '@/lib/store';
 
 interface StorefrontContentProps {
   creator: Creator;
@@ -124,6 +125,7 @@ export default function StorefrontContent({
   bookingServices,
   isMobilePreview = false
 }: StorefrontContentProps) {
+  const { isSlotBooked } = useCreatorStore();
   const [activeTab, setActiveTab] = useState<'all' | 'memberships' | 'sessions' | 'courses' | 'products' | 'communities' | 'reviews'>('all');
   
   // Checkout modal
@@ -138,7 +140,7 @@ export default function StorefrontContent({
 
   // Booking slot selection state
   const [bookingModalService, setBookingModalService] = useState<BookingService | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string>('Tomorrow (07:00 PM IST)');
+  const [selectedDate, setSelectedDate] = useState<string>('Tomorrow');
   const [selectedSlot, setSelectedSlot] = useState<string>('07:00 PM');
 
   // Lead capture
@@ -155,7 +157,8 @@ export default function StorefrontContent({
 
   const handleOpenBookingSlot = (service: BookingService) => {
     setBookingModalService(service);
-    setSelectedSlot(service.timeSlots[0] || '07:00 PM');
+    const availableSlot = service.timeSlots.find((s) => !isSlotBooked(selectedDate, s, creator.id)) || service.timeSlots[0] || '07:00 PM';
+    setSelectedSlot(availableSlot);
   };
 
   const handleProceedBookingToCheckout = () => {
@@ -1018,21 +1021,29 @@ export default function StorefrontContent({
             <div>
               <label className="block text-[11px] font-semibold text-slate-300 mb-1.5">Select Time Slot (IST)</label>
               <div className="grid grid-cols-2 gap-2">
-                {bookingModalService.timeSlots.map((slot) => (
-                  <button
-                    key={slot}
-                    type="button"
-                    onClick={() => setSelectedSlot(slot)}
-                    className={`py-2.5 rounded-[14px] text-xs font-medium border transition flex items-center justify-center gap-1.5 btn-press ${
-                      selectedSlot === slot
-                        ? 'border-royal-500 bg-royal-600/25 text-white font-bold shadow-royal-sm'
-                        : 'border-white/[0.08] bg-white/[0.03] text-slate-300 hover:border-white/[0.15]'
-                    }`}
-                  >
-                    <Clock className="h-3.5 w-3.5 text-royal-400" />
-                    <span>{slot}</span>
-                  </button>
-                ))}
+                {bookingModalService.timeSlots.map((slot) => {
+                  const isBooked = isSlotBooked(selectedDate, slot, creator.id);
+                  return (
+                    <button
+                      key={slot}
+                      type="button"
+                      disabled={isBooked}
+                      onClick={() => !isBooked && setSelectedSlot(slot)}
+                      className={`py-2.5 rounded-[14px] text-xs font-medium border transition flex items-center justify-center gap-1.5 btn-press ${
+                        isBooked
+                          ? 'border-white/[0.04] bg-white/[0.01] text-slate-500 line-through opacity-50 cursor-not-allowed'
+                          : selectedSlot === slot
+                          ? 'border-royal-500 bg-royal-600/25 text-white font-bold shadow-royal-sm'
+                          : 'border-white/[0.08] bg-white/[0.03] text-slate-300 hover:border-white/[0.15]'
+                      }`}
+                      title={isBooked ? 'This slot has already been booked and blocked.' : `Select ${slot}`}
+                    >
+                      <Clock className={`h-3.5 w-3.5 ${isBooked ? 'text-slate-600' : 'text-royal-400'}`} />
+                      <span>{slot}</span>
+                      {isBooked && <span className="text-[10px] text-rose-400 font-mono font-semibold ml-0.5">(Booked)</span>}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 

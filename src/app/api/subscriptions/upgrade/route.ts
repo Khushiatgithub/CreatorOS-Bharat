@@ -25,10 +25,7 @@ export async function POST(request: NextRequest) {
 
     await SubscriptionModel.updatePlan(
       subscriptionId,
-      newPlan.id,
-      newPlan.name,
-      newAmount,
-      newBillingCycle
+      newPlan.id
     );
 
     return NextResponse.json({

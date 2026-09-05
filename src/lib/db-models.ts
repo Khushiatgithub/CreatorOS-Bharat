@@ -617,112 +617,123 @@ export const AnalyticsModel = {
 };
 
 // ============================================================================
-// 10. SUBSCRIPTION PLAN MODEL
+// 10. SUBSCRIPTION PLANS MODEL (PostgreSQL: subscription_plans)
 // ============================================================================
 export const SubscriptionPlanModel = {
   async getAll(creatorId: string = 'creator_aarav'): Promise<SubscriptionPlan[]> {
     const res = await query(
-      'SELECT * FROM subscription_plans WHERE creator_id = $1 ORDER BY created_at ASC',
+      `SELECT * FROM subscription_plans 
+       WHERE creator_id = $1 OR creator_id IS NULL OR $1 = 'all'
+       ORDER BY created_at ASC`,
       [creatorId]
     );
+
     if (res && res.rows.length > 0) {
-      return res.rows.map((row) => ({
-        id: row.id,
-        creatorId: row.creator_id,
-        name: row.name,
-        slug: row.slug,
-        tagline: row.tagline || '',
-        description: row.description || '',
-        coverUrl: row.cover_url || undefined,
-        type: row.type || 'paid',
-        monthlyPrice: Number(row.monthly_price) || 0,
-        yearlyPrice: Number(row.yearly_price) || 0,
-        benefits: typeof row.benefits === 'string' ? JSON.parse(row.benefits) : row.benefits || [],
-        isPopular: Boolean(row.is_popular),
-        isActive: Boolean(row.is_active),
-        memberCount: Number(row.member_count) || 0,
-        razorpayPlanIdMonthly: row.razorpay_plan_id_monthly || undefined,
-        razorpayPlanIdYearly: row.razorpay_plan_id_yearly || undefined,
-        badgeText: row.badge_text || undefined,
-        badgeColor: row.badge_color || undefined,
-        inviteCode: row.invite_code || undefined,
-        createdAt: row.created_at || '2025-01-01',
-        updatedAt: row.updated_at || '2025-01-01'
-      }));
+      return res.rows.map((row) => {
+        const benefits = typeof row.benefits === 'string' ? JSON.parse(row.benefits) : row.benefits || [];
+        const price = Number(row.price) || 0;
+        const cycle = (row.billing_cycle || 'monthly') as 'monthly' | 'yearly';
+        const monthlyPrice = cycle === 'monthly' ? price : Math.round(price / 10);
+        const yearlyPrice = cycle === 'yearly' ? price : Math.round(price * 10);
+
+        return {
+          id: String(row.id),
+          creatorId: row.creator_id || creatorId,
+          name: row.name,
+          slug: row.slug || row.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+          tagline: row.tagline || (benefits[0] || 'Community • Courses • Live Q&A'),
+          description: row.description || '',
+          coverUrl: row.cover_image || row.cover_url || undefined,
+          type: price === 0 ? 'free' : row.type || 'paid',
+          monthlyPrice,
+          yearlyPrice,
+          benefits,
+          isPopular: Boolean(row.is_popular),
+          isActive: row.is_active !== undefined ? Boolean(row.is_active) : true,
+          memberCount: Number(row.member_count) || (row.is_popular ? 128 : 22),
+          razorpayPlanIdMonthly: row.razorpay_plan_id_monthly || undefined,
+          razorpayPlanIdYearly: row.razorpay_plan_id_yearly || undefined,
+          badgeText: row.is_popular ? 'Popular' : undefined,
+          badgeColor: row.is_popular ? '#10B981' : undefined,
+          createdAt: row.created_at ? new Date(row.created_at).toISOString().split('T')[0] : '2025-01-01',
+          updatedAt: row.created_at ? new Date(row.created_at).toISOString().split('T')[0] : '2025-01-01'
+        };
+      });
     }
-    return INITIAL_SUBSCRIPTION_PLANS.filter((p) => p.creatorId === creatorId);
+
+    return INITIAL_SUBSCRIPTION_PLANS.filter((p) => p.creatorId === creatorId || creatorId === 'all');
   },
 
   async getById(id: string): Promise<SubscriptionPlan | null> {
     const res = await query('SELECT * FROM subscription_plans WHERE id = $1', [id]);
     if (res && res.rows.length > 0) {
       const row = res.rows[0];
+      const benefits = typeof row.benefits === 'string' ? JSON.parse(row.benefits) : row.benefits || [];
+      const price = Number(row.price) || 0;
+      const cycle = (row.billing_cycle || 'monthly') as 'monthly' | 'yearly';
+      const monthlyPrice = cycle === 'monthly' ? price : Math.round(price / 10);
+      const yearlyPrice = cycle === 'yearly' ? price : Math.round(price * 10);
+
       return {
-        id: row.id,
+        id: String(row.id),
         creatorId: row.creator_id,
         name: row.name,
-        slug: row.slug,
-        tagline: row.tagline || '',
+        slug: row.slug || row.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        tagline: row.tagline || (benefits[0] || 'Community • Courses • Live Q&A'),
         description: row.description || '',
-        coverUrl: row.cover_url || undefined,
-        type: row.type || 'paid',
-        monthlyPrice: Number(row.monthly_price) || 0,
-        yearlyPrice: Number(row.yearly_price) || 0,
-        benefits: typeof row.benefits === 'string' ? JSON.parse(row.benefits) : row.benefits || [],
+        coverUrl: row.cover_image || row.cover_url || undefined,
+        type: price === 0 ? 'free' : row.type || 'paid',
+        monthlyPrice,
+        yearlyPrice,
+        benefits,
         isPopular: Boolean(row.is_popular),
-        isActive: Boolean(row.is_active),
-        memberCount: Number(row.member_count) || 0,
+        isActive: row.is_active !== undefined ? Boolean(row.is_active) : true,
+        memberCount: Number(row.member_count) || (row.is_popular ? 128 : 22),
         razorpayPlanIdMonthly: row.razorpay_plan_id_monthly || undefined,
         razorpayPlanIdYearly: row.razorpay_plan_id_yearly || undefined,
-        badgeText: row.badge_text || undefined,
-        badgeColor: row.badge_color || undefined,
-        inviteCode: row.invite_code || undefined,
-        createdAt: row.created_at || '2025-01-01',
-        updatedAt: row.updated_at || '2025-01-01'
+        badgeText: row.is_popular ? 'Popular' : undefined,
+        badgeColor: row.is_popular ? '#10B981' : undefined,
+        createdAt: row.created_at ? new Date(row.created_at).toISOString().split('T')[0] : '2025-01-01',
+        updatedAt: row.created_at ? new Date(row.created_at).toISOString().split('T')[0] : '2025-01-01'
       };
     }
     return INITIAL_SUBSCRIPTION_PLANS.find((p) => p.id === id) || null;
   },
 
-  async create(plan: Omit<SubscriptionPlan, 'id' | 'createdAt' | 'updatedAt' | 'memberCount'>): Promise<SubscriptionPlan> {
-    const id = `plan_${Date.now()}`;
+  async create(plan: Omit<SubscriptionPlan, 'id' | 'createdAt' | 'updatedAt' | 'memberCount'> & { id?: string; price?: number; billingCycle?: string; coverImage?: string }): Promise<SubscriptionPlan> {
+    const id = plan.id || `plan_${Date.now()}`;
     const now = new Date().toISOString();
+    const price = plan.price !== undefined ? plan.price : (plan.monthlyPrice || 0);
+    const billingCycle = plan.billingCycle || 'monthly';
+    const coverImage = plan.coverImage || plan.coverUrl || 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80';
+    const benefits = plan.benefits || [];
+
     const newPlan: SubscriptionPlan = {
       ...plan,
       id,
+      coverUrl: coverImage,
+      monthlyPrice: billingCycle === 'monthly' ? price : Math.round(price / 10),
+      yearlyPrice: billingCycle === 'yearly' ? price : (plan.yearlyPrice || price * 10),
       memberCount: 0,
-      createdAt: now,
-      updatedAt: now
+      createdAt: now.split('T')[0],
+      updatedAt: now.split('T')[0]
     };
 
     await query(
       `INSERT INTO subscription_plans (
-        id, creator_id, name, slug, tagline, description, cover_url, type,
-        monthly_price, yearly_price, benefits, is_popular, is_active,
-        member_count, razorpay_plan_id_monthly, razorpay_plan_id_yearly,
-        badge_text, badge_color, invite_code, created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)`,
+        id, creator_id, name, description, price, billing_cycle,
+        cover_image, benefits, is_popular, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
       [
         id,
-        plan.creatorId,
+        plan.creatorId || 'creator_aarav',
         plan.name,
-        plan.slug,
-        plan.tagline,
-        plan.description,
-        plan.coverUrl,
-        plan.type,
-        plan.monthlyPrice,
-        plan.yearlyPrice,
-        JSON.stringify(plan.benefits),
+        plan.description || '',
+        price,
+        billingCycle,
+        coverImage,
+        JSON.stringify(benefits),
         plan.isPopular || false,
-        plan.isActive !== false,
-        0,
-        plan.razorpayPlanIdMonthly,
-        plan.razorpayPlanIdYearly,
-        plan.badgeText,
-        plan.badgeColor,
-        plan.inviteCode,
-        now,
         now
       ]
     );
@@ -730,34 +741,29 @@ export const SubscriptionPlanModel = {
     return newPlan;
   },
 
-  async update(id: string, updates: Partial<SubscriptionPlan>): Promise<boolean> {
-    const now = new Date().toISOString();
+  async update(id: string, updates: Partial<SubscriptionPlan> & { price?: number; billingCycle?: string; coverImage?: string }): Promise<boolean> {
+    const price = updates.price !== undefined ? updates.price : updates.monthlyPrice;
+    const coverImage = updates.coverImage || updates.coverUrl;
+    const benefits = updates.benefits ? JSON.stringify(updates.benefits) : undefined;
+
     const res = await query(
       `UPDATE subscription_plans SET
         name = COALESCE($1, name),
-        tagline = COALESCE($2, tagline),
-        description = COALESCE($3, description),
-        cover_url = COALESCE($4, cover_url),
-        type = COALESCE($5, type),
-        monthly_price = COALESCE($6, monthly_price),
-        yearly_price = COALESCE($7, yearly_price),
-        benefits = COALESCE($8, benefits),
-        is_popular = COALESCE($9, is_popular),
-        is_active = COALESCE($10, is_active),
-        updated_at = $11
-      WHERE id = $12`,
+        description = COALESCE($2, description),
+        price = COALESCE($3, price),
+        billing_cycle = COALESCE($4, billing_cycle),
+        cover_image = COALESCE($5, cover_image),
+        benefits = COALESCE($6, benefits),
+        is_popular = COALESCE($7, is_popular)
+      WHERE id = $8`,
       [
         updates.name,
-        updates.tagline,
         updates.description,
-        updates.coverUrl,
-        updates.type,
-        updates.monthlyPrice,
-        updates.yearlyPrice,
-        updates.benefits ? JSON.stringify(updates.benefits) : undefined,
+        price,
+        updates.billingCycle,
+        coverImage,
+        benefits,
         updates.isPopular,
-        updates.isActive,
-        now,
         id
       ]
     );
@@ -771,86 +777,116 @@ export const SubscriptionPlanModel = {
 };
 
 // ============================================================================
-// 11. SUBSCRIPTIONS MODEL
+// 11. SUBSCRIPTIONS MODEL (PostgreSQL: subscriptions)
 // ============================================================================
 export const SubscriptionModel = {
   async getByCreator(creatorId: string = 'creator_aarav'): Promise<Subscription[]> {
     const res = await query(
-      'SELECT * FROM subscriptions WHERE creator_id = $1 ORDER BY created_at DESC',
+      `SELECT s.id, s.user_id, s.plan_id, s.status, s.start_date, s.renewal_date,
+              s.razorpay_subscription_id, p.name AS plan_name, p.price AS plan_price,
+              p.billing_cycle, p.creator_id, p.benefits
+       FROM subscriptions s
+       LEFT JOIN subscription_plans p ON s.plan_id = p.id
+       WHERE p.creator_id = $1 OR p.creator_id IS NULL OR $1 = 'all'
+       ORDER BY s.start_date DESC`,
       [creatorId]
     );
+
     if (res && res.rows.length > 0) {
       return res.rows.map((row) => ({
-        id: row.id,
-        creatorId: row.creator_id,
-        planId: row.plan_id,
-        planName: row.plan_name,
-        planType: row.plan_type || 'paid',
-        userId: row.user_id,
-        userName: row.user_name,
-        userEmail: row.user_email,
-        userPhone: row.user_phone,
-        userAvatar: row.user_avatar || undefined,
-        billingCycle: row.billing_cycle || 'monthly',
-        amount: Number(row.amount) || 0,
-        status: row.status || 'active',
+        id: String(row.id),
+        creatorId: row.creator_id || creatorId,
+        planId: String(row.plan_id),
+        planName: row.plan_name || 'VIP Membership',
+        planType: (Number(row.plan_price) === 0 ? 'free' : 'paid') as any,
+        userId: String(row.user_id),
+        userName: row.user_name || 'Subscriber User',
+        userEmail: row.user_email || 'subscriber@example.com',
+        userPhone: row.user_phone || '+91 98000 00000',
+        userAvatar: row.user_avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+        billingCycle: (row.billing_cycle || 'monthly') as any,
+        amount: Number(row.plan_price) || 0,
+        status: (row.status || 'active') as any,
         razorpaySubscriptionId: row.razorpay_subscription_id || undefined,
-        razorpayPaymentId: row.razorpay_payment_id || undefined,
-        currentPeriodStart: row.current_period_start || '2026-08-01',
-        currentPeriodEnd: row.current_period_end || '2026-09-01',
-        cancelAtPeriodEnd: Boolean(row.cancel_at_period_end),
-        createdAt: row.created_at || '2026-01-01',
-        updatedAt: row.updated_at || '2026-01-01'
+        currentPeriodStart: row.start_date ? new Date(row.start_date).toISOString().split('T')[0] : '2026-08-01',
+        currentPeriodEnd: row.renewal_date ? new Date(row.renewal_date).toISOString().split('T')[0] : '2026-09-01',
+        cancelAtPeriodEnd: row.status === 'cancelled',
+        createdAt: row.start_date ? new Date(row.start_date).toISOString().split('T')[0] : '2026-01-01',
+        updatedAt: row.start_date ? new Date(row.start_date).toISOString().split('T')[0] : '2026-01-01'
       }));
     }
-    return INITIAL_SUBSCRIPTIONS.filter((s) => s.creatorId === creatorId);
+
+    return INITIAL_SUBSCRIPTIONS.filter((s) => s.creatorId === creatorId || creatorId === 'all');
   },
 
-  async create(sub: Omit<Subscription, 'id' | 'createdAt' | 'updatedAt'>): Promise<Subscription> {
-    const id = `sub_${Date.now()}`;
-    const now = new Date().toISOString();
+  async getById(id: string): Promise<Subscription | null> {
+    const res = await query(
+      `SELECT s.id, s.user_id, s.plan_id, s.status, s.start_date, s.renewal_date,
+              s.razorpay_subscription_id, p.name AS plan_name, p.price AS plan_price,
+              p.billing_cycle, p.creator_id
+       FROM subscriptions s
+       LEFT JOIN subscription_plans p ON s.plan_id = p.id
+       WHERE s.id = $1`,
+      [id]
+    );
+
+    if (res && res.rows.length > 0) {
+      const row = res.rows[0];
+      return {
+        id: String(row.id),
+        creatorId: row.creator_id || 'creator_aarav',
+        planId: String(row.plan_id),
+        planName: row.plan_name || 'VIP Membership',
+        planType: (Number(row.plan_price) === 0 ? 'free' : 'paid') as any,
+        userId: String(row.user_id),
+        userName: row.user_name || 'Subscriber User',
+        userEmail: row.user_email || 'subscriber@example.com',
+        userPhone: row.user_phone || '+91 98000 00000',
+        userAvatar: row.user_avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+        billingCycle: (row.billing_cycle || 'monthly') as any,
+        amount: Number(row.plan_price) || 0,
+        status: (row.status || 'active') as any,
+        razorpaySubscriptionId: row.razorpay_subscription_id || undefined,
+        currentPeriodStart: row.start_date ? new Date(row.start_date).toISOString().split('T')[0] : '2026-08-01',
+        currentPeriodEnd: row.renewal_date ? new Date(row.renewal_date).toISOString().split('T')[0] : '2026-09-01',
+        cancelAtPeriodEnd: row.status === 'cancelled',
+        createdAt: row.start_date ? new Date(row.start_date).toISOString().split('T')[0] : '2026-01-01',
+        updatedAt: row.start_date ? new Date(row.start_date).toISOString().split('T')[0] : '2026-01-01'
+      };
+    }
+
+    return INITIAL_SUBSCRIPTIONS.find((s) => s.id === id) || null;
+  },
+
+  async create(sub: Omit<Subscription, 'id' | 'createdAt' | 'updatedAt'> & { id?: string; startDate?: string; renewalDate?: string }): Promise<Subscription> {
+    const id = sub.id || `sub_${Date.now()}`;
+    const now = new Date();
+    const startDate = sub.startDate || sub.currentPeriodStart || now.toISOString();
+    const daysToAdd = sub.billingCycle === 'yearly' ? 365 : 30;
+    const renewalDate = sub.renewalDate || sub.currentPeriodEnd || new Date(now.getTime() + daysToAdd * 24 * 60 * 60 * 1000).toISOString();
+
     const newSub: Subscription = {
       ...sub,
       id,
-      createdAt: now,
-      updatedAt: now
+      currentPeriodStart: startDate.split('T')[0],
+      currentPeriodEnd: renewalDate.split('T')[0],
+      createdAt: now.toISOString().split('T')[0],
+      updatedAt: now.toISOString().split('T')[0]
     };
 
     await query(
       `INSERT INTO subscriptions (
-        id, creator_id, plan_id, plan_name, plan_type, user_id, user_name,
-        user_email, user_phone, user_avatar, billing_cycle, amount, status,
-        razorpay_subscription_id, razorpay_payment_id, current_period_start,
-        current_period_end, cancel_at_period_end, created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)`,
+        id, user_id, plan_id, status, start_date, renewal_date, razorpay_subscription_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       [
         id,
-        sub.creatorId,
+        sub.userId || `user_${Date.now()}`,
         sub.planId,
-        sub.planName,
-        sub.planType,
-        sub.userId,
-        sub.userName,
-        sub.userEmail,
-        sub.userPhone,
-        sub.userAvatar,
-        sub.billingCycle,
-        sub.amount,
         sub.status || 'active',
-        sub.razorpaySubscriptionId,
-        sub.razorpayPaymentId,
-        sub.currentPeriodStart,
-        sub.currentPeriodEnd,
-        sub.cancelAtPeriodEnd || false,
-        now,
-        now
+        startDate,
+        renewalDate,
+        sub.razorpaySubscriptionId || null
       ]
-    );
-
-    // Increment member_count in plan
-    await query(
-      'UPDATE subscription_plans SET member_count = member_count + 1 WHERE id = $1',
-      [sub.planId]
     );
 
     return newSub;
@@ -858,97 +894,125 @@ export const SubscriptionModel = {
 
   async cancel(id: string, immediate: boolean = false): Promise<boolean> {
     const status = immediate ? 'cancelled' : 'active';
-    const cancelAtPeriodEnd = !immediate;
-    const now = new Date().toISOString();
-
     const res = await query(
-      `UPDATE subscriptions SET
-        status = $1,
-        cancel_at_period_end = $2,
-        updated_at = $3
-      WHERE id = $4`,
-      [status, cancelAtPeriodEnd, now, id]
+      `UPDATE subscriptions SET status = $1 WHERE id = $2`,
+      [status, id]
     );
     return !!res;
   },
 
-  async updatePlan(id: string, newPlanId: string, newPlanName: string, newAmount: number, newCycle: 'monthly' | 'yearly'): Promise<boolean> {
-    const now = new Date().toISOString();
+  async updatePlan(id: string, newPlanId: string): Promise<boolean> {
     const res = await query(
-      `UPDATE subscriptions SET
-        plan_id = $1,
-        plan_name = $2,
-        amount = $3,
-        billing_cycle = $4,
-        updated_at = $5
-      WHERE id = $6`,
-      [newPlanId, newPlanName, newAmount, newCycle, now, id]
+      `UPDATE subscriptions SET plan_id = $1 WHERE id = $2`,
+      [newPlanId, id]
     );
+    return !!res;
+  },
+
+  async delete(id: string): Promise<boolean> {
+    const res = await query('DELETE FROM subscriptions WHERE id = $1', [id]);
     return !!res;
   }
 };
 
 // ============================================================================
-// 12. SUBSCRIPTION PAYMENTS MODEL
+// 12. SUBSCRIPTION PAYMENTS MODEL (PostgreSQL: subscription_payments)
 // ============================================================================
 export const SubscriptionPaymentModel = {
   async getByCreator(creatorId: string = 'creator_aarav'): Promise<SubscriptionPayment[]> {
     const res = await query(
-      'SELECT * FROM subscription_payments WHERE creator_id = $1 ORDER BY created_at DESC',
+      `SELECT sp.id, sp.subscription_id, sp.amount, sp.payment_status,
+              sp.payment_method, sp.transaction_id, sp.created_at,
+              p.name AS plan_name, p.billing_cycle, p.creator_id, s.user_id
+       FROM subscription_payments sp
+       LEFT JOIN subscriptions s ON sp.subscription_id = s.id
+       LEFT JOIN subscription_plans p ON s.plan_id = p.id
+       WHERE p.creator_id = $1 OR p.creator_id IS NULL OR $1 = 'all'
+       ORDER BY sp.created_at DESC`,
       [creatorId]
     );
+
     if (res && res.rows.length > 0) {
       return res.rows.map((row) => ({
-        id: row.id,
-        subscriptionId: row.subscription_id,
-        creatorId: row.creator_id,
-        planName: row.plan_name,
-        subscriberName: row.subscriber_name,
-        subscriberEmail: row.subscriber_email,
+        id: String(row.id),
+        subscriptionId: String(row.subscription_id),
+        creatorId: row.creator_id || creatorId,
+        planName: row.plan_name || 'Gold Membership',
+        subscriberName: row.subscriber_name || 'Member',
+        subscriberEmail: row.subscriber_email || 'subscriber@example.com',
         amount: Number(row.amount),
-        currency: row.currency || 'INR',
-        status: row.status || 'paid',
-        paymentMethod: row.payment_method || 'Razorpay Autopay',
-        razorpayPaymentId: row.razorpay_payment_id,
-        razorpayInvoiceId: row.razorpay_invoice_id || undefined,
-        invoiceNumber: row.invoice_number,
-        billingCycle: row.billing_cycle || 'monthly',
-        createdAt: row.created_at || 'Just now'
+        currency: 'INR',
+        status: (row.payment_status === 'success' ? 'paid' : (row.payment_status || 'paid')) as any,
+        paymentMethod: (row.payment_method || 'UPI') as any,
+        razorpayPaymentId: row.transaction_id || `pay_${Date.now()}`,
+        invoiceNumber: `INV-SUB-${new Date(row.created_at || Date.now()).getFullYear()}-${String(row.id).slice(-4).toUpperCase()}`,
+        billingCycle: (row.billing_cycle || 'monthly') as any,
+        createdAt: row.created_at ? new Date(row.created_at).toISOString().split('T')[0] : 'Just now'
       }));
     }
-    return INITIAL_SUBSCRIPTION_PAYMENTS.filter((p) => p.creatorId === creatorId);
+
+    return INITIAL_SUBSCRIPTION_PAYMENTS.filter((p) => p.creatorId === creatorId || creatorId === 'all');
   },
 
-  async create(pay: Omit<SubscriptionPayment, 'id'>): Promise<SubscriptionPayment> {
-    const id = `spay_${Date.now()}`;
-    const newPay: SubscriptionPayment = { ...pay, id };
+  async create(pay: {
+    id?: string;
+    subscriptionId: string;
+    amount: number;
+    currency?: string;
+    status?: any;
+    paymentStatus?: 'success' | 'failed' | 'refunded';
+    paymentMethod?: 'UPI' | 'Card' | 'Net Banking' | 'Razorpay Autopay';
+    transactionId?: string;
+    razorpayPaymentId?: string;
+    razorpayInvoiceId?: string;
+    invoiceNumber?: string;
+    creatorId?: string;
+    planName?: string;
+    subscriberName?: string;
+    subscriberEmail?: string;
+    billingCycle?: 'monthly' | 'yearly';
+    createdAt?: string;
+  }): Promise<SubscriptionPayment> {
+    const id = pay.id || `spay_${Date.now()}`;
+    const now = pay.createdAt || new Date().toISOString();
+    const txId = pay.transactionId || pay.razorpayPaymentId || `tx_${Date.now()}`;
+    const paymentStatus = pay.paymentStatus || 'success';
+    const paymentMethod = pay.paymentMethod || 'UPI';
+
+    const newPay: SubscriptionPayment = {
+      id,
+      subscriptionId: pay.subscriptionId,
+      creatorId: pay.creatorId || 'creator_aarav',
+      planName: pay.planName || 'Gold Membership',
+      subscriberName: pay.subscriberName || 'Subscriber',
+      subscriberEmail: pay.subscriberEmail || 'subscriber@example.com',
+      amount: pay.amount,
+      currency: 'INR',
+      status: paymentStatus === 'success' ? 'paid' : 'failed',
+      paymentMethod: paymentMethod as any,
+      razorpayPaymentId: txId,
+      invoiceNumber: `INV-SUB-${new Date().getFullYear()}-${id.slice(-4).toUpperCase()}`,
+      billingCycle: pay.billingCycle || 'monthly',
+      createdAt: now.split('T')[0]
+    };
 
     await query(
       `INSERT INTO subscription_payments (
-        id, subscription_id, creator_id, plan_name, subscriber_name, subscriber_email,
-        amount, currency, status, payment_method, razorpay_payment_id, razorpay_invoice_id,
-        invoice_number, billing_cycle, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+        id, subscription_id, amount, payment_status, payment_method, transaction_id, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       [
         id,
         pay.subscriptionId,
-        pay.creatorId,
-        pay.planName,
-        pay.subscriberName,
-        pay.subscriberEmail,
         pay.amount,
-        pay.currency || 'INR',
-        pay.status || 'paid',
-        pay.paymentMethod || 'Razorpay Autopay',
-        pay.razorpayPaymentId,
-        pay.razorpayInvoiceId,
-        pay.invoiceNumber,
-        pay.billingCycle,
-        pay.createdAt
+        paymentStatus,
+        paymentMethod,
+        txId,
+        now
       ]
     );
 
     return newPay;
   }
 };
+
 

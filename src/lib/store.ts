@@ -996,6 +996,25 @@ export function useCreatorStore() {
       return next;
     });
 
+    // Async create in PostgreSQL API
+    try {
+      fetch('/api/subscriptions/plans', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...newPlan,
+          creatorId: activeCreatorId,
+          price: newPlan.monthlyPrice || newPlan.yearlyPrice || 0,
+          billing_cycle: newPlan.monthlyPrice ? 'monthly' : 'yearly',
+          cover_image: newPlan.coverUrl,
+          benefits: newPlan.benefits,
+          is_popular: newPlan.isPopular
+        })
+      }).catch((e) => console.warn('Background PostgreSQL plan sync:', e));
+    } catch (e) {
+      console.warn('API error:', e);
+    }
+
     return plan;
   };
 
@@ -1012,6 +1031,22 @@ export function useCreatorStore() {
       saveState(STORAGE_KEYS.SUBSCRIPTION_PLANS, next);
       return next;
     });
+
+    // Async update in PostgreSQL API
+    try {
+      fetch(`/api/subscriptions/plans/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...updates,
+          price: updates.monthlyPrice !== undefined ? updates.monthlyPrice : updates.yearlyPrice,
+          cover_image: updates.coverUrl,
+          is_popular: updates.isPopular
+        })
+      }).catch((e) => console.warn('Background PostgreSQL plan update sync:', e));
+    } catch (e) {
+      console.warn('API error:', e);
+    }
   };
 
   const deleteSubscriptionPlan = (id: string) => {
@@ -1020,6 +1055,15 @@ export function useCreatorStore() {
       saveState(STORAGE_KEYS.SUBSCRIPTION_PLANS, next);
       return next;
     });
+
+    // Async delete in PostgreSQL API
+    try {
+      fetch(`/api/subscriptions/plans/${id}`, {
+        method: 'DELETE'
+      }).catch((e) => console.warn('Background PostgreSQL plan delete sync:', e));
+    } catch (e) {
+      console.warn('API error:', e);
+    }
   };
 
   const subscribeToPlan = (params: {
@@ -1109,6 +1153,53 @@ export function useCreatorStore() {
         saveState(STORAGE_KEYS.SUBSCRIPTION_PAYMENTS, next);
         return next;
       });
+
+      // Async record payment in PostgreSQL API
+      try {
+        fetch('/api/subscriptions/payments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            subscription_id: newSub.id,
+            amount,
+            payment_status: 'success',
+            payment_method: params.paymentMethod || 'UPI',
+            transaction_id: rzpPayId,
+            creatorId: activeCreatorId,
+            planName: plan.name,
+            subscriberName: params.subscriberName,
+            subscriberEmail: params.subscriberEmail,
+            billingCycle: params.billingCycle
+          })
+        }).catch((e) => console.warn('Background PostgreSQL payment sync:', e));
+      } catch (e) {
+        console.warn('API error:', e);
+      }
+    }
+
+    // Async record subscription in PostgreSQL API
+    try {
+      fetch('/api/subscriptions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: newSub.userId,
+          plan_id: newSub.planId,
+          status: 'active',
+          start_date: currentStart,
+          renewal_date: currentEnd,
+          razorpay_subscription_id: rzpSubId,
+          creatorId: activeCreatorId,
+          planName: plan.name,
+          amount,
+          billingCycle: params.billingCycle,
+          userName: params.subscriberName,
+          userEmail: params.subscriberEmail,
+          userPhone: params.subscriberPhone
+        })
+      }).catch((e) => console.warn('Background PostgreSQL sub sync:', e));
+    } catch (e) {
+      console.warn('API error:', e);
     }
 
     return newSub;
@@ -1128,6 +1219,17 @@ export function useCreatorStore() {
       saveState(STORAGE_KEYS.SUBSCRIPTIONS, next);
       return next;
     });
+
+    // Async cancel in PostgreSQL API
+    try {
+      fetch('/api/subscriptions/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscriptionId, cancelAtPeriodEnd: !immediate })
+      }).catch((e) => console.warn('Background PostgreSQL cancel sync:', e));
+    } catch (e) {
+      console.warn('API error:', e);
+    }
   };
 
   const changeSubscriptionPlan = (
@@ -1156,6 +1258,17 @@ export function useCreatorStore() {
       saveState(STORAGE_KEYS.SUBSCRIPTIONS, next);
       return next;
     });
+
+    // Async upgrade/downgrade in PostgreSQL API
+    try {
+      fetch('/api/subscriptions/upgrade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscriptionId, newPlanId, newBillingCycle })
+      }).catch((e) => console.warn('Background PostgreSQL plan change sync:', e));
+    } catch (e) {
+      console.warn('API error:', e);
+    }
   };
 
   // Compute live creator MRR, ARR, Active Subscribers metrics

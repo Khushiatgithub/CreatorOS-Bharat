@@ -217,6 +217,42 @@ CREATE TABLE IF NOT EXISTS analytics (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 11. SUBSCRIPTION PLANS TABLE (Recurring Membership Tiers)
+CREATE TABLE IF NOT EXISTS subscription_plans (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    creator_id VARCHAR(64) NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    price NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+    billing_cycle VARCHAR(20) NOT NULL DEFAULT 'monthly' CHECK (billing_cycle IN ('monthly', 'yearly')),
+    cover_image TEXT,
+    benefits JSONB NOT NULL DEFAULT '[]'::jsonb,
+    is_popular BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 12. SUBSCRIPTIONS TABLE (Active Recurring Subscribers)
+CREATE TABLE IF NOT EXISTS subscriptions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id VARCHAR(64) NOT NULL,
+    plan_id UUID NOT NULL REFERENCES subscription_plans(id) ON DELETE CASCADE,
+    status VARCHAR(32) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'cancelled', 'expired', 'past_due', 'halted', 'pending')),
+    start_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    renewal_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    razorpay_subscription_id TEXT
+);
+
+-- 13. SUBSCRIPTION PAYMENTS TABLE (Recurring Charges & GST Invoices)
+CREATE TABLE IF NOT EXISTS subscription_payments (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    subscription_id UUID NOT NULL REFERENCES subscriptions(id) ON DELETE CASCADE,
+    amount NUMERIC(10, 2) NOT NULL,
+    payment_status VARCHAR(32) NOT NULL DEFAULT 'success' CHECK (payment_status IN ('success', 'failed', 'refunded')),
+    payment_method VARCHAR(64) NOT NULL DEFAULT 'UPI' CHECK (payment_method IN ('UPI', 'Card', 'Net Banking', 'Razorpay Autopay')),
+    transaction_id TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes for lightning fast queries
 CREATE INDEX IF NOT EXISTS idx_products_user ON products(user_id);
 CREATE INDEX IF NOT EXISTS idx_orders_user ON orders(user_id);
@@ -226,3 +262,12 @@ CREATE INDEX IF NOT EXISTS idx_bookings_user ON bookings(user_id);
 CREATE INDEX IF NOT EXISTS idx_appointments_user ON appointments(user_id);
 CREATE INDEX IF NOT EXISTS idx_proposals_campaign ON campaign_proposals(campaign_id);
 CREATE INDEX IF NOT EXISTS idx_analytics_user_date ON analytics(user_id, date);
+CREATE INDEX IF NOT EXISTS idx_sub_plans_creator ON subscription_plans(creator_id);
+CREATE INDEX IF NOT EXISTS idx_sub_plans_popular ON subscription_plans(is_popular);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_plan ON subscriptions(plan_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_renewal ON subscriptions(renewal_date);
+CREATE INDEX IF NOT EXISTS idx_sub_payments_sub ON subscription_payments(subscription_id);
+CREATE INDEX IF NOT EXISTS idx_sub_payments_tx ON subscription_payments(transaction_id);
+

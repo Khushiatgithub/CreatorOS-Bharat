@@ -16,18 +16,19 @@ import {
   BarChart3, 
   ShieldCheck, 
   Zap, 
-  ArrowUpRight,
-  User,
-  Users,
-  Crown,
-  LogOut
+  ArrowUpRight, 
+  User, 
+  Users, 
+  Crown, 
+  LogOut 
 } from 'lucide-react';
 import { SignOutButton, SignedIn } from '@clerk/nextjs';
 import { useCreatorStore } from '@/lib/store';
+import { formatINR } from '@/lib/gst';
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
-  { href: '/dashboard/memberships', label: 'Memberships', icon: Crown, badge: 'MRR', highlight: true },
+  { href: '/dashboard/memberships', label: 'Memberships', icon: Users, badge: 'MRR', highlight: true },
   { href: '/dashboard/community', label: 'Community Hub', icon: Users, badge: 'New' },
   { href: '/dashboard/storefront-builder', label: 'Storefront Builder', icon: Palette, badge: 'Live' },
   { href: '/dashboard/products', label: 'Digital Products', icon: FileText },
@@ -43,10 +44,22 @@ const NAV_ITEMS = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { activeCreator } = useCreatorStore();
+  const { activeCreator, subscriptionPlans } = useCreatorStore();
+
+  const goldPlan = subscriptionPlans.find((p) => p.name === 'Gold Membership' || p.isPopular) || {
+    name: 'Gold Membership',
+    monthlyPrice: 799,
+    tagline: 'Community • Courses • Live Q&A',
+    memberCount: 128,
+    badgeText: 'Popular'
+  };
+
+  const memberCount = goldPlan.memberCount || 128;
+  const monthlyPrice = goldPlan.monthlyPrice || 799;
+  const totalMRR = memberCount * monthlyPrice;
 
   return (
-    <aside className="w-64 shrink-0 hidden lg:flex flex-col border-r border-white/[0.08] bg-[#07090F]/90 backdrop-blur-2xl p-4 text-slate-200">
+    <aside className="w-64 shrink-0 hidden lg:flex flex-col border-r border-white/[0.08] bg-[#07090F]/90 backdrop-blur-2xl p-4 text-slate-200 overflow-y-auto no-scrollbar max-h-screen">
       
       {/* Creator Profile Mini Card - 20px rounded */}
       <div className="rounded-[20px] border border-white/[0.08] bg-[#0E1322]/80 p-3.5 mb-5 flex items-center gap-3 shadow-glass-subtle">
@@ -109,6 +122,73 @@ export default function Sidebar() {
           );
         })}
 
+        {/* ========================================================================= */}
+        {/* MEMBERSHIPS FEATURED SIDEBAR ITEM / WIDGET */}
+        {/* ========================================================================= */}
+        <div className="pt-4 pb-2 space-y-2.5">
+          {/* Header row: Memberships & Upgrade */}
+          <div className="flex items-center justify-between px-1">
+            <Link 
+              href="/dashboard/memberships" 
+              className="flex items-center gap-2 text-white font-bold text-xs hover:text-royal-400 transition"
+            >
+              <Users className="h-4 w-4 text-blue-500" />
+              <span>Memberships</span>
+            </Link>
+            <Link
+              href="/dashboard/memberships"
+              className="flex items-center gap-1 text-[11px] font-semibold text-sky-400 hover:text-sky-300 transition"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-sky-400" />
+              <span>Upgrade</span>
+            </Link>
+          </div>
+
+          {/* Action row: New Plan button */}
+          <div className="flex justify-end">
+            <Link
+              href="/dashboard/memberships"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-semibold transition shadow-sm"
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+              <span>New Plan</span>
+            </Link>
+          </div>
+
+          {/* Membership Plan Card */}
+          <Link
+            href="/dashboard/memberships"
+            className="block rounded-2xl border border-white/[0.12] bg-[#05070D] hover:border-royal-500/50 p-4 transition shadow-xl space-y-2.5 group relative"
+          >
+            <div className="flex items-center gap-2">
+              <h5 className="font-bold text-white text-sm group-hover:text-royal-300 transition">
+                {goldPlan.name}
+              </h5>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-950/90 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold">
+                {goldPlan.badgeText || 'Popular'}
+              </span>
+            </div>
+
+            <div className="text-xl font-extrabold text-white font-display">
+              ₹{monthlyPrice}/month
+            </div>
+
+            <p className="text-xs text-slate-200 font-medium leading-snug">
+              {goldPlan.tagline || 'Community • Courses • Live Q&A'}
+            </p>
+
+            <div className="flex items-center justify-between pt-2.5 border-t border-white/[0.08] text-xs">
+              <div className="flex items-center gap-1.5 text-slate-300 font-medium">
+                <Users className="h-3.5 w-3.5 text-slate-400" />
+                <span>{memberCount} Members</span>
+              </div>
+              <div className="font-extrabold text-white font-mono text-xs sm:text-sm">
+                ₹{formatINR(totalMRR)} MRR
+              </div>
+            </div>
+          </Link>
+        </div>
+
         <div className="pt-2 space-y-1">
           <Link
             href="/onboarding"
@@ -133,7 +213,7 @@ export default function Sidebar() {
       </div>
 
       {/* Instant IMPS Payout Status Box - 20px rounded */}
-      <div className="mt-auto space-y-2">
+      <div className="mt-auto space-y-2 pt-3">
         <div className="rounded-[20px] border border-royal-500/25 bg-gradient-to-b from-[#0E1529] to-[#080C18] p-3.5 text-xs shadow-glass-subtle">
           <div className="flex items-center justify-between text-royal-400 font-semibold text-[11px] mb-1">
             <span className="flex items-center gap-1.5">

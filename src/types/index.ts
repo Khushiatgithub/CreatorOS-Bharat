@@ -497,4 +497,88 @@ export interface Community {
   createdAt: string;
 }
 
+// ============================================================================
+// MEMBERSHIP SUBSCRIPTION SYSTEM TYPES
+// ============================================================================
+
+export type SubscriptionPlanType = 'free' | 'paid' | 'invite_only';
+export type SubscriptionBillingCycle = 'monthly' | 'yearly';
+export type SubscriptionStatus = 'active' | 'cancelled' | 'past_due' | 'paused' | 'expired';
+
+export interface SubscriptionPlan {
+  id: string;
+  creatorId: string;
+  name: string;
+  slug: string;
+  tagline: string;
+  description: string;
+  coverUrl?: string;
+  type: SubscriptionPlanType;
+  monthlyPrice: number; // ₹ INR (0 for free)
+  yearlyPrice: number;  // ₹ INR (with discount)
+  benefits: string[];
+  isPopular?: boolean;
+  isActive: boolean;
+  memberCount: number;
+  razorpayPlanIdMonthly?: string;
+  razorpayPlanIdYearly?: string;
+  badgeText?: string;
+  badgeColor?: string;
+  inviteCode?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Subscription {
+  id: string;
+  creatorId: string;
+  planId: string;
+  planName: string;
+  planType: SubscriptionPlanType;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  userPhone: string;
+  userAvatar?: string;
+  billingCycle: SubscriptionBillingCycle;
+  amount: number;
+  status: SubscriptionStatus;
+  razorpaySubscriptionId?: string;
+  razorpayPaymentId?: string;
+  currentPeriodStart: string;
+  currentPeriodEnd: string;
+  cancelAtPeriodEnd: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SubscriptionPayment {
+  id: string;
+  subscriptionId: string;
+  creatorId: string;
+  planName: string;
+  subscriberName: string;
+  subscriberEmail: string;
+  amount: number;
+  currency: string;
+  status: 'paid' | 'failed' | 'refunded';
+  paymentMethod: 'UPI' | 'Card' | 'Netbanking' | 'Razorpay Autopay';
+  razorpayPaymentId: string;
+  razorpayInvoiceId?: string;
+  invoiceNumber: string;
+  billingCycle: SubscriptionBillingCycle;
+  createdAt: string;
+}
+
+export interface MembershipMetrics {
+  mrr: number;
+  arr: number;
+  activeSubscribers: number;
+  churnRate: number;
+  arpu: number;
+  newThisMonth: number;
+  growthPercentage: number;
+}
+
+
 

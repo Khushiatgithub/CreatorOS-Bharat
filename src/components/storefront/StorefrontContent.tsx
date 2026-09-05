@@ -39,6 +39,7 @@ import {
 } from 'lucide-react';
 import { Creator, StoreTheme, DigitalProduct, Course, BookingService, ProductType } from '@/types';
 import UPICheckoutModal from '@/components/checkout/UPICheckoutModal';
+import MembershipPricingSection from '@/components/storefront/MembershipPricingSection';
 import { AnimatedCounter, RippleButton, HoverCard } from '@/components/ui/motion';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -123,7 +124,7 @@ export default function StorefrontContent({
   bookingServices,
   isMobilePreview = false
 }: StorefrontContentProps) {
-  const [activeTab, setActiveTab] = useState<'all' | 'sessions' | 'courses' | 'products' | 'communities' | 'reviews'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'memberships' | 'sessions' | 'courses' | 'products' | 'communities' | 'reviews'>('all');
   
   // Checkout modal
   const [selectedItemForCheckout, setSelectedItemForCheckout] = useState<{
@@ -408,10 +409,11 @@ export default function StorefrontContent({
         <div id="offerings-section" className="scroll-mt-16 flex items-center gap-1.5 p-1 rounded-[20px] bg-white/[0.04] border border-white/[0.08] mb-8 overflow-x-auto no-scrollbar">
           {[
             { id: 'all', label: `All Offerings (${products.length + courses.length + bookingServices.length})` },
+            { id: 'memberships', label: 'VIP Memberships' },
             { id: 'sessions', label: `1:1 Sessions (${bookingServices.length})` },
             { id: 'courses', label: `Courses (${courses.length})` },
             { id: 'products', label: `Digital Notes (${products.length})` },
-            { id: 'communities', label: 'Communities (VIP)' },
+            { id: 'communities', label: 'Free Community' },
             { id: 'reviews', label: `Reviews (${reviewsList.length})` },
           ].map((tab) => (
             <button
@@ -427,6 +429,22 @@ export default function StorefrontContent({
             </button>
           ))}
         </div>
+
+        {/* ========================================================================= */}
+        {/* VIP MEMBERSHIP SUBSCRIPTION TIERS */}
+        {/* ========================================================================= */}
+        <AnimatePresence mode="wait">
+          {(activeTab === 'all' || activeTab === 'memberships') && (
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              className="mb-12"
+            >
+              <MembershipPricingSection creator={creator} theme={theme} />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* ========================================================================= */}
         {/* 4. AVAILABLE SESSIONS & BOOK NOW CTA */}

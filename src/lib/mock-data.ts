@@ -14,7 +14,10 @@ import {
   CommunityMember,
   CommunityTier,
   CommunityChannel,
-  CommunityComment
+  CommunityComment,
+  SubscriptionPlan,
+  Subscription,
+  SubscriptionPayment
 } from '@/types';
 
 export const THEMES: StoreTheme[] = [
@@ -2307,4 +2310,277 @@ VIP members can drop a comment with their resume link or DM me on WhatsApp direc
     ]
   }
 ];
+
+// ============================================================================
+// MEMBERSHIP SUBSCRIPTION SYSTEM MOCK DATA
+// ============================================================================
+
+export const INITIAL_SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
+  {
+    id: 'plan_free_tier',
+    creatorId: 'creator_aarav',
+    name: 'Free Community Access',
+    slug: 'free-community',
+    tagline: 'Get started with open engineering discussions & community AMAs.',
+    description: 'Perfect for engineering students and aspiring developers looking to stay up to date with tech trends and placement tips.',
+    coverUrl: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=800&q=80',
+    type: 'free',
+    monthlyPrice: 0,
+    yearlyPrice: 0,
+    benefits: [
+      'Access to #general & #announcements channels',
+      'Monthly public YouTube live stream Q&A',
+      'Weekly tech newsletter & curated links',
+      'Community discussion board participation'
+    ],
+    isPopular: false,
+    isActive: true,
+    memberCount: 840,
+    badgeText: 'Free Forever',
+    createdAt: '2025-01-01',
+    updatedAt: '2025-01-01'
+  },
+  {
+    id: 'plan_vip_pro',
+    creatorId: 'creator_aarav',
+    name: 'VIP Inner Circle Pro',
+    slug: 'vip-inner-circle',
+    tagline: 'Fast-track your FAANG & tier-1 product startup placements.',
+    description: 'High-impact monthly subscription with 1:1 resume tear-downs, weekly live mock interview whiteboarding, system design blueprints, and private WhatsApp community.',
+    coverUrl: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80',
+    type: 'paid',
+    monthlyPrice: 799,
+    yearlyPrice: 7999, // Save ~17% (2 months free)
+    benefits: [
+      'Private VIP Discord & WhatsApp Channels',
+      'Bi-Weekly Live System Design Whiteboarding Sessions',
+      '1x Guaranteed 1:1 Resume & LinkedIn Profile Review',
+      'Full Access to 18 DSA Master Patterns & Notion Templates',
+      'Direct Employee Referral Submissions to 40+ Tech Unicorns',
+      'High-Priority Q&A with Sub-5 Minute Response Time'
+    ],
+    isPopular: true,
+    isActive: true,
+    memberCount: 186,
+    razorpayPlanIdMonthly: 'plan_rzp_monthly_799',
+    razorpayPlanIdYearly: 'plan_rzp_yearly_7999',
+    badgeText: 'Most Popular',
+    badgeColor: '#2563EB',
+    createdAt: '2025-01-10',
+    updatedAt: '2025-01-10'
+  },
+  {
+    id: 'plan_founders_elite',
+    creatorId: 'creator_aarav',
+    name: "Founder's Elite Guild",
+    slug: 'founders-elite',
+    tagline: 'Direct 1:1 architectural mentorship and career accelerator.',
+    description: 'Exclusive cohort limited to 25 senior engineers and tech startup founders looking for direct weekly 1:1 advisory, architecture code reviews, and angel network access.',
+    coverUrl: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=800&q=80',
+    type: 'invite_only',
+    monthlyPrice: 2499,
+    yearlyPrice: 24999,
+    benefits: [
+      'Direct WhatsApp DM access with Aarav Sharma',
+      'Monthly 1-on-1 45-Min Private Strategy & Architecture Call',
+      'Full Code Reviews for your side projects & micro-SaaS',
+      'Angel Investor & Founder Syndicate Intros',
+      'All VIP Pro perks included automatically',
+      'VIP badge & verified creator advisory pass'
+    ],
+    isPopular: false,
+    isActive: true,
+    memberCount: 22,
+    razorpayPlanIdMonthly: 'plan_rzp_monthly_2499',
+    razorpayPlanIdYearly: 'plan_rzp_yearly_24999',
+    badgeText: 'Invite Only',
+    badgeColor: '#F59E0B',
+    inviteCode: 'BHARAT_ELITE_2026',
+    createdAt: '2025-01-15',
+    updatedAt: '2025-01-15'
+  }
+];
+
+export const INITIAL_SUBSCRIPTIONS: Subscription[] = [
+  {
+    id: 'sub_101',
+    creatorId: 'creator_aarav',
+    planId: 'plan_vip_pro',
+    planName: 'VIP Inner Circle Pro',
+    planType: 'paid',
+    userId: 'user_rohan',
+    userName: 'Rohan Mehta',
+    userEmail: 'rohan.mehta@gmail.com',
+    userPhone: '+91 98234 56789',
+    userAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
+    billingCycle: 'monthly',
+    amount: 799,
+    status: 'active',
+    razorpaySubscriptionId: 'sub_RzpLive101Aarav',
+    razorpayPaymentId: 'pay_Rzp987162534',
+    currentPeriodStart: '2026-08-15',
+    currentPeriodEnd: '2026-09-15',
+    cancelAtPeriodEnd: false,
+    createdAt: '2026-01-15',
+    updatedAt: '2026-08-15'
+  },
+  {
+    id: 'sub_102',
+    creatorId: 'creator_aarav',
+    planId: 'plan_vip_pro',
+    planName: 'VIP Inner Circle Pro',
+    planType: 'paid',
+    userId: 'user_ananya',
+    userName: 'Ananya Verma',
+    userEmail: 'ananya.code@outlook.com',
+    userPhone: '+91 97123 45678',
+    userAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80',
+    billingCycle: 'yearly',
+    amount: 7999,
+    status: 'active',
+    razorpaySubscriptionId: 'sub_RzpLive102Ananya',
+    razorpayPaymentId: 'pay_Rzp987162535',
+    currentPeriodStart: '2026-03-01',
+    currentPeriodEnd: '2027-03-01',
+    cancelAtPeriodEnd: false,
+    createdAt: '2026-03-01',
+    updatedAt: '2026-03-01'
+  },
+  {
+    id: 'sub_103',
+    creatorId: 'creator_aarav',
+    planId: 'plan_founders_elite',
+    planName: "Founder's Elite Guild",
+    planType: 'invite_only',
+    userId: 'user_siddharth',
+    userName: 'Siddharth Rao',
+    userEmail: 'sid.rao@techscale.in',
+    userPhone: '+91 99887 76655',
+    userAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80',
+    billingCycle: 'monthly',
+    amount: 2499,
+    status: 'active',
+    razorpaySubscriptionId: 'sub_RzpLive103Sid',
+    razorpayPaymentId: 'pay_Rzp987162536',
+    currentPeriodStart: '2026-08-20',
+    currentPeriodEnd: '2026-09-20',
+    cancelAtPeriodEnd: false,
+    createdAt: '2026-02-20',
+    updatedAt: '2026-08-20'
+  },
+  {
+    id: 'sub_104',
+    creatorId: 'creator_aarav',
+    planId: 'plan_vip_pro',
+    planName: 'VIP Inner Circle Pro',
+    planType: 'paid',
+    userId: 'user_kavita',
+    userName: 'Kavita Sundaram',
+    userEmail: 'kavita.sundaram@gmail.com',
+    userPhone: '+91 98450 12345',
+    userAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80',
+    billingCycle: 'monthly',
+    amount: 799,
+    status: 'active',
+    razorpaySubscriptionId: 'sub_RzpLive104Kavita',
+    razorpayPaymentId: 'pay_Rzp987162537',
+    currentPeriodStart: '2026-08-28',
+    currentPeriodEnd: '2026-09-28',
+    cancelAtPeriodEnd: false,
+    createdAt: '2026-04-28',
+    updatedAt: '2026-08-28'
+  },
+  {
+    id: 'sub_105',
+    creatorId: 'creator_aarav',
+    planId: 'plan_free_tier',
+    planName: 'Free Community Access',
+    planType: 'free',
+    userId: 'user_vikram',
+    userName: 'Vikram Joshi',
+    userEmail: 'vikram.joshi@bits.ac.in',
+    userPhone: '+91 99112 23344',
+    userAvatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=150&q=80',
+    billingCycle: 'monthly',
+    amount: 0,
+    status: 'active',
+    currentPeriodStart: '2026-01-10',
+    currentPeriodEnd: '2027-01-10',
+    cancelAtPeriodEnd: false,
+    createdAt: '2026-01-10',
+    updatedAt: '2026-01-10'
+  }
+];
+
+export const INITIAL_SUBSCRIPTION_PAYMENTS: SubscriptionPayment[] = [
+  {
+    id: 'spay_101',
+    subscriptionId: 'sub_101',
+    creatorId: 'creator_aarav',
+    planName: 'VIP Inner Circle Pro',
+    subscriberName: 'Rohan Mehta',
+    subscriberEmail: 'rohan.mehta@gmail.com',
+    amount: 799,
+    currency: 'INR',
+    status: 'paid',
+    paymentMethod: 'Razorpay Autopay',
+    razorpayPaymentId: 'pay_Rzp987162534',
+    razorpayInvoiceId: 'inv_Rzp987162534',
+    invoiceNumber: 'INV-SUB-2026-0089',
+    billingCycle: 'monthly',
+    createdAt: '2026-08-15 10:30 AM'
+  },
+  {
+    id: 'spay_102',
+    subscriptionId: 'sub_102',
+    creatorId: 'creator_aarav',
+    planName: 'VIP Inner Circle Pro',
+    subscriberName: 'Ananya Verma',
+    subscriberEmail: 'ananya.code@outlook.com',
+    amount: 7999,
+    currency: 'INR',
+    status: 'paid',
+    paymentMethod: 'UPI',
+    razorpayPaymentId: 'pay_Rzp987162535',
+    razorpayInvoiceId: 'inv_Rzp987162535',
+    invoiceNumber: 'INV-SUB-2026-0042',
+    billingCycle: 'yearly',
+    createdAt: '2026-03-01 04:15 PM'
+  },
+  {
+    id: 'spay_103',
+    subscriptionId: 'sub_103',
+    creatorId: 'creator_aarav',
+    planName: "Founder's Elite Guild",
+    subscriberName: 'Siddharth Rao',
+    subscriberEmail: 'sid.rao@techscale.in',
+    amount: 2499,
+    currency: 'INR',
+    status: 'paid',
+    paymentMethod: 'Razorpay Autopay',
+    razorpayPaymentId: 'pay_Rzp987162536',
+    razorpayInvoiceId: 'inv_Rzp987162536',
+    invoiceNumber: 'INV-SUB-2026-0091',
+    billingCycle: 'monthly',
+    createdAt: '2026-08-20 11:00 AM'
+  },
+  {
+    id: 'spay_104',
+    subscriptionId: 'sub_104',
+    creatorId: 'creator_aarav',
+    planName: 'VIP Inner Circle Pro',
+    subscriberName: 'Kavita Sundaram',
+    subscriberEmail: 'kavita.sundaram@gmail.com',
+    amount: 799,
+    currency: 'INR',
+    status: 'paid',
+    paymentMethod: 'Card',
+    razorpayPaymentId: 'pay_Rzp987162537',
+    razorpayInvoiceId: 'inv_Rzp987162537',
+    invoiceNumber: 'INV-SUB-2026-0095',
+    billingCycle: 'monthly',
+    createdAt: '2026-08-28 02:45 PM'
+  }
+];
+
 

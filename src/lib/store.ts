@@ -17,7 +17,11 @@ import {
   CommunityPost,
   CommunityMember,
   CommunityComment,
-  CommunityTier
+  CommunityTier,
+  SubscriptionPlan,
+  Subscription,
+  SubscriptionPayment,
+  MembershipMetrics
 } from '@/types';
 import {
   INITIAL_CREATORS,
@@ -32,6 +36,9 @@ import {
   INITIAL_COMMUNITIES,
   INITIAL_COMMUNITY_POSTS,
   INITIAL_COMMUNITY_MEMBERS,
+  INITIAL_SUBSCRIPTION_PLANS,
+  INITIAL_SUBSCRIPTIONS,
+  INITIAL_SUBSCRIPTION_PAYMENTS,
   THEMES
 } from './mock-data';
 import { calculateGST, SAC_CODES } from './gst';
@@ -51,7 +58,10 @@ const STORAGE_KEYS = {
   COMMUNITIES: 'creatoros_communities',
   ACTIVE_COMMUNITY_ID: 'creatoros_active_community_id',
   COMMUNITY_POSTS: 'creatoros_community_posts',
-  COMMUNITY_MEMBERS: 'creatoros_community_members'
+  COMMUNITY_MEMBERS: 'creatoros_community_members',
+  SUBSCRIPTION_PLANS: 'creatoros_subscription_plans',
+  SUBSCRIPTIONS: 'creatoros_subscriptions',
+  SUBSCRIPTION_PAYMENTS: 'creatoros_subscription_payments'
 };
 
 // Initial state loader with safe hydration
@@ -71,6 +81,9 @@ export function useCreatorStore() {
   const [activeCommunityId, setActiveCommunityId] = useState<string>('comm_tech_faang');
   const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>(INITIAL_COMMUNITY_POSTS);
   const [communityMembers, setCommunityMembers] = useState<CommunityMember[]>(INITIAL_COMMUNITY_MEMBERS);
+  const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>(INITIAL_SUBSCRIPTION_PLANS);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>(INITIAL_SUBSCRIPTIONS);
+  const [subscriptionPayments, setSubscriptionPayments] = useState<SubscriptionPayment[]>(INITIAL_SUBSCRIPTION_PAYMENTS);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Load from localStorage on client mount
@@ -120,6 +133,15 @@ export function useCreatorStore() {
 
       const savedMembers = localStorage.getItem(STORAGE_KEYS.COMMUNITY_MEMBERS);
       if (savedMembers) setCommunityMembers(JSON.parse(savedMembers));
+
+      const savedSubPlans = localStorage.getItem(STORAGE_KEYS.SUBSCRIPTION_PLANS);
+      if (savedSubPlans) setSubscriptionPlans(JSON.parse(savedSubPlans));
+
+      const savedSubs = localStorage.getItem(STORAGE_KEYS.SUBSCRIPTIONS);
+      if (savedSubs) setSubscriptions(JSON.parse(savedSubs));
+
+      const savedSubPayments = localStorage.getItem(STORAGE_KEYS.SUBSCRIPTION_PAYMENTS);
+      if (savedSubPayments) setSubscriptionPayments(JSON.parse(savedSubPayments));
     } catch (e) {
       console.warn('LocalStorage error or not available', e);
     } finally {
@@ -950,6 +972,213 @@ export function useCreatorStore() {
     });
   };
 
+  // ============================================================================
+  // MEMBERSHIP SUBSCRIPTION SYSTEM ACTIONS & METRICS
+  // ============================================================================
+
+  const createSubscriptionPlan = (
+    newPlan: Omit<SubscriptionPlan, 'id' | 'creatorId' | 'createdAt' | 'updatedAt' | 'memberCount'>
+  ) => {
+    const id = `plan_${Date.now()}`;
+    const now = new Date().toISOString().split('T')[0];
+    const plan: SubscriptionPlan = {
+      ...newPlan,
+      id,
+      creatorId: activeCreatorId,
+      memberCount: 0,
+      createdAt: now,
+      updatedAt: now
+    };
+
+    setSubscriptionPlans((prev) => {
+      const next = [plan, ...prev];
+      saveState(STORAGE_KEYS.SUBSCRIPTION_PLANS, next);
+      return next;
+    });
+
+    return plan;
+  };
+
+  const updateSubscriptionPlan = (id: string, updates: Partial<SubscriptionPlan>) => {
+    setSubscriptionPlans((prev) => {
+      const next = prev.map((p) => {
+        if (p.id !== id) return p;
+        return {
+          ...p,
+          ...updates,
+          updatedAt: new Date().toISOString().split('T')[0]
+        };
+      });
+      saveState(STORAGE_KEYS.SUBSCRIPTION_PLANS, next);
+      return next;
+    });
+  };
+
+  const deleteSubscriptionPlan = (id: string) => {
+    setSubscriptionPlans((prev) => {
+      const next = prev.filter((p) => p.id !== id);
+      saveState(STORAGE_KEYS.SUBSCRIPTION_PLANS, next);
+      return next;
+    });
+  };
+
+  const subscribeToPlan = (params: {
+    planId: string;
+    billingCycle: 'monthly' | 'yearly';
+    subscriberName: string;
+    subscriberEmail: string;
+    subscriberPhone?: string;
+    paymentMethod?: 'UPI' | 'Card' | 'Netbanking' | 'Razorpay Autopay';
+    razorpayPaymentId?: string;
+    razorpaySubscriptionId?: string;
+  }) => {
+    const plan = subscriptionPlans.find((p) => p.id === params.planId) || subscriptionPlans[0];
+    const amount = params.billingCycle === 'yearly' ? plan.yearlyPrice : plan.monthlyPrice;
+
+    const now = new Date();
+    const currentStart = now.toISOString().split('T')[0];
+    const daysToAdd = params.billingCycle === 'yearly' ? 365 : 30;
+    const endDate = new Date(now.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
+    const currentEnd = endDate.toISOString().split('T')[0];
+
+    const rzpPayId = params.razorpayPaymentId || `pay_rzp_${Math.floor(100000000 + Math.random() * 900000000)}`;
+    const rzpSubId = params.razorpaySubscriptionId || `sub_rzp_${Math.floor(100000000 + Math.random() * 900000000)}`;
+
+    const newSub: Subscription = {
+      id: `sub_${Date.now()}`,
+      creatorId: activeCreatorId,
+      planId: plan.id,
+      planName: plan.name,
+      planType: plan.type,
+      userId: `user_${Date.now()}`,
+      userName: params.subscriberName,
+      userEmail: params.subscriberEmail,
+      userPhone: params.subscriberPhone || '+91 98000 00000',
+      userAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+      billingCycle: params.billingCycle,
+      amount,
+      status: 'active',
+      razorpaySubscriptionId: rzpSubId,
+      razorpayPaymentId: rzpPayId,
+      currentPeriodStart: currentStart,
+      currentPeriodEnd: currentEnd,
+      cancelAtPeriodEnd: false,
+      createdAt: 'Just now',
+      updatedAt: 'Just now'
+    };
+
+    setSubscriptions((prev) => {
+      const next = [newSub, ...prev];
+      saveState(STORAGE_KEYS.SUBSCRIPTIONS, next);
+      return next;
+    });
+
+    // Update memberCount in plan
+    setSubscriptionPlans((prev) => {
+      const next = prev.map((p) => {
+        if (p.id !== plan.id) return p;
+        return { ...p, memberCount: p.memberCount + 1 };
+      });
+      saveState(STORAGE_KEYS.SUBSCRIPTION_PLANS, next);
+      return next;
+    });
+
+    // Create payment receipt
+    if (amount > 0) {
+      const invoiceNumber = `INV-SUB-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const newPay: SubscriptionPayment = {
+        id: `spay_${Date.now()}`,
+        subscriptionId: newSub.id,
+        creatorId: activeCreatorId,
+        planName: plan.name,
+        subscriberName: params.subscriberName,
+        subscriberEmail: params.subscriberEmail,
+        amount,
+        currency: 'INR',
+        status: 'paid',
+        paymentMethod: params.paymentMethod || 'Razorpay Autopay',
+        razorpayPaymentId: rzpPayId,
+        razorpayInvoiceId: `inv_${rzpPayId.slice(-8)}`,
+        invoiceNumber,
+        billingCycle: params.billingCycle,
+        createdAt: 'Just now'
+      };
+
+      setSubscriptionPayments((prev) => {
+        const next = [newPay, ...prev];
+        saveState(STORAGE_KEYS.SUBSCRIPTION_PAYMENTS, next);
+        return next;
+      });
+    }
+
+    return newSub;
+  };
+
+  const cancelSubscription = (subscriptionId: string, immediate: boolean = false) => {
+    setSubscriptions((prev) => {
+      const next = prev.map((s) => {
+        if (s.id !== subscriptionId) return s;
+        return {
+          ...s,
+          status: immediate ? ('cancelled' as const) : s.status,
+          cancelAtPeriodEnd: !immediate,
+          updatedAt: 'Just now'
+        };
+      });
+      saveState(STORAGE_KEYS.SUBSCRIPTIONS, next);
+      return next;
+    });
+  };
+
+  const changeSubscriptionPlan = (
+    subscriptionId: string,
+    newPlanId: string,
+    newBillingCycle: 'monthly' | 'yearly' = 'monthly'
+  ) => {
+    const newPlan = subscriptionPlans.find((p) => p.id === newPlanId);
+    if (!newPlan) return;
+
+    const newAmount = newBillingCycle === 'yearly' ? newPlan.yearlyPrice : newPlan.monthlyPrice;
+
+    setSubscriptions((prev) => {
+      const next = prev.map((s) => {
+        if (s.id !== subscriptionId) return s;
+        return {
+          ...s,
+          planId: newPlan.id,
+          planName: newPlan.name,
+          planType: newPlan.type,
+          amount: newAmount,
+          billingCycle: newBillingCycle,
+          updatedAt: 'Just now'
+        };
+      });
+      saveState(STORAGE_KEYS.SUBSCRIPTIONS, next);
+      return next;
+    });
+  };
+
+  // Compute live creator MRR, ARR, Active Subscribers metrics
+  const activeSubsForCreator = subscriptions.filter(
+    (s) => s.creatorId === activeCreatorId && s.status === 'active'
+  );
+
+  const calculatedMRR = activeSubsForCreator.reduce((acc, sub) => {
+    if (sub.planType === 'free') return acc;
+    const monthlyVal = sub.billingCycle === 'yearly' ? Math.round(sub.amount / 12) : sub.amount;
+    return acc + monthlyVal;
+  }, 0);
+
+  const membershipMetrics: MembershipMetrics = {
+    mrr: calculatedMRR,
+    arr: calculatedMRR * 12,
+    activeSubscribers: activeSubsForCreator.length,
+    churnRate: 1.8,
+    arpu: activeSubsForCreator.length > 0 ? Math.round(calculatedMRR / activeSubsForCreator.length) : 0,
+    newThisMonth: activeSubsForCreator.filter((s) => s.createdAt.includes('2026') || s.createdAt.includes('Just now')).length,
+    growthPercentage: 18.4
+  };
+
   // Reset demo data
   const resetDemoData = () => {
     setCreators(INITIAL_CREATORS);
@@ -965,6 +1194,9 @@ export function useCreatorStore() {
     setActiveCommunityId('comm_tech_faang');
     setCommunityPosts(INITIAL_COMMUNITY_POSTS);
     setCommunityMembers(INITIAL_COMMUNITY_MEMBERS);
+    setSubscriptionPlans(INITIAL_SUBSCRIPTION_PLANS);
+    setSubscriptions(INITIAL_SUBSCRIPTIONS);
+    setSubscriptionPayments(INITIAL_SUBSCRIPTION_PAYMENTS);
     setAppointments([]);
     if (typeof window !== 'undefined') {
       localStorage.clear();
@@ -999,6 +1231,14 @@ export function useCreatorStore() {
     allCommunityPosts: communityPosts,
     communityMembers: communityMembers.filter((m) => m.communityId === activeCommunityId),
     allCommunityMembers: communityMembers,
+    // Membership Subscriptions state & metrics
+    subscriptionPlans: subscriptionPlans.filter((p) => p.creatorId === activeCreatorId),
+    allSubscriptionPlans: subscriptionPlans,
+    subscriptions: subscriptions.filter((s) => s.creatorId === activeCreatorId),
+    allSubscriptions: subscriptions,
+    subscriptionPayments: subscriptionPayments.filter((p) => p.creatorId === activeCreatorId),
+    allSubscriptionPayments: subscriptionPayments,
+    membershipMetrics,
     // Actions
     updateCreator,
     switchActiveCreator,
@@ -1026,6 +1266,13 @@ export function useCreatorStore() {
     pinPost,
     lockPost,
     deletePost,
-    moderateMember
+    moderateMember,
+    // Membership Subscription Actions
+    createSubscriptionPlan,
+    updateSubscriptionPlan,
+    deleteSubscriptionPlan,
+    subscribeToPlan,
+    cancelSubscription,
+    changeSubscriptionPlan
   };
 }

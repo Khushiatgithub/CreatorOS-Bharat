@@ -19,6 +19,7 @@ import {
   ArrowUpRight,
   User,
   Users,
+  Crown,
   LogOut
 } from 'lucide-react';
 import { SignOutButton, SignedIn } from '@clerk/nextjs';
@@ -26,13 +27,14 @@ import { useCreatorStore } from '@/lib/store';
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
-  { href: '/dashboard/community', label: 'Community Hub', icon: Users, badge: 'New', highlight: true },
+  { href: '/dashboard/memberships', label: 'Memberships', icon: Crown, badge: 'MRR', highlight: true },
+  { href: '/dashboard/community', label: 'Community Hub', icon: Users, badge: 'New' },
   { href: '/dashboard/storefront-builder', label: 'Storefront Builder', icon: Palette, badge: 'Live' },
   { href: '/dashboard/products', label: 'Digital Products', icon: FileText },
   { href: '/dashboard/courses', label: 'Courses & Cohorts', icon: Video },
   { href: '/dashboard/bookings', label: '1:1 Bookings', icon: Calendar },
   { href: '/dashboard/whatsapp', label: 'WhatsApp Automation', icon: MessageSquare, badge: 'Auto' },
-  { href: '/dashboard/media-kit', label: 'AI Media Kit', icon: Sparkles, highlight: true },
+  { href: '/dashboard/media-kit', label: 'AI Media Kit', icon: Sparkles },
   { href: '/dashboard/marketplace', label: 'Brand Marketplace', icon: Briefcase, badge: 'Deals' },
   { href: '/dashboard/gst-invoices', label: 'GST Invoices', icon: Receipt },
   { href: '/dashboard/analytics', label: 'Analytics & Payouts', icon: BarChart3 },

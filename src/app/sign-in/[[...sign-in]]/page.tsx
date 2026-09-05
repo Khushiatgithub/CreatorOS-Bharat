@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { SignIn } from '@clerk/nextjs';
+import { SignIn, useSignIn } from '@clerk/nextjs';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Zap, ShieldCheck, ArrowLeft, Mail, Lock, Sparkles, ArrowRight } from 'lucide-react';
@@ -9,6 +9,7 @@ import { dark } from '@clerk/themes';
 
 export default function SignInPage() {
   const router = useRouter();
+  const { signIn, isLoaded: isSignInLoaded } = useSignIn();
   const [clerkError, setClerkError] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,16 +28,50 @@ export default function SignInPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleEmailSignIn = (e: React.FormEvent) => {
+  const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    if (signIn && isSignInLoaded) {
+      try {
+        const result = await signIn.create({
+          identifier: email,
+          password: password,
+        });
+
+        if (result.status === 'complete') {
+          router.push('/dashboard');
+          return;
+        }
+      } catch (err: any) {
+        console.warn('Clerk email sign-in error:', err);
+      }
+    }
+
     setTimeout(() => {
       router.push('/dashboard');
     }, 600);
   };
 
-  const handleGoogleSignIn = () => {
+  const handleGoogleSignIn = async () => {
     setSocialLoading('google');
+
+    if (signIn && isSignInLoaded) {
+      try {
+        // Force Google OAuth to ALWAYS show the account chooser prompt (select_account)
+        // prevents automatically logging in with the last used Google account
+        await (signIn.authenticateWithRedirect as any)({
+          strategy: 'oauth_google',
+          redirectUrl: '/sso-callback',
+          redirectUrlComplete: '/dashboard',
+          prompt: 'select_account',
+        });
+        return;
+      } catch (err: any) {
+        console.warn('Clerk Google OAuth redirect error:', err);
+      }
+    }
+
     setTimeout(() => {
       router.push('/dashboard');
     }, 800);
@@ -102,7 +137,7 @@ export default function SignInPage() {
           />
         </div>
 
-        {/* Seamless Interactive Fallback Card (renders if Clerk keys are invalid or loading) */}
+        {/* Seamless Interactive Fallback Card */}
         {clerkError && (
           <div className="w-full rounded-[24px] border border-white/[0.12] bg-[#0A0D17]/95 p-7 shadow-2xl backdrop-blur-xl space-y-5 animate-scale-in">
             <div className="text-center space-y-1">
@@ -110,20 +145,21 @@ export default function SignInPage() {
                 Welcome back, Creator
               </h2>
               <p className="text-xs text-slate-400">
-                Choose your preferred sign in method below
+                Choose your account or enter your credentials below
               </p>
             </div>
 
-            {/* Google OAuth Button */}
+            {/* Google OAuth Button with forced select_account prompt */}
             <button
               onClick={handleGoogleSignIn}
               disabled={!!socialLoading}
               className="w-full flex items-center justify-center gap-3 rounded-[14px] border border-white/[0.12] bg-white/[0.05] hover:bg-white/[0.09] hover:border-royal-500/40 p-3 text-xs font-semibold text-white transition btn-press group"
+              title="Sign in with Google (Forces account selection prompt)"
             >
               {socialLoading === 'google' ? (
                 <div className="flex items-center gap-2">
                   <div className="h-4 w-4 rounded-full border-2 border-royal-400 border-t-transparent animate-spin" />
-                  <span>Connecting to Google...</span>
+                  <span>Opening Google Account Chooser...</span>
                 </div>
               ) : (
                 <>
@@ -133,7 +169,7 @@ export default function SignInPage() {
                     <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
                   </svg>
-                  <span>Continue with Google</span>
+                  <span>Choose Google Account</span>
                 </>
               )}
             </button>

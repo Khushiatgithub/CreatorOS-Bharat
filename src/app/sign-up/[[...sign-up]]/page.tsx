@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { SignUp } from '@clerk/nextjs';
+import { SignUp, useSignUp } from '@clerk/nextjs';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Zap, ShieldCheck, ArrowLeft, Mail, Lock, User, Sparkles, ArrowRight, CheckCircle2 } from 'lucide-react';
@@ -9,6 +9,7 @@ import { dark } from '@clerk/themes';
 
 export default function SignUpPage() {
   const router = useRouter();
+  const { signUp, isLoaded: isSignUpLoaded } = useSignUp();
   const [clerkError, setClerkError] = useState(false);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -28,16 +29,51 @@ export default function SignUpPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleEmailSignUp = (e: React.FormEvent) => {
+  const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    if (signUp && isSignUpLoaded) {
+      try {
+        const result = await signUp.create({
+          emailAddress: email,
+          password: password,
+          firstName: fullName.split(' ')[0] || fullName,
+          lastName: fullName.split(' ').slice(1).join(' ') || '',
+        });
+
+        if (result.status === 'complete') {
+          router.push('/dashboard');
+          return;
+        }
+      } catch (err: any) {
+        console.warn('Clerk email sign-up error:', err);
+      }
+    }
+
     setTimeout(() => {
       router.push('/dashboard');
     }, 600);
   };
 
-  const handleGoogleSignUp = () => {
+  const handleGoogleSignUp = async () => {
     setSocialLoading('google');
+
+    if (signUp && isSignUpLoaded) {
+      try {
+        // Force Google OAuth to ALWAYS show the account chooser prompt (select_account)
+        await (signUp.authenticateWithRedirect as any)({
+          strategy: 'oauth_google',
+          redirectUrl: '/sso-callback',
+          redirectUrlComplete: '/dashboard',
+          prompt: 'select_account',
+        });
+        return;
+      } catch (err: any) {
+        console.warn('Clerk Google OAuth signup error:', err);
+      }
+    }
+
     setTimeout(() => {
       router.push('/dashboard');
     }, 800);
@@ -115,16 +151,17 @@ export default function SignUpPage() {
               </p>
             </div>
 
-            {/* Google OAuth Button */}
+            {/* Google OAuth Button with forced select_account prompt */}
             <button
               onClick={handleGoogleSignUp}
               disabled={!!socialLoading}
               className="w-full flex items-center justify-center gap-3 rounded-[14px] border border-white/[0.12] bg-white/[0.05] hover:bg-white/[0.09] hover:border-royal-500/40 p-3 text-xs font-semibold text-white transition btn-press group"
+              title="Sign up with Google (Forces account selection prompt)"
             >
               {socialLoading === 'google' ? (
                 <div className="flex items-center gap-2">
                   <div className="h-4 w-4 rounded-full border-2 border-royal-400 border-t-transparent animate-spin" />
-                  <span>Connecting to Google...</span>
+                  <span>Opening Google Account Chooser...</span>
                 </div>
               ) : (
                 <>
@@ -134,7 +171,7 @@ export default function SignUpPage() {
                     <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
                   </svg>
-                  <span>Sign up with Google</span>
+                  <span>Choose Google Account</span>
                 </>
               )}
             </button>

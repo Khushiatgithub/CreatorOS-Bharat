@@ -8,7 +8,13 @@ import {
   WhatsAppNotification,
   BrandCollabBrief,
   BrandProposal,
-  MediaKitData
+  MediaKitData,
+  Community,
+  CommunityPost,
+  CommunityMember,
+  CommunityTier,
+  CommunityChannel,
+  CommunityComment
 } from '@/types';
 
 export const THEMES: StoreTheme[] = [
@@ -1883,3 +1889,422 @@ export const INITIAL_MEDIA_KIT: MediaKitData = {
     { name: 'Postman', logoText: 'POSTMAN' }
   ]
 };
+
+export const INITIAL_COMMUNITIES: Community[] = [
+  {
+    id: 'comm_tech_faang',
+    creatorId: 'creator_aarav',
+    creatorName: 'Aarav Sharma',
+    creatorUsername: 'aaravtech',
+    name: 'Bharat SDE & FAANG Hub',
+    slug: 'faang-hub',
+    tagline: 'Top 1% tech engineering circle for FAANG & high-growth Indian startups.',
+    description: 'A private circle for ambitious software engineers in India. Daily system design case studies, Leetcode patterns, live resume roasters, and direct hiring manager referrals.',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80',
+    category: 'Software Engineering & Career',
+    isPublic: true,
+    membersCount: 1420,
+    activeOnlineCount: 184,
+    isJoined: true,
+    userRole: 'creator',
+    postsCount: 289,
+    createdAt: '2025-01-10',
+    rules: [
+      'Be respectful, helpful, and constructive in all code reviews.',
+      'No spam, self-promotion, or unsolicited DMs to fellow members.',
+      'Always format code blocks with syntax highlighting.',
+      'Discussions related to compensation must keep candidate privacy intact.'
+    ],
+    tiers: [
+      {
+        id: 'tier_free',
+        name: 'Community Access',
+        type: 'free',
+        price: 0,
+        description: 'Open access to public discussion channels, weekly tech roundups, and general Q&A.',
+        perks: [
+          'Access to #general, #dsa-grind and #announcements',
+          'Participate in open tech AMA sessions',
+          'Community badge & public profile'
+        ],
+        badgeText: 'Member',
+        badgeColor: 'bg-slate-500/20 text-slate-300'
+      },
+      {
+        id: 'tier_vip_pro',
+        name: 'VIP Pro Mentorship',
+        type: 'paid',
+        price: 499,
+        billingPeriod: 'monthly',
+        description: 'Direct mentor access, 1:1 resume roast queues, mock tech interviews, and private referrals.',
+        perks: [
+          'Everything in Community Access',
+          'Exclusive #vip-lounge and #referrals-jobs channels',
+          'Monthly live System Design Masterclass (Google Meet)',
+          'Priority 1:1 Resume Roast & Direct WhatsApp Alert Channel',
+          'Zero platform commission UPI billing'
+        ],
+        badgeText: 'VIP Pro',
+        badgeColor: 'bg-royal-600/25 text-royal-300 border border-royal-500/40',
+        isPopular: true
+      },
+      {
+        id: 'tier_lifetime',
+        name: 'Lifetime Founder Pass',
+        type: 'paid',
+        price: 2999,
+        billingPeriod: 'lifetime',
+        description: 'Permanent all-access pass to every cohort, masterclass recording, and direct mentor DM access.',
+        perks: [
+          'Permanent lifetime access to all future channels',
+          'All Digital Notes & Cheat Sheets included for free (₹2,500 value)',
+          'Direct 1:1 DM channel with Aarav',
+          'Golden Elite Founder badge on profile'
+        ],
+        badgeText: 'Elite Founder',
+        badgeColor: 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+      }
+    ],
+    channels: [
+      {
+        id: 'chan_announcements',
+        name: 'Announcements',
+        slug: 'announcements',
+        description: 'Official creator broadcasts, live masterclass schedules, and major updates.',
+        icon: '📢',
+        isAnnouncementsOnly: true,
+        postsCount: 14
+      },
+      {
+        id: 'chan_general',
+        name: 'General Tech Banter',
+        slug: 'general',
+        description: 'Tech trends, dev setups, developer memes, and day-to-day work chat.',
+        icon: '💬',
+        postsCount: 128
+      },
+      {
+        id: 'chan_system_design',
+        name: 'System Design Hub',
+        slug: 'system-design',
+        description: 'High Level (HLD) and Low Level (LLD) architectural deep-dives for Indian scale.',
+        icon: '🏗️',
+        postsCount: 64
+      },
+      {
+        id: 'chan_dsa',
+        name: 'DSA & LeetCode Grind',
+        slug: 'dsa-grind',
+        description: 'Daily interview questions, algorithmic patterns, and optimization tricks.',
+        icon: '⚡',
+        postsCount: 52
+      },
+      {
+        id: 'chan_referrals',
+        name: 'Referrals & Hiring',
+        slug: 'referrals-jobs',
+        description: 'Verified employee referrals and job openings across top Indian tech companies.',
+        icon: '💼',
+        isVipOnly: true,
+        postsCount: 31
+      }
+    ]
+  },
+  {
+    id: 'comm_design_guild',
+    creatorId: 'creator_priya',
+    creatorName: 'Priya Nair',
+    creatorUsername: 'priyaui',
+    name: 'Bharat Product & UI/UX Guild',
+    slug: 'product-ui-guild',
+    tagline: 'Crafting world-class design systems and high-converting micro-interactions.',
+    description: 'A focused collective of Indian product designers, Figma wizards, and UI/UX freelancers scaling to $5k+/month clients.',
+    avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=1200&q=80',
+    category: 'Design & Product',
+    isPublic: true,
+    membersCount: 890,
+    activeOnlineCount: 92,
+    isJoined: false,
+    userRole: 'guest',
+    postsCount: 142,
+    createdAt: '2025-01-20',
+    rules: [
+      'Provide constructive design feedback with visual references.',
+      'Respect copyright and attribution for UI kits.'
+    ],
+    tiers: [
+      {
+        id: 'tier_design_free',
+        name: 'Free Design Circle',
+        type: 'free',
+        price: 0,
+        description: 'Access to general feedback and design inspiration channels.',
+        perks: ['Access to open channels', 'Weekly design critiques'],
+        badgeText: 'Designer'
+      },
+      {
+        id: 'tier_design_pro',
+        name: 'Pro UI Guild',
+        type: 'paid',
+        price: 399,
+        billingPeriod: 'monthly',
+        description: 'Direct Figma review sessions, freelance client lead board, and production UI kits.',
+        perks: [
+          'Exclusive Figma asset library',
+          'Live Portfolio Tear-downs',
+          'Global freelance client board'
+        ],
+        badgeText: 'Pro Designer',
+        isPopular: true
+      }
+    ],
+    channels: [
+      {
+        id: 'chan_design_announce',
+        name: 'Announcements',
+        slug: 'announcements',
+        description: 'Design challenges and workshops.',
+        icon: '📢',
+        isAnnouncementsOnly: true,
+        postsCount: 8
+      },
+      {
+        id: 'chan_design_feedback',
+        name: 'Portfolio Roast',
+        slug: 'portfolio-roast',
+        description: 'Share your Figma links and live sites for honest feedback.',
+        icon: '🎨',
+        postsCount: 84
+      }
+    ]
+  }
+];
+
+export const INITIAL_COMMUNITY_MEMBERS: CommunityMember[] = [
+  {
+    id: 'mem_1',
+    communityId: 'comm_tech_faang',
+    name: 'Aarav Sharma',
+    username: 'aaravtech',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+    role: 'creator',
+    tierId: 'tier_lifetime',
+    tierName: 'Elite Founder',
+    bio: 'Ex-Google & Uber SDE. Creator of CreatorOS Bharat. Helping 50k+ Indian engineers crack top tech.',
+    location: 'Bengaluru, India',
+    joinedAt: '2025-01-10',
+    reputationPoints: 1250,
+    badges: ['Community Founder', 'Top Mentor', 'Verified Creator']
+  },
+  {
+    id: 'mem_2',
+    communityId: 'comm_tech_faang',
+    name: 'Rohan Mehta',
+    username: 'rohan_sde',
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
+    role: 'moderator',
+    tierId: 'tier_vip_pro',
+    tierName: 'VIP Pro',
+    bio: 'Staff Engineer @ Razorpay. Distributed systems nerd & Golang fanboy.',
+    location: 'Pune, India',
+    joinedAt: '2025-01-12',
+    reputationPoints: 680,
+    badges: ['Lead Moderator', 'System Architect', 'Top Contributor']
+  },
+  {
+    id: 'mem_3',
+    communityId: 'comm_tech_faang',
+    name: 'Ananya Verma',
+    username: 'ananya_code',
+    avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=300&q=80',
+    role: 'vip',
+    tierId: 'tier_vip_pro',
+    tierName: 'VIP Pro',
+    bio: 'Frontend Engineer @ Swiggy. Building with Next.js 15, Tailwind and Framer Motion.',
+    location: 'Hyderabad, India',
+    joinedAt: '2025-01-15',
+    reputationPoints: 420,
+    badges: ['VIP Pro', 'Active Solver']
+  },
+  {
+    id: 'mem_4',
+    communityId: 'comm_tech_faang',
+    name: 'Vikram Joshi',
+    username: 'vikram_j',
+    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
+    role: 'member',
+    tierId: 'tier_free',
+    tierName: 'Community Access',
+    bio: 'Final year CS student @ BITS Pilani. Preparing for off-campus tech placements.',
+    location: 'Delhi NCR, India',
+    joinedAt: '2025-01-22',
+    reputationPoints: 115,
+    badges: ['Rising Star']
+  },
+  {
+    id: 'mem_5',
+    communityId: 'comm_tech_faang',
+    name: 'Kavita Sundaram',
+    username: 'kavita_tech',
+    avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=80',
+    role: 'member',
+    tierId: 'tier_free',
+    tierName: 'Community Access',
+    bio: 'Backend Engineer transitioning to Rust & Kafka pipelines.',
+    location: 'Chennai, India',
+    joinedAt: '2025-02-01',
+    reputationPoints: 95,
+    badges: ['New Member']
+  }
+];
+
+export const INITIAL_COMMUNITY_POSTS: CommunityPost[] = [
+  {
+    id: 'post_announcement_1',
+    communityId: 'comm_tech_faang',
+    channelId: 'chan_announcements',
+    channelName: 'Announcements',
+    authorId: 'mem_1',
+    authorName: 'Aarav Sharma',
+    authorUsername: 'aaravtech',
+    authorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+    authorRole: 'creator',
+    title: '🚨 LIVE Masterclass: Designing UPI Payment Gateways for 100k TPS (Sunday 7 PM IST)',
+    content: `Hey engineers! This Sunday we are hosting an exclusive deep dive on how NPCI, PhonePe and Razorpay process millions of concurrent UPI transactions with sub-50ms latency.
+
+Topics Covered:
+1. Idempotency Keys & Distributed Transaction Locks
+2. Kafka Event Streaming for Bank Webhooks
+3. Zero-loss ledger reconciliation with PostgreSQL row-level locks
+4. Live Q&A and System Design Whiteboarding
+
+VIP Pro members will get the complete Figma architecture blueprints and recording directly in the dashboard!`,
+    categoryTag: 'Broadcast',
+    isAnnouncement: true,
+    isPinned: true,
+    isLocked: false,
+    likesCount: 142,
+    commentsCount: 28,
+    viewsCount: 1850,
+    hasLiked: true,
+    createdAt: '2 hours ago',
+    attachments: [
+      { title: 'UPI-High-Concurrency-Architecture.pdf', url: 'https://example.com/upi-arch.pdf', type: 'pdf' },
+      { title: 'Google Meet RSVP Link', url: 'https://meet.google.com/xyz-bharat', type: 'link' }
+    ],
+    comments: [
+      {
+        id: 'comm_c1',
+        postId: 'post_announcement_1',
+        authorId: 'mem_2',
+        authorName: 'Rohan Mehta',
+        authorUsername: 'rohan_sde',
+        authorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
+        authorRole: 'moderator',
+        content: 'Super excited! Will share some real production incident learnings from our payment routing cluster as well.',
+        createdAt: '1 hour ago',
+        likesCount: 19,
+        hasLiked: true
+      },
+      {
+        id: 'comm_c2',
+        postId: 'post_announcement_1',
+        authorId: 'mem_3',
+        authorName: 'Ananya Verma',
+        authorUsername: 'ananya_code',
+        authorAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=300&q=80',
+        authorRole: 'vip',
+        content: 'Calendar blocked! Can we also discuss fallback queues for bank downtime handling?',
+        createdAt: '45 mins ago',
+        likesCount: 7
+      }
+    ]
+  },
+  {
+    id: 'post_tech_2',
+    communityId: 'comm_tech_faang',
+    channelId: 'chan_system_design',
+    channelName: 'System Design Hub',
+    authorId: 'mem_2',
+    authorName: 'Rohan Mehta',
+    authorUsername: 'rohan_sde',
+    authorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
+    authorRole: 'moderator',
+    title: 'Why we migrated from Redis Pub/Sub to Redis Streams for Real-time WhatsApp Invoicing',
+    content: `A quick production post-mortem for anyone building high-volume notification bots:
+
+Redis Pub/Sub has zero persistence—if a consumer pod crashes while receiving an order event, that WhatsApp invoice delivery message is permanently lost.
+
+By switching to Redis Streams with Consumer Groups:
+- At-least-once delivery guarantee
+- Persistent message backlog with ACK confirmation
+- Native dead-letter queues for invalid Indian phone numbers (+91)`,
+    categoryTag: 'Architecture',
+    isAnnouncement: false,
+    isPinned: false,
+    isLocked: false,
+    likesCount: 88,
+    commentsCount: 14,
+    viewsCount: 730,
+    hasLiked: false,
+    createdAt: '5 hours ago',
+    comments: [
+      {
+        id: 'comm_c3',
+        postId: 'post_tech_2',
+        authorId: 'mem_4',
+        authorName: 'Vikram Joshi',
+        authorUsername: 'vikram_j',
+        authorAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
+        authorRole: 'member',
+        content: 'This is gold. How do you handle duplicate ACKs when Redis consumer timeouts trigger re-delivery?',
+        createdAt: '3 hours ago',
+        likesCount: 4
+      }
+    ]
+  },
+  {
+    id: 'post_referrals_3',
+    communityId: 'comm_tech_faang',
+    channelId: 'chan_referrals',
+    channelName: 'Referrals & Hiring',
+    authorId: 'mem_3',
+    authorName: 'Ananya Verma',
+    authorUsername: 'ananya_code',
+    authorAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=300&q=80',
+    authorRole: 'vip',
+    title: '🔥 Swiggy Hiring: SDE-2 & Senior Frontend Engineers (Bengaluru / Hybrid)',
+    content: `Our Food Delivery Core team is expanding! Looking for engineers with:
+- 2-5 years experience in React, Next.js, and TypeScript
+- Strong understanding of Core Web Vitals, SSR caching, and client performance
+- Experience building high-scale consumer mobile-web interfaces
+
+VIP members can drop a comment with their resume link or DM me on WhatsApp directly for fast-track referral routing!`,
+    categoryTag: 'Hiring',
+    isAnnouncement: false,
+    isPinned: false,
+    isLocked: false,
+    likesCount: 64,
+    commentsCount: 22,
+    viewsCount: 940,
+    hasLiked: true,
+    createdAt: '1 day ago',
+    comments: [
+      {
+        id: 'comm_c4',
+        postId: 'post_referrals_3',
+        authorId: 'mem_4',
+        authorName: 'Vikram Joshi',
+        authorUsername: 'vikram_j',
+        authorAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
+        authorRole: 'member',
+        content: 'Shared my resume on your DM Ananya, thank you so much!',
+        createdAt: '18 hours ago',
+        likesCount: 2
+      }
+    ]
+  }
+];
+

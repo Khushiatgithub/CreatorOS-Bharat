@@ -375,3 +375,126 @@ export interface GSTInvoiceData {
   notes?: string;
   reverseCharge?: string;
 }
+
+export interface CommunityTier {
+  id: string;
+  name: string;
+  type: 'free' | 'paid';
+  price: number; // 0 for free, INR amount for paid
+  billingPeriod?: 'monthly' | 'yearly' | 'lifetime' | 'one-time';
+  billingCycle?: 'monthly' | 'yearly' | 'one-time';
+  description: string;
+  perks: string[];
+  badgeText?: string;
+  badgeColor?: string;
+  isPopular?: boolean;
+  membersCount?: number;
+}
+
+export interface CommunityMember {
+  id: string;
+  communityId: string;
+  name: string;
+  username?: string;
+  handle?: string;
+  avatarUrl: string;
+  role: 'creator' | 'admin' | 'moderator' | 'vip' | 'member';
+  roleBadge?: string;
+  tierId?: string;
+  tierName?: string;
+  bio?: string;
+  location?: string;
+  joinedAt: string;
+  reputationPoints: number;
+  badges?: string[];
+  isBanned?: boolean;
+  isOnline?: boolean;
+}
+
+export interface CommunityComment {
+  id: string;
+  postId?: string;
+  authorId?: string;
+  author?: string;
+  authorName?: string;
+  authorUsername?: string;
+  authorAvatar: string;
+  authorRole?: 'creator' | 'admin' | 'moderator' | 'vip' | 'member';
+  content: string;
+  createdAt: string;
+  likesCount?: number;
+  likes?: number;
+  hasLiked?: boolean;
+}
+
+export interface CommunityPost {
+  id: string;
+  communityId: string;
+  channelId: string;
+  channelName?: string;
+  authorId?: string;
+  author?: string;
+  authorName?: string;
+  authorUsername?: string;
+  authorAvatar: string;
+  authorRole?: 'creator' | 'admin' | 'moderator' | 'vip' | 'member';
+  authorBadge?: string;
+  title: string;
+  content: string;
+  categoryTag?: string;
+  tags?: string[];
+  mediaUrl?: string;
+  isAnnouncement?: boolean;
+  isPinned?: boolean;
+  isLocked?: boolean;
+  likesCount?: number;
+  likes?: number;
+  commentsCount: number;
+  viewsCount?: number;
+  hasLiked?: boolean;
+  isLiked?: boolean;
+  createdAt: string;
+  attachments?: { title: string; url: string; type: 'link' | 'code' | 'pdf' | 'image' }[];
+  comments?: CommunityComment[];
+}
+
+export interface CommunityChannel {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  icon?: string;
+  isPrivate?: boolean;
+  isAnnouncementsOnly?: boolean;
+  isVipOnly?: boolean;
+  postsCount?: number;
+}
+
+export interface Community {
+  id: string;
+  creatorId: string;
+  creatorName?: string;
+  creatorUsername?: string;
+  name: string;
+  slug?: string;
+  tagline: string;
+  description: string;
+  avatarUrl: string;
+  bannerUrl?: string;
+  coverUrl?: string;
+  category: string;
+  isPublic?: boolean;
+  membersCount: number;
+  activeOnlineCount?: number;
+  isJoined?: boolean;
+  userRole?: 'creator' | 'admin' | 'moderator' | 'vip' | 'member' | 'guest';
+  myRole?: 'creator' | 'admin' | 'moderator' | 'vip' | 'member' | 'guest';
+  rules: string[];
+  tiers?: CommunityTier[];
+  membershipTiers?: CommunityTier[];
+  channels: CommunityChannel[];
+  postsCount: number;
+  createdAt: string;
+}
+
+

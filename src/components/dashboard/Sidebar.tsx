@@ -18,6 +18,7 @@ import {
   Zap, 
   ArrowUpRight,
   User,
+  Users,
   LogOut
 } from 'lucide-react';
 import { SignOutButton, SignedIn } from '@clerk/nextjs';
@@ -25,6 +26,7 @@ import { useCreatorStore } from '@/lib/store';
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+  { href: '/dashboard/community', label: 'Community Hub', icon: Users, badge: 'New', highlight: true },
   { href: '/dashboard/storefront-builder', label: 'Storefront Builder', icon: Palette, badge: 'Live' },
   { href: '/dashboard/products', label: 'Digital Products', icon: FileText },
   { href: '/dashboard/courses', label: 'Courses & Cohorts', icon: Video },

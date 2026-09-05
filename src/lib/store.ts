@@ -12,7 +12,12 @@ import {
   BrandCollabBrief,
   BrandProposal,
   MediaKitData,
-  ProductType
+  ProductType,
+  Community,
+  CommunityPost,
+  CommunityMember,
+  CommunityComment,
+  CommunityTier
 } from '@/types';
 import {
   INITIAL_CREATORS,
@@ -24,6 +29,9 @@ import {
   INITIAL_BRAND_BRIEFS,
   INITIAL_BRAND_PROPOSALS,
   INITIAL_MEDIA_KIT,
+  INITIAL_COMMUNITIES,
+  INITIAL_COMMUNITY_POSTS,
+  INITIAL_COMMUNITY_MEMBERS,
   THEMES
 } from './mock-data';
 import { calculateGST, SAC_CODES } from './gst';
@@ -39,7 +47,11 @@ const STORAGE_KEYS = {
   WHATSAPP_LOGS: 'creatoros_whatsapp_logs',
   BRAND_BRIEFS: 'creatoros_brand_briefs',
   BRAND_PROPOSALS: 'creatoros_brand_proposals',
-  MEDIA_KIT: 'creatoros_media_kit'
+  MEDIA_KIT: 'creatoros_media_kit',
+  COMMUNITIES: 'creatoros_communities',
+  ACTIVE_COMMUNITY_ID: 'creatoros_active_community_id',
+  COMMUNITY_POSTS: 'creatoros_community_posts',
+  COMMUNITY_MEMBERS: 'creatoros_community_members'
 };
 
 // Initial state loader with safe hydration
@@ -55,6 +67,10 @@ export function useCreatorStore() {
   const [brandBriefs, setBrandBriefs] = useState<BrandCollabBrief[]>(INITIAL_BRAND_BRIEFS);
   const [brandProposals, setBrandProposals] = useState<BrandProposal[]>(INITIAL_BRAND_PROPOSALS);
   const [mediaKit, setMediaKit] = useState<MediaKitData>(INITIAL_MEDIA_KIT);
+  const [communities, setCommunities] = useState<Community[]>(INITIAL_COMMUNITIES);
+  const [activeCommunityId, setActiveCommunityId] = useState<string>('comm_tech_faang');
+  const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>(INITIAL_COMMUNITY_POSTS);
+  const [communityMembers, setCommunityMembers] = useState<CommunityMember[]>(INITIAL_COMMUNITY_MEMBERS);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Load from localStorage on client mount
@@ -92,6 +108,18 @@ export function useCreatorStore() {
 
       const savedMediaKit = localStorage.getItem(STORAGE_KEYS.MEDIA_KIT);
       if (savedMediaKit) setMediaKit(JSON.parse(savedMediaKit));
+
+      const savedCommunities = localStorage.getItem(STORAGE_KEYS.COMMUNITIES);
+      if (savedCommunities) setCommunities(JSON.parse(savedCommunities));
+
+      const savedActiveCommunityId = localStorage.getItem(STORAGE_KEYS.ACTIVE_COMMUNITY_ID);
+      if (savedActiveCommunityId) setActiveCommunityId(savedActiveCommunityId);
+
+      const savedPosts = localStorage.getItem(STORAGE_KEYS.COMMUNITY_POSTS);
+      if (savedPosts) setCommunityPosts(JSON.parse(savedPosts));
+
+      const savedMembers = localStorage.getItem(STORAGE_KEYS.COMMUNITY_MEMBERS);
+      if (savedMembers) setCommunityMembers(JSON.parse(savedMembers));
     } catch (e) {
       console.warn('LocalStorage error or not available', e);
     } finally {
@@ -620,6 +648,299 @@ export function useCreatorStore() {
     });
   };
 
+  // Community actions
+  const activeCommunity = communities.find((c) => c.id === activeCommunityId) || communities[0] || INITIAL_COMMUNITIES[0];
+
+  const switchActiveCommunity = (id: string) => {
+    setActiveCommunityId(id);
+    saveState(STORAGE_KEYS.ACTIVE_COMMUNITY_ID, id);
+  };
+
+  const createCommunity = (
+    newComm: Omit<Community, 'id' | 'creatorId' | 'membersCount' | 'postsCount' | 'isJoined' | 'createdAt'>
+  ) => {
+    const id = `comm_${Date.now()}`;
+    const comm: Community = {
+      ...newComm,
+      id,
+      creatorId: activeCreatorId,
+      membersCount: 1,
+      postsCount: 0,
+      isJoined: true,
+      myRole: 'creator',
+      createdAt: 'Just now'
+    };
+
+    setCommunities((prev) => {
+      const next = [comm, ...prev];
+      saveState(STORAGE_KEYS.COMMUNITIES, next);
+      return next;
+    });
+
+    // Add creator as founder member
+    const newMember: CommunityMember = {
+      id: `member_${Date.now()}`,
+      communityId: id,
+      name: activeCreator.name,
+      avatarUrl: activeCreator.avatarUrl,
+      username: activeCreator.username,
+      handle: `@${activeCreator.username}`,
+      role: 'creator',
+      roleBadge: 'Founder / Host',
+      tierName: 'Creator Admin',
+      joinedAt: 'Just now',
+      reputationPoints: 1000,
+      isOnline: true,
+      bio: activeCreator.bio
+    };
+
+    setCommunityMembers((prev) => {
+      const next = [newMember, ...prev];
+      saveState(STORAGE_KEYS.COMMUNITY_MEMBERS, next);
+      return next;
+    });
+
+    setActiveCommunityId(id);
+    saveState(STORAGE_KEYS.ACTIVE_COMMUNITY_ID, id);
+
+    return comm;
+  };
+
+  const joinCommunity = (communityId: string, tierId?: string) => {
+    setCommunities((prev) => {
+      const next = prev.map((c) => {
+        const tiers = c.membershipTiers || c.tiers || [];
+        const targetTier = tiers.find((t) => t.id === tierId) || tiers[0];
+        const isPaid = targetTier && targetTier.type === 'paid';
+        return {
+          ...c,
+          isJoined: true,
+          membersCount: c.membersCount + (c.isJoined ? 0 : 1),
+          myRole: isPaid ? ('vip' as const) : ('member' as const)
+        };
+      });
+      saveState(STORAGE_KEYS.COMMUNITIES, next);
+      return next;
+    });
+
+    // Add member record if not exists
+    setCommunityMembers((prev) => {
+      const exists = prev.some((m) => m.communityId === communityId && m.name === activeCreator.name);
+      if (exists) return prev;
+
+      const newMember: CommunityMember = {
+        id: `member_${Date.now()}`,
+        communityId,
+        name: activeCreator.name,
+        avatarUrl: activeCreator.avatarUrl,
+        username: activeCreator.username,
+        handle: `@${activeCreator.username}`,
+        role: tierId && tierId.includes('paid') ? 'vip' : 'member',
+        roleBadge: tierId && tierId.includes('paid') ? 'VIP Pro Member' : 'Community Member',
+        tierName: tierId && tierId.includes('paid') ? 'VIP Inner Circle' : 'Free Community Access',
+        joinedAt: 'Just now',
+        reputationPoints: 50,
+        isOnline: true,
+        bio: activeCreator.bio
+      };
+      const next = [newMember, ...prev];
+      saveState(STORAGE_KEYS.COMMUNITY_MEMBERS, next);
+      return next;
+    });
+  };
+
+  const leaveCommunity = (communityId: string) => {
+    setCommunities((prev) => {
+      const next = prev.map((c) => {
+        if (c.id !== communityId) return c;
+        return {
+          ...c,
+          isJoined: false,
+          membersCount: Math.max(0, c.membersCount - 1),
+          myRole: undefined
+        };
+      });
+      saveState(STORAGE_KEYS.COMMUNITIES, next);
+      return next;
+    });
+
+    setCommunityMembers((prev) => {
+      const next = prev.filter((m) => !(m.communityId === communityId && m.name === activeCreator.name));
+      saveState(STORAGE_KEYS.COMMUNITY_MEMBERS, next);
+      return next;
+    });
+  };
+
+  const createPost = (data: {
+    title: string;
+    content: string;
+    channelId: string;
+    tags?: string[];
+    mediaUrl?: string;
+    isAnnouncement?: boolean;
+  }) => {
+    const isFounder = activeCommunity?.creatorId === activeCreatorId;
+    const newPost: CommunityPost = {
+      id: `post_${Date.now()}`,
+      communityId: activeCommunityId,
+      channelId: data.channelId,
+      title: data.title,
+      content: data.content,
+      author: activeCreator.name,
+      authorAvatar: activeCreator.avatarUrl,
+      authorRole: isFounder ? 'creator' : 'member',
+      authorBadge: isFounder ? 'Host / Creator' : 'Member',
+      createdAt: 'Just now',
+      likes: 0,
+      isLiked: false,
+      commentsCount: 0,
+      isPinned: !!data.isAnnouncement,
+      isAnnouncement: !!data.isAnnouncement,
+      isLocked: false,
+      tags: data.tags || ['General'],
+      mediaUrl: data.mediaUrl,
+      comments: []
+    };
+
+    setCommunityPosts((prev) => {
+      const next = [newPost, ...prev];
+      saveState(STORAGE_KEYS.COMMUNITY_POSTS, next);
+      return next;
+    });
+
+    setCommunities((prev) => {
+      const next = prev.map((c) => {
+        if (c.id !== activeCommunityId) return c;
+        return { ...c, postsCount: c.postsCount + 1 };
+      });
+      saveState(STORAGE_KEYS.COMMUNITIES, next);
+      return next;
+    });
+
+    return newPost;
+  };
+
+  const likePost = (postId: string) => {
+    setCommunityPosts((prev) => {
+      const next = prev.map((post) => {
+        if (post.id !== postId) return post;
+        const currentLikes = post.likes ?? post.likesCount ?? 0;
+        const willLike = !(post.isLiked ?? post.hasLiked);
+        return {
+          ...post,
+          isLiked: willLike,
+          hasLiked: willLike,
+          likes: willLike ? currentLikes + 1 : Math.max(0, currentLikes - 1),
+          likesCount: willLike ? currentLikes + 1 : Math.max(0, currentLikes - 1)
+        };
+      });
+      saveState(STORAGE_KEYS.COMMUNITY_POSTS, next);
+      return next;
+    });
+  };
+
+  const addComment = (postId: string, content: string) => {
+    const isFounder = activeCommunity?.creatorId === activeCreatorId;
+    const newComment: CommunityComment = {
+      id: `comment_${Date.now()}`,
+      author: activeCreator.name,
+      authorAvatar: activeCreator.avatarUrl,
+      authorRole: isFounder ? 'creator' : 'member',
+      content,
+      createdAt: 'Just now',
+      likes: 0
+    };
+
+    setCommunityPosts((prev) => {
+      const next = prev.map((post) => {
+        if (post.id !== postId) return post;
+        const currentComments = post.comments || [];
+        return {
+          ...post,
+          commentsCount: post.commentsCount + 1,
+          comments: [...currentComments, newComment]
+        };
+      });
+      saveState(STORAGE_KEYS.COMMUNITY_POSTS, next);
+      return next;
+    });
+  };
+
+  const pinPost = (postId: string) => {
+    setCommunityPosts((prev) => {
+      const next = prev.map((post) => {
+        if (post.id !== postId) return post;
+        return {
+          ...post,
+          isPinned: !post.isPinned
+        };
+      });
+      saveState(STORAGE_KEYS.COMMUNITY_POSTS, next);
+      return next;
+    });
+  };
+
+  const lockPost = (postId: string) => {
+    setCommunityPosts((prev) => {
+      const next = prev.map((post) => {
+        if (post.id !== postId) return post;
+        return {
+          ...post,
+          isLocked: !post.isLocked
+        };
+      });
+      saveState(STORAGE_KEYS.COMMUNITY_POSTS, next);
+      return next;
+    });
+  };
+
+  const deletePost = (postId: string) => {
+    setCommunityPosts((prev) => {
+      const next = prev.filter((post) => post.id !== postId);
+      saveState(STORAGE_KEYS.COMMUNITY_POSTS, next);
+      return next;
+    });
+
+    setCommunities((prev) => {
+      const next = prev.map((c) => {
+        if (c.id !== activeCommunityId) return c;
+        return { ...c, postsCount: Math.max(0, c.postsCount - 1) };
+      });
+      saveState(STORAGE_KEYS.COMMUNITIES, next);
+      return next;
+    });
+  };
+
+  const moderateMember = (
+    memberId: string,
+    action: 'ban' | 'promote_mod' | 'demote_member' | 'promote_vip'
+  ) => {
+    setCommunityMembers((prev) => {
+      if (action === 'ban') {
+        const next = prev.filter((m) => m.id !== memberId);
+        saveState(STORAGE_KEYS.COMMUNITY_MEMBERS, next);
+        return next;
+      }
+
+      const next = prev.map((m) => {
+        if (m.id !== memberId) return m;
+        if (action === 'promote_mod') {
+          return { ...m, role: 'moderator' as const, roleBadge: 'Community Moderator' };
+        }
+        if (action === 'promote_vip') {
+          return { ...m, role: 'vip' as const, roleBadge: 'VIP Pro Member' };
+        }
+        if (action === 'demote_member') {
+          return { ...m, role: 'member' as const, roleBadge: 'Community Member' };
+        }
+        return m;
+      });
+
+      saveState(STORAGE_KEYS.COMMUNITY_MEMBERS, next);
+      return next;
+    });
+  };
+
   // AI Media Kit regenerate / update
   const updateMediaKit = (updated: Partial<MediaKitData>) => {
     setMediaKit((prev) => {
@@ -640,6 +961,10 @@ export function useCreatorStore() {
     setBrandBriefs(INITIAL_BRAND_BRIEFS);
     setBrandProposals(INITIAL_BRAND_PROPOSALS);
     setMediaKit(INITIAL_MEDIA_KIT);
+    setCommunities(INITIAL_COMMUNITIES);
+    setActiveCommunityId('comm_tech_faang');
+    setCommunityPosts(INITIAL_COMMUNITY_POSTS);
+    setCommunityMembers(INITIAL_COMMUNITY_MEMBERS);
     setAppointments([]);
     if (typeof window !== 'undefined') {
       localStorage.clear();
@@ -666,6 +991,15 @@ export function useCreatorStore() {
     brandProposals,
     mediaKit,
     themes: THEMES,
+    // Community state
+    communities,
+    activeCommunity,
+    activeCommunityId,
+    communityPosts: communityPosts.filter((p) => p.communityId === activeCommunityId),
+    allCommunityPosts: communityPosts,
+    communityMembers: communityMembers.filter((m) => m.communityId === activeCommunityId),
+    allCommunityMembers: communityMembers,
+    // Actions
     updateCreator,
     switchActiveCreator,
     addProduct,
@@ -680,6 +1014,18 @@ export function useCreatorStore() {
     updateProposalStatus,
     submitProposalDeliverable,
     updateMediaKit,
-    resetDemoData
+    resetDemoData,
+    // Community Actions
+    switchActiveCommunity,
+    createCommunity,
+    joinCommunity,
+    leaveCommunity,
+    createPost,
+    likePost,
+    addComment,
+    pinPost,
+    lockPost,
+    deletePost,
+    moderateMember
   };
 }

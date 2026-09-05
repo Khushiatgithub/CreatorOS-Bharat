@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { CalendarMeetingModel } from '@/lib/db-models';
+import { CalendarMeetingModel, CalendarIntegrationModel } from '@/lib/db-models';
 
 export async function GET(req: Request) {
   try {
@@ -45,6 +45,37 @@ export async function POST(req: Request) {
       );
     }
 
+    // Check if creator has connected Google Calendar with tokens
+    let finalMeetingUrl = meetingUrl || 'https://meet.google.com/new';
+    let googleEventId: string | undefined;
+
+    try {
+      const { accessToken } = await CalendarIntegrationModel.getEncryptedTokens(creatorId);
+      if (accessToken) {
+        const { createGoogleCalendarEvent } = await import('@/lib/google-calendar');
+        const now = new Date();
+        const startISO = new Date(now.getTime() + 86400000).toISOString();
+        const endISO = new Date(now.getTime() + 86400000 + durationMinutes * 60000).toISOString();
+
+        const calEvent = await createGoogleCalendarEvent(accessToken, {
+          summary: meetingTitle || `1:1 Session with ${studentName}`,
+          description: topic || 'CreatorOS Bharat 1:1 Mentorship Meeting',
+          startDateTime: startISO,
+          endDateTime: endISO,
+          attendeeEmail: studentEmail || 'student@example.com',
+          attendeeName: studentName,
+          createMeetConference: true
+        });
+
+        if (calEvent.meetUrl) {
+          finalMeetingUrl = calEvent.meetUrl;
+        }
+        googleEventId = calEvent.eventId;
+      }
+    } catch (gcalErr) {
+      console.warn('Google Calendar event auto-creation skipped:', gcalErr);
+    }
+
     const meeting = await CalendarMeetingModel.create({
       creatorId,
       studentName,
@@ -56,7 +87,8 @@ export async function POST(req: Request) {
       meetingTime,
       durationMinutes,
       meetingStatus,
-      meetingUrl: meetingUrl || 'https://meet.google.com/new',
+      meetingUrl: finalMeetingUrl,
+      googleEventId,
       topic
     });
 

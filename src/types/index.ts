@@ -597,6 +597,12 @@ export interface GoogleCalendarIntegration {
   isConnected: boolean;
   syncStatus: 'synced' | 'syncing' | 'disconnected' | 'error';
   lastSyncedAt?: string;
+  accessToken?: string;
+  refreshToken?: string;
+  tokenExpiry?: string;
+  scope?: string;
+  googleCalendarId?: string;
+  autoGenerateMeet?: boolean;
   createdAt: string;
   updatedAt: string;
 }

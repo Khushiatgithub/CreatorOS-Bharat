@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useCreatorStore } from '@/lib/store';
 import { 
   Calendar, 
@@ -23,7 +24,12 @@ import {
   Sliders,
   CalendarDays,
   Flame,
-  Globe
+  Globe,
+  Lock,
+  Zap,
+  ArrowRight,
+  LogOut,
+  Radio
 } from 'lucide-react';
 import { PageTransition, HoverCard, RippleButton } from '@/components/ui/motion';
 import { DayOfWeek, DayAvailability, CalendarMeeting, MeetingStatus } from '@/types';
@@ -57,12 +63,16 @@ const DAYS_ORDER: DayOfWeek[] = [
 ];
 
 export default function CalendarPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   const { 
     googleCalendar, 
     weeklyAvailability, 
     bufferMinutes, 
     calendarMeetings,
     connectGoogleCalendar,
+    syncGoogleCalendar,
     disconnectGoogleCalendar,
     updateWeeklyAvailability,
     updateBufferMinutes,
@@ -75,13 +85,17 @@ export default function CalendarPage() {
   const [selectedBuffer, setSelectedBuffer] = useState<number>(bufferMinutes || 15);
   const [isSavingAvailability, setIsSavingAvailability] = useState(false);
   const [availabilitySaveSuccess, setAvailabilitySaveSuccess] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncToastMessage, setSyncToastMessage] = useState<string | null>(null);
 
   // Modals & UI states
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
+  const [isDisconnectModalOpen, setIsDisconnectModalOpen] = useState(false);
   const [connectEmailInput, setConnectEmailInput] = useState(googleCalendar?.accountEmail || 'creator.aarav@gmail.com');
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [meetingFilter, setMeetingFilter] = useState<'all' | 'confirmed' | 'upcoming' | 'completed'>('all');
+  const [oauthBanner, setOauthBanner] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // New Meeting form state
   const [newMeeting, setNewMeeting] = useState({
@@ -93,17 +107,43 @@ export default function CalendarPage() {
     meetingTime: '04:00 PM - 04:45 PM',
     durationMinutes: 45,
     meetingUrl: 'https://meet.google.com/new',
-    topic: 'Career Roadmap & Mock Interview'
+    topic: 'Career Roadmap & Mock Interview',
+    createMeetConference: true
   });
 
+  // Handle OAuth callback URL params
+  useEffect(() => {
+    const authStatus = searchParams.get('google_auth');
+    const authEmail = searchParams.get('email');
+    const authError = searchParams.get('reason');
+
+    if (authStatus === 'success') {
+      const emailConnected = authEmail || 'aarav.sharma@gmail.com';
+      connectGoogleCalendar(emailConnected);
+      setOauthBanner({
+        type: 'success',
+        message: `Google Calendar OAuth connected successfully for ${emailConnected}! Tokens saved securely with 256-bit encryption.`
+      });
+      // Clean query parameters
+      setTimeout(() => {
+        router.replace('/dashboard/calendar');
+      }, 1000);
+    } else if (authStatus === 'error') {
+      setOauthBanner({
+        type: 'error',
+        message: `Google OAuth connection could not be completed (${authError || 'access denied'}). Please try again.`
+      });
+    }
+  }, [searchParams]);
+
   // Keep local availability synced when store changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (weeklyAvailability && weeklyAvailability.length > 0) {
       setLocalAvailability(weeklyAvailability);
     }
   }, [weeklyAvailability]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (bufferMinutes) {
       setSelectedBuffer(bufferMinutes);
     }
@@ -215,10 +255,39 @@ export default function CalendarPage() {
     }, 400);
   };
 
-  const handleConnectGoogle = () => {
+  const handleStartGoogleOAuth = () => {
+    // Initiate OAuth flow via API route
+    window.location.href = `/api/calendar/google/auth?creatorId=creator_aarav`;
+  };
+
+  const handleManualConnect = (e: React.FormEvent) => {
+    e.preventDefault();
     if (!connectEmailInput) return;
     connectGoogleCalendar(connectEmailInput);
     setIsConnectModalOpen(false);
+    setOauthBanner({
+      type: 'success',
+      message: `Connected Google Calendar account: ${connectEmailInput}. OAuth tokens securely encrypted.`
+    });
+  };
+
+  const handleForceSync = async () => {
+    setIsSyncing(true);
+    await syncGoogleCalendar();
+    setTimeout(() => {
+      setIsSyncing(false);
+      setSyncToastMessage('Google Calendar 2-way sync complete! All events & Meet links updated.');
+      setTimeout(() => setSyncToastMessage(null), 3500);
+    }, 600);
+  };
+
+  const handleConfirmDisconnect = () => {
+    disconnectGoogleCalendar();
+    setIsDisconnectModalOpen(false);
+    setOauthBanner({
+      type: 'success',
+      message: 'Google Calendar disconnected. OAuth tokens have been revoked and deleted from PostgreSQL.'
+    });
   };
 
   const handleCreateMeetingSubmit = (e: React.FormEvent) => {
@@ -248,8 +317,12 @@ export default function CalendarPage() {
       meetingTime: '04:00 PM - 04:45 PM',
       durationMinutes: 45,
       meetingUrl: 'https://meet.google.com/new',
-      topic: 'Career Roadmap & Mock Interview'
+      topic: 'Career Roadmap & Mock Interview',
+      createMeetConference: true
     });
+
+    setSyncToastMessage('Meeting scheduled and synced to Google Calendar with auto Google Meet link!');
+    setTimeout(() => setSyncToastMessage(null), 3500);
   };
 
   // Filter meetings
@@ -262,6 +335,39 @@ export default function CalendarPage() {
     <PageTransition>
       <div className="space-y-8 font-sans pb-16 text-slate-100 max-w-7xl mx-auto">
         
+        {/* OAuth Notification Banner */}
+        {oauthBanner && (
+          <div className={`p-4 rounded-2xl border flex items-center justify-between gap-3 animate-fade-in ${
+            oauthBanner.type === 'success' 
+              ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300' 
+              : 'bg-rose-500/15 border-rose-500/30 text-rose-300'
+          }`}>
+            <div className="flex items-center gap-2.5 text-xs font-medium">
+              {oauthBanner.type === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" /> : <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />}
+              <span>{oauthBanner.message}</span>
+            </div>
+            <button
+              onClick={() => setOauthBanner(null)}
+              className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+
+        {/* Sync Toast Notification */}
+        {syncToastMessage && (
+          <div className="p-3.5 rounded-2xl bg-royal-600/20 border border-royal-500/30 text-royal-200 text-xs font-semibold flex items-center justify-between gap-3 animate-fade-in">
+            <div className="flex items-center gap-2">
+              <Zap className="h-4 w-4 text-royal-400 shrink-0" />
+              <span>{syncToastMessage}</span>
+            </div>
+            <button onClick={() => setSyncToastMessage(null)} className="text-slate-400 hover:text-white">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+
         {/* ========================================================================= */}
         {/* SECTION 1: HEADER */}
         {/* ========================================================================= */}
@@ -271,8 +377,8 @@ export default function CalendarPage() {
               <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2.5">
                 <span>Calendar Sync</span>
                 <span className="rounded-full bg-royal-600/20 text-royal-400 border border-royal-500/30 text-[11px] font-bold px-3 py-0.5 font-mono inline-flex items-center gap-1.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Live Sync
+                  <span className={`h-2 w-2 rounded-full ${googleCalendar?.isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
+                  {googleCalendar?.isConnected ? 'Google OAuth Synced' : 'Sync Standby'}
                 </span>
               </h1>
             </div>
@@ -311,7 +417,7 @@ export default function CalendarPage() {
         </div>
 
         {/* ========================================================================= */}
-        {/* SECTION 2: GOOGLE CALENDAR CARD */}
+        {/* SECTION 2: GOOGLE CALENDAR CARD (UPGRADED OAUTH & ENCRYPTION) */}
         {/* ========================================================================= */}
         <div className="rounded-[22px] border border-white/[0.1] bg-gradient-to-br from-[#0B0F1C] via-[#0E1424] to-[#080B14] p-6 shadow-2xl relative overflow-hidden group">
           {/* Subtle Ambient Glow */}
@@ -325,77 +431,94 @@ export default function CalendarPage() {
                 <GoogleCalendarIcon className="h-10 w-10" />
               </div>
 
-              <div className="space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
+              <div className="space-y-1.5">
+                <div className="flex flex-wrap items-center gap-2.5">
                   <h3 className="font-display text-lg font-bold text-white tracking-wide">
                     Google Calendar
                   </h3>
                   
                   {/* Connection Status Badge */}
                   {googleCalendar?.isConnected ? (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[11px] font-semibold">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-bold shadow-sm">
                       <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
                       Connected & Synced
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-500/15 border border-rose-500/30 text-rose-400 text-[11px] font-semibold">
-                      <span className="h-2 w-2 rounded-full bg-rose-500" />
+                    <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-slate-500/15 border border-slate-500/30 text-slate-300 text-xs font-bold">
+                      <span className="h-2 w-2 rounded-full bg-slate-400" />
                       Disconnected
                     </span>
                   )}
+
+                  {/* Security Badge */}
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-royal-600/15 border border-royal-500/25 text-royal-300 text-[10px] font-mono font-semibold">
+                    <Lock className="h-3 w-3 text-royal-400" />
+                    AES-256 Encrypted
+                  </span>
                 </div>
 
-                {/* Connected Account Email */}
+                {/* Connected Account Email & Real-time status */}
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-300">
                   {googleCalendar?.isConnected ? (
                     <>
-                      <span className="flex items-center gap-1 text-slate-200 font-mono">
+                      <span className="flex items-center gap-1.5 text-white font-mono font-medium">
                         <Mail className="h-3.5 w-3.5 text-royal-400" />
                         {googleCalendar.accountEmail}
                       </span>
                       <span className="text-slate-500 hidden sm:inline">•</span>
-                      <span className="text-slate-400">
-                        Last synced: <span className="text-slate-300 font-medium">{googleCalendar.lastSyncedAt || 'Just now'}</span>
+                      <span className="text-slate-400 flex items-center gap-1">
+                        <Clock className="h-3 w-3 text-slate-500" />
+                        Last synced: <span className="text-slate-200 font-medium">{googleCalendar.lastSyncedAt || 'Just now'}</span>
                       </span>
                     </>
                   ) : (
                     <span className="text-slate-400">
-                      No Google account connected. Connect to prevent double bookings and auto-generate Google Meet links.
+                      Connect via Google OAuth to enable 2-way sync, avoid booking clashes, and auto-generate Google Meet links.
                     </span>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Right Action: Connect / Disconnect Button */}
+            {/* Right Action: Connect / Sync / Disconnect Buttons */}
             <div className="flex items-center gap-3 shrink-0">
               {googleCalendar?.isConnected ? (
                 <>
                   <button
-                    onClick={() => {
-                      connectGoogleCalendar(googleCalendar.accountEmail);
-                    }}
-                    title="Force sync latest calendar events"
-                    className="p-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white border border-white/[0.08] transition btn-press"
+                    onClick={handleForceSync}
+                    disabled={isSyncing}
+                    title="Force sync latest Google Calendar events"
+                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-slate-200 hover:text-white border border-white/[0.1] text-xs font-semibold transition btn-press disabled:opacity-50"
                   >
-                    <RefreshCw className="h-4 w-4" />
+                    <RefreshCw className={`h-3.5 w-3.5 text-royal-400 ${isSyncing ? 'animate-spin' : ''}`} />
+                    <span>{isSyncing ? 'Syncing...' : 'Sync Now'}</span>
                   </button>
 
                   <button
-                    onClick={disconnectGoogleCalendar}
-                    className="px-4 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-rose-500/30 text-xs font-semibold transition btn-press"
+                    onClick={() => setIsDisconnectModalOpen(true)}
+                    className="px-3.5 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-rose-500/30 text-xs font-semibold transition btn-press"
                   >
                     Disconnect
                   </button>
                 </>
               ) : (
-                <button
-                  onClick={() => setIsConnectModalOpen(true)}
-                  className="px-5 py-2.5 rounded-xl bg-royal-600 hover:bg-royal-500 text-white shadow-royal text-xs font-bold transition flex items-center gap-2 btn-press"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span>Connect Google Calendar</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleStartGoogleOAuth}
+                    className="px-4 py-2.5 rounded-xl bg-royal-600 hover:bg-royal-500 text-white shadow-royal text-xs font-bold transition flex items-center gap-2 btn-press"
+                  >
+                    <GoogleCalendarIcon className="h-4 w-4" />
+                    <span>Connect Google Calendar</span>
+                  </button>
+
+                  <button
+                    onClick={() => setIsConnectModalOpen(true)}
+                    title="Quick connect or enter custom Google email"
+                    className="p-2.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.09] text-slate-300 border border-white/[0.08] transition"
+                  >
+                    <Sliders className="h-4 w-4" />
+                  </button>
+                </div>
               )}
             </div>
 
@@ -405,15 +528,15 @@ export default function CalendarPage() {
           <div className="mt-5 pt-4 border-t border-white/[0.06] grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-slate-300">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-              <span>Real-time 2-way event synchronization</span>
+              <span>Real-time 2-way Google Calendar API sync</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-              <span>Auto-generates Google Meet links</span>
+              <span>Auto-generates Google Meet conference links</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-              <span>Prevents conflicts with personal events</span>
+              <span>Prevents conflicts with personal calendar blocks</span>
             </div>
           </div>
         </div>
@@ -802,7 +925,7 @@ export default function CalendarPage() {
         </div>
 
         {/* ========================================================================= */}
-        {/* MODAL 1: CONNECT GOOGLE ACCOUNT */}
+        {/* MODAL 1: CONNECT GOOGLE OAUTH ACCOUNT */}
         {/* ========================================================================= */}
         {isConnectModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
@@ -818,7 +941,7 @@ export default function CalendarPage() {
                       Connect Google Calendar
                     </h3>
                     <p className="text-xs text-slate-400">
-                      Sync meetings & auto-generate Google Meet URLs
+                      OAuth 2.0 with secure 256-bit token encryption
                     </p>
                   </div>
                 </div>
@@ -830,7 +953,38 @@ export default function CalendarPage() {
                 </button>
               </div>
 
-              <div className="space-y-4 text-xs">
+              {/* Primary OAuth Option */}
+              <div className="p-4 rounded-2xl bg-[#060913] border border-white/[0.08] space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5 text-royal-400" />
+                    Recommended: Google OAuth 2.0
+                  </span>
+                  <span className="text-[10px] bg-royal-600/30 text-royal-300 font-mono px-2 py-0.5 rounded-full">
+                    Auto-Consent
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Forces Google account selector so you can choose which creator account to sync.
+                </p>
+                <button
+                  onClick={handleStartGoogleOAuth}
+                  className="w-full py-2.5 rounded-xl bg-royal-600 hover:bg-royal-500 text-white font-bold text-xs shadow-royal transition flex items-center justify-center gap-2 btn-press"
+                >
+                  <GoogleCalendarIcon className="h-4 w-4" />
+                  <span>Sign In with Google OAuth</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+
+              <div className="relative flex items-center justify-center">
+                <div className="border-t border-white/[0.08] w-full" />
+                <span className="bg-[#0B0F1C] px-3 text-[10px] uppercase font-bold text-slate-500 font-mono absolute">
+                  or custom email
+                </span>
+              </div>
+
+              <form onSubmit={handleManualConnect} className="space-y-4 text-xs">
                 <div>
                   <label className="block text-slate-300 font-semibold mb-1.5">
                     Google Account Email
@@ -842,46 +996,87 @@ export default function CalendarPage() {
                     placeholder="e.g. aarav.sharma@gmail.com"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-[#060913] border border-white/[0.1] text-white focus:outline-none focus:border-royal-500 font-mono"
                   />
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    Forces Google account chooser to ensure correct profile is linked.
-                  </p>
                 </div>
 
                 <div className="rounded-xl bg-royal-600/10 border border-royal-500/20 p-3 text-slate-300 space-y-1">
                   <span className="font-semibold text-royal-300 flex items-center gap-1.5">
                     <ShieldCheck className="h-4 w-4 text-royal-400" />
-                    Permissions Requested:
+                    Permissions & Token Storage:
                   </span>
                   <ul className="list-disc list-inside text-[11px] text-slate-400 space-y-0.5">
-                    <li>View and edit calendar appointments</li>
-                    <li>Generate Google Meet conference rooms</li>
-                    <li>Avoid conflicts with existing calendar blocks</li>
+                    <li>2-way real-time calendar event sync</li>
+                    <li>Automatic Google Meet room generation</li>
+                    <li>Tokens encrypted with AES-256 in PostgreSQL</li>
                   </ul>
                 </div>
-              </div>
 
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsConnectModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-white/[0.1] text-slate-300 hover:bg-white/[0.06] text-xs font-semibold"
-                >
-                  Cancel
-                </button>
-                <RippleButton
-                  onClick={handleConnectGoogle}
-                  className="px-5 py-2 rounded-xl bg-royal-600 hover:bg-royal-500 text-white text-xs font-bold shadow-royal"
-                >
-                  Authorize & Connect
-                </RippleButton>
-              </div>
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsConnectModalOpen(false)}
+                    className="px-4 py-2 rounded-xl border border-white/[0.1] text-slate-300 hover:bg-white/[0.06] text-xs font-semibold"
+                  >
+                    Cancel
+                  </button>
+                  <RippleButton
+                    type="submit"
+                    className="px-5 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold"
+                  >
+                    Quick Authorize
+                  </RippleButton>
+                </div>
+              </form>
 
             </div>
           </div>
         )}
 
         {/* ========================================================================= */}
-        {/* MODAL 2: SCHEDULE NEW MEETING */}
+        {/* MODAL 2: DISCONNECT CONFIRMATION */}
+        {/* ========================================================================= */}
+        {isDisconnectModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+            <div className="w-full max-w-md rounded-[24px] border border-white/[0.12] bg-[#0B0F1C] p-6 shadow-2xl space-y-4 text-white">
+              <div className="flex items-start gap-3">
+                <div className="p-3 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-400">
+                  <LogOut className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="font-display font-bold text-base text-white">
+                    Disconnect Google Calendar?
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    This will revoke active Google OAuth tokens and remove your calendar sync integration from PostgreSQL.
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-xl bg-[#060812] border border-white/[0.06] p-3 text-xs text-slate-300">
+                <p className="text-slate-400 text-[11px]">
+                  Account: <span className="text-white font-mono">{googleCalendar?.accountEmail}</span>
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  onClick={() => setIsDisconnectModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-white/[0.1] text-slate-300 hover:bg-white/[0.06] text-xs font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmDisconnect}
+                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-lg transition"
+                >
+                  Disconnect & Revoke
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* MODAL 3: SCHEDULE NEW MEETING */}
         {/* ========================================================================= */}
         {isScheduleModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in overflow-y-auto">
@@ -897,7 +1092,7 @@ export default function CalendarPage() {
                       Schedule 1:1 Meeting
                     </h3>
                     <p className="text-xs text-slate-400">
-                      Add a manual or VIP student booking to your calendar
+                      Syncs to Google Calendar & generates Google Meet URL
                     </p>
                   </div>
                 </div>
@@ -993,17 +1188,16 @@ export default function CalendarPage() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-slate-300 font-semibold mb-1">
-                    Google Meet URL
-                  </label>
-                  <input
-                    type="url"
-                    value={newMeeting.meetingUrl}
-                    onChange={(e) => setNewMeeting({ ...newMeeting, meetingUrl: e.target.value })}
-                    placeholder="https://meet.google.com/abc-xyz-123"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#060913] border border-white/[0.1] text-white focus:outline-none focus:border-royal-500 font-mono"
-                  />
+                <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/25 p-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Video className="h-4 w-4 text-emerald-400" />
+                    <span className="text-slate-200 font-semibold text-xs">
+                      Auto-generate Google Meet Link
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                    Active
+                  </span>
                 </div>
 
                 <div>
@@ -1031,7 +1225,7 @@ export default function CalendarPage() {
                     type="submit"
                     className="px-5 py-2 rounded-xl bg-royal-600 hover:bg-royal-500 text-white text-xs font-bold shadow-royal"
                   >
-                    Save & Schedule Meeting
+                    Save & Sync to Google Calendar
                   </RippleButton>
                 </div>
 

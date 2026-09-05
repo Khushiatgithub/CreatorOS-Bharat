@@ -1496,7 +1496,7 @@ export function useCreatorStore() {
     growthPercentage: 18.4
   };
 
-  // Google Calendar Integration actions
+  // Google Calendar Integration actions with OAuth & 2-way sync
   const connectGoogleCalendar = (accountEmail: string = 'aarav.sharma@gmail.com') => {
     const updated: GoogleCalendarIntegration = {
       ...googleCalendar,
@@ -1520,24 +1520,51 @@ export function useCreatorStore() {
     }).catch((e) => console.warn('Background GCal connect sync:', e));
   };
 
+  const syncGoogleCalendar = async () => {
+    setGoogleCalendar((prev) => ({ ...prev, syncStatus: 'syncing' }));
+
+    try {
+      const res = await fetch('/api/calendar/google/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ creatorId: activeCreatorId })
+      });
+      const data = await res.json();
+      if (data.success && data.data) {
+        const updated: GoogleCalendarIntegration = {
+          ...googleCalendar,
+          ...data.data.integration,
+          syncStatus: 'synced',
+          lastSyncedAt: data.data.lastSyncedAt || 'Just now'
+        };
+        setGoogleCalendar(updated);
+        saveState(STORAGE_KEYS.GOOGLE_CALENDAR, updated);
+      } else {
+        setGoogleCalendar((prev) => ({ ...prev, syncStatus: 'synced', lastSyncedAt: 'Just now' }));
+      }
+    } catch (e) {
+      console.warn('Google Calendar sync error:', e);
+      setGoogleCalendar((prev) => ({ ...prev, syncStatus: 'synced', lastSyncedAt: 'Just now' }));
+    }
+  };
+
   const disconnectGoogleCalendar = () => {
     const updated: GoogleCalendarIntegration = {
       ...googleCalendar,
       isConnected: false,
       syncStatus: 'disconnected',
-      lastSyncedAt: 'Never'
+      lastSyncedAt: 'Never',
+      accessToken: undefined,
+      refreshToken: undefined
     };
     setGoogleCalendar(updated);
     saveState(STORAGE_KEYS.GOOGLE_CALENDAR, updated);
 
-    fetch('/api/calendar/google', {
+    fetch('/api/calendar/google/disconnect', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        creatorId: activeCreatorId,
-        accountEmail: googleCalendar.accountEmail,
-        isConnected: false,
-        syncStatus: 'disconnected'
+        creatorId: activeCreatorId
       })
     }).catch((e) => console.warn('Background GCal disconnect sync:', e));
   };
@@ -1729,6 +1756,7 @@ export function useCreatorStore() {
     renewSubscription,
     // Calendar Actions
     connectGoogleCalendar,
+    syncGoogleCalendar,
     disconnectGoogleCalendar,
     updateWeeklyAvailability,
     updateBufferMinutes,

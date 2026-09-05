@@ -95,7 +95,15 @@ export async function runDatabaseMigrations(): Promise<{ success: boolean; messa
     `CREATE INDEX IF NOT EXISTS idx_cal_integ_creator ON calendar_integrations(creator_id);`,
     `CREATE INDEX IF NOT EXISTS idx_cal_avail_creator ON calendar_availability(creator_id);`,
     `CREATE INDEX IF NOT EXISTS idx_cal_meetings_creator ON calendar_meetings(creator_id);`,
-    `CREATE INDEX IF NOT EXISTS idx_cal_meetings_status ON calendar_meetings(meeting_status);`
+    `CREATE INDEX IF NOT EXISTS idx_cal_meetings_status ON calendar_meetings(meeting_status);`,
+
+    // 10. Migration 005: OAuth Token Columns
+    `ALTER TABLE calendar_integrations ADD COLUMN IF NOT EXISTS access_token TEXT;`,
+    `ALTER TABLE calendar_integrations ADD COLUMN IF NOT EXISTS refresh_token TEXT;`,
+    `ALTER TABLE calendar_integrations ADD COLUMN IF NOT EXISTS token_expiry TIMESTAMP WITH TIME ZONE;`,
+    `ALTER TABLE calendar_integrations ADD COLUMN IF NOT EXISTS scope TEXT;`,
+    `ALTER TABLE calendar_integrations ADD COLUMN IF NOT EXISTS google_calendar_id TEXT DEFAULT 'primary';`,
+    `ALTER TABLE calendar_integrations ADD COLUMN IF NOT EXISTS auto_generate_meet BOOLEAN DEFAULT TRUE;`
   ];
 
   try {

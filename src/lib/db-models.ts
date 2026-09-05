@@ -1,4 +1,5 @@
 import { query } from './db';
+import { encryptToken, decryptToken } from './token-security';
 import { 
   Creator, 
   DigitalProduct, 
@@ -1160,7 +1161,7 @@ export const INITIAL_CALENDAR_MEETINGS: CalendarMeeting[] = [
 ];
 
 // ============================================================================
-// 13. CALENDAR INTEGRATION MODEL (Google Calendar)
+// 13. CALENDAR INTEGRATION MODEL (Google Calendar with OAuth)
 // ============================================================================
 export const CalendarIntegrationModel = {
   async getByCreator(creatorId: string = 'creator_aarav'): Promise<GoogleCalendarIntegration> {
@@ -1179,6 +1180,12 @@ export const CalendarIntegrationModel = {
         isConnected: Boolean(row.is_connected),
         syncStatus: row.sync_status || 'synced',
         lastSyncedAt: row.last_synced_at ? new Date(row.last_synced_at).toLocaleString('en-IN') : 'Just now',
+        accessToken: row.access_token ? decryptToken(row.access_token) : undefined,
+        refreshToken: row.refresh_token ? decryptToken(row.refresh_token) : undefined,
+        tokenExpiry: row.token_expiry ? new Date(row.token_expiry).toISOString() : undefined,
+        scope: row.scope || undefined,
+        googleCalendarId: row.google_calendar_id || 'primary',
+        autoGenerateMeet: row.auto_generate_meet !== false,
         createdAt: row.created_at ? new Date(row.created_at).toISOString().split('T')[0] : '2025-01-01',
         updatedAt: row.updated_at ? new Date(row.updated_at).toISOString().split('T')[0] : '2025-01-01'
       };
@@ -1187,26 +1194,57 @@ export const CalendarIntegrationModel = {
     return INITIAL_GOOGLE_CALENDAR;
   },
 
+  async getEncryptedTokens(creatorId: string = 'creator_aarav'): Promise<{ accessToken?: string; refreshToken?: string }> {
+    const res = await query(
+      'SELECT access_token, refresh_token FROM calendar_integrations WHERE creator_id = $1 LIMIT 1',
+      [creatorId]
+    );
+    if (res && res.rows.length > 0) {
+      return {
+        accessToken: res.rows[0].access_token || undefined,
+        refreshToken: res.rows[0].refresh_token || undefined
+      };
+    }
+    return {};
+  },
+
   async save(integration: {
     creatorId?: string;
     accountEmail: string;
     isConnected: boolean;
     syncStatus?: 'synced' | 'syncing' | 'disconnected' | 'error';
+    accessToken?: string;
+    refreshToken?: string;
+    tokenExpiry?: string;
+    scope?: string;
+    googleCalendarId?: string;
+    autoGenerateMeet?: boolean;
   }): Promise<GoogleCalendarIntegration> {
     const creatorId = integration.creatorId || 'creator_aarav';
     const id = `gcal_${creatorId}`;
     const now = new Date().toISOString();
     const syncStatus = integration.isConnected ? (integration.syncStatus || 'synced') : 'disconnected';
 
+    const encAccessToken = integration.accessToken ? encryptToken(integration.accessToken) : null;
+    const encRefreshToken = integration.refreshToken ? encryptToken(integration.refreshToken) : null;
+
     await query(
       `INSERT INTO calendar_integrations (
-        id, creator_id, provider, account_email, is_connected, sync_status, last_synced_at, created_at, updated_at
-      ) VALUES ($1, $2, 'google_calendar', $3, $4, $5, $6, $7, $8)
+        id, creator_id, provider, account_email, is_connected, sync_status, 
+        last_synced_at, access_token, refresh_token, token_expiry, scope, google_calendar_id, 
+        auto_generate_meet, created_at, updated_at
+      ) VALUES ($1, $2, 'google_calendar', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
       ON CONFLICT (id) DO UPDATE SET
         account_email = EXCLUDED.account_email,
         is_connected = EXCLUDED.is_connected,
         sync_status = EXCLUDED.sync_status,
         last_synced_at = EXCLUDED.last_synced_at,
+        access_token = COALESCE(EXCLUDED.access_token, calendar_integrations.access_token),
+        refresh_token = COALESCE(EXCLUDED.refresh_token, calendar_integrations.refresh_token),
+        token_expiry = COALESCE(EXCLUDED.token_expiry, calendar_integrations.token_expiry),
+        scope = COALESCE(EXCLUDED.scope, calendar_integrations.scope),
+        google_calendar_id = COALESCE(EXCLUDED.google_calendar_id, calendar_integrations.google_calendar_id),
+        auto_generate_meet = COALESCE(EXCLUDED.auto_generate_meet, calendar_integrations.auto_generate_meet),
         updated_at = EXCLUDED.updated_at`,
       [
         id,
@@ -1215,6 +1253,12 @@ export const CalendarIntegrationModel = {
         integration.isConnected,
         syncStatus,
         now,
+        encAccessToken,
+        encRefreshToken,
+        integration.tokenExpiry || null,
+        integration.scope || null,
+        integration.googleCalendarId || 'primary',
+        integration.autoGenerateMeet !== false,
         now,
         now
       ]
@@ -1228,9 +1272,33 @@ export const CalendarIntegrationModel = {
       isConnected: integration.isConnected,
       syncStatus,
       lastSyncedAt: 'Just now',
+      accessToken: integration.accessToken,
+      refreshToken: integration.refreshToken,
+      tokenExpiry: integration.tokenExpiry,
+      scope: integration.scope,
+      googleCalendarId: integration.googleCalendarId || 'primary',
+      autoGenerateMeet: integration.autoGenerateMeet !== false,
       createdAt: now.split('T')[0],
       updatedAt: now.split('T')[0]
     };
+  },
+
+  async disconnect(creatorId: string = 'creator_aarav'): Promise<boolean> {
+    const id = `gcal_${creatorId}`;
+    const now = new Date().toISOString();
+
+    await query(
+      `UPDATE calendar_integrations SET
+        is_connected = FALSE,
+        sync_status = 'disconnected',
+        access_token = NULL,
+        refresh_token = NULL,
+        updated_at = $1
+      WHERE id = $2 OR creator_id = $3`,
+      [now, id, creatorId]
+    );
+
+    return true;
   }
 };
 

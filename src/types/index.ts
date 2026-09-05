@@ -204,19 +204,57 @@ export interface BrandCollabBrief {
   id: string;
   brandName: string;
   brandLogo: string;
+  brandCoverImage?: string;
   industry: string;
   category?: string;
-  matchScore?: number;
+  tier?: 'Enterprise' | 'ScaleUp' | 'D2C Unicorn' | 'Global' | 'Fast Growing';
+  matchScore: number;
+  matchBreakdown?: {
+    audienceDemographics: number;
+    contentStyle: number;
+    engagementRate: number;
+    brandSafety: number;
+    reasons: string[];
+  };
   title: string;
   description: string;
+  fullBrief?: string;
+  guidelines?: {
+    dos: string[];
+    donts: string[];
+    mandatoryMentions: string[];
+    hashtags: string[];
+  };
   budgetMin: number;
   budgetMax: number;
+  escrowGuaranteed?: boolean;
+  payoutStructure?: {
+    upfrontAdvancePercent: number;
+    milestoneReleasePercent: number;
+    bonusTerms?: string;
+  };
   targetNiches: string[];
+  targetAudience?: {
+    ageRange: string;
+    topCities: string[];
+    minFollowers?: string;
+  };
   deliverables: string[];
+  deliverableBreakdown?: {
+    title: string;
+    platform: 'Instagram' | 'YouTube' | 'LinkedIn' | 'X' | 'Podcast' | 'Multi-Platform';
+    specs: string;
+    suggestedRate: number;
+  }[];
   deadline: string;
+  deadlineDate?: string;
+  daysRemaining?: number;
   applicantsCount: number;
+  maxApplicants?: number;
   verifiedBrand: boolean;
-  status: 'open' | 'shortlisting' | 'filled';
+  featured?: boolean;
+  status: 'open' | 'urgent' | 'shortlisting' | 'filled';
+  sampleHooks?: string[];
 }
 
 export interface BrandProposal {
@@ -224,13 +262,45 @@ export interface BrandProposal {
   briefId: string;
   briefTitle: string;
   brandName: string;
+  brandLogo?: string;
   creatorId: string;
   proposedAmount: number;
+  gstAmount?: number;
+  netPayout?: number;
   pitch: string;
+  creativeHook?: string;
   deliverablesProposed: string[];
   timelineDays: number;
-  status: 'submitted' | 'shortlisted' | 'accepted' | 'declined';
+  scriptDraftDate?: string;
+  contentGoLiveDate?: string;
+  addons?: {
+    whitelisting: boolean;
+    rawFootage: boolean;
+    exclusiveCategory: boolean;
+  };
+  mediaKitAttached?: boolean;
+  escrowStatus?: 'awaiting_funding' | 'escrow_locked' | 'milestone_1_released' | 'fully_released';
+  escrowAmount?: number;
+  status: 'submitted' | 'shortlisted' | 'in_review' | 'escrow_funded' | 'draft_submitted' | 'approved' | 'completed' | 'declined';
+  statusTimeline?: {
+    step: string;
+    timestamp: string;
+    note: string;
+    isCompleted: boolean;
+  }[];
   submittedAt: string;
+  brandFeedback?: string;
+  deliverableLinks?: {
+    title: string;
+    url: string;
+    platform: string;
+    submittedAt: string;
+    viewsCount?: string;
+    engagement?: string;
+  }[];
+  invoiceGenerated?: boolean;
+  invoiceNumber?: string;
+  upiRefId?: string;
 }
 
 export interface MediaKitData {

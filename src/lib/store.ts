@@ -22,6 +22,7 @@ import {
   INITIAL_ORDERS,
   INITIAL_WHATSAPP_NOTIFS,
   INITIAL_BRAND_BRIEFS,
+  INITIAL_BRAND_PROPOSALS,
   INITIAL_MEDIA_KIT,
   THEMES
 } from './mock-data';
@@ -52,7 +53,7 @@ export function useCreatorStore() {
   const [orders, setOrders] = useState<Order[]>(INITIAL_ORDERS);
   const [whatsappLogs, setWhatsappLogs] = useState<WhatsAppNotification[]>(INITIAL_WHATSAPP_NOTIFS);
   const [brandBriefs, setBrandBriefs] = useState<BrandCollabBrief[]>(INITIAL_BRAND_BRIEFS);
-  const [brandProposals, setBrandProposals] = useState<BrandProposal[]>([]);
+  const [brandProposals, setBrandProposals] = useState<BrandProposal[]>(INITIAL_BRAND_PROPOSALS);
   const [mediaKit, setMediaKit] = useState<MediaKitData>(INITIAL_MEDIA_KIT);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -426,21 +427,93 @@ export function useCreatorStore() {
   };
 
   // Submit proposal to brand collab brief
-  const applyToBrandBrief = (briefId: string, proposedAmount: number, pitch: string, deliverables: string[], timelineDays: number) => {
+  const applyToBrandBrief = (
+    briefId: string,
+    proposedAmount: number,
+    pitch: string,
+    deliverables: string[],
+    timelineDays: number = 7,
+    options?: {
+      creativeHook?: string;
+      scriptDraftDate?: string;
+      contentGoLiveDate?: string;
+      addons?: {
+        whitelisting: boolean;
+        rawFootage: boolean;
+        exclusiveCategory: boolean;
+      };
+      mediaKitAttached?: boolean;
+    }
+  ) => {
     const brief = brandBriefs.find((b) => b.id === briefId);
     if (!brief) return;
+
+    const gstAmount = Math.round(proposedAmount * 0.18);
+    const netPayout = Math.round(proposedAmount * 0.99); // 1% TDS deduction under Sec 194J
 
     const proposal: BrandProposal = {
       id: `prop_${Date.now()}`,
       briefId,
       briefTitle: brief.title,
       brandName: brief.brandName,
+      brandLogo: brief.brandLogo,
       creatorId: activeCreatorId,
       proposedAmount,
+      gstAmount,
+      netPayout,
       pitch,
+      creativeHook: options?.creativeHook || (brief.sampleHooks && brief.sampleHooks[0]) || 'Authentic creator integration',
       deliverablesProposed: deliverables,
       timelineDays,
+      scriptDraftDate: options?.scriptDraftDate || `${Math.max(1, Math.round(timelineDays * 0.4))} days from acceptance`,
+      contentGoLiveDate: options?.contentGoLiveDate || `${timelineDays} days from acceptance`,
+      addons: options?.addons || {
+        whitelisting: false,
+        rawFootage: false,
+        exclusiveCategory: false
+      },
+      mediaKitAttached: options?.mediaKitAttached !== false,
+      escrowStatus: 'awaiting_funding',
+      escrowAmount: proposedAmount,
       status: 'submitted',
+      statusTimeline: [
+        {
+          step: 'Proposal Submitted',
+          timestamp: 'Just now',
+          note: `Proposal of ₹${proposedAmount.toLocaleString('en-IN')} (+18% GST) submitted with AI Media Kit.`,
+          isCompleted: true
+        },
+        {
+          step: `Brand Review by ${brief.brandName}`,
+          timestamp: 'In Progress',
+          note: 'Brand marketing and influencer team is evaluating creative pitch.',
+          isCompleted: false
+        },
+        {
+          step: 'NPCI Escrow Funding',
+          timestamp: 'Pending Acceptance',
+          note: '100% funds will be locked into verified escrow upon brand sign-off.',
+          isCompleted: false
+        },
+        {
+          step: 'Draft Video / Script Submission',
+          timestamp: 'Pending',
+          note: 'Awaiting draft submission from creator.',
+          isCompleted: false
+        },
+        {
+          step: 'Approved & Live on Socials',
+          timestamp: 'Pending',
+          note: 'Content publishing with verified tracking links.',
+          isCompleted: false
+        },
+        {
+          step: '1-Click UPI Escrow Settlement',
+          timestamp: 'Pending',
+          note: 'Instant payout disbursement to creator bank account.',
+          isCompleted: false
+        }
+      ],
       submittedAt: 'Just now'
     };
 
@@ -458,6 +531,93 @@ export function useCreatorStore() {
     });
 
     return proposal;
+  };
+
+  // Update proposal status & pipeline stage (Simulate deal progression)
+  const updateProposalStatus = (
+    proposalId: string,
+    newStatus: BrandProposal['status'],
+    brandFeedback?: string
+  ) => {
+    setBrandProposals((prev) => {
+      const next = prev.map((p) => {
+        if (p.id !== proposalId) return p;
+
+        let escrowStatus = p.escrowStatus || 'awaiting_funding';
+        let upiRefId = p.upiRefId;
+        let invoiceNumber = p.invoiceNumber;
+        let invoiceGenerated = p.invoiceGenerated;
+
+        if (newStatus === 'escrow_funded' || newStatus === 'draft_submitted' || newStatus === 'approved') {
+          escrowStatus = 'escrow_locked';
+        } else if (newStatus === 'completed') {
+          escrowStatus = 'fully_released';
+          upiRefId = upiRefId || `UPI-${Math.floor(100000000000 + Math.random() * 900000000000)}`;
+          invoiceNumber = invoiceNumber || `INV-2026-BR-${Math.floor(1000 + Math.random() * 9000)}`;
+          invoiceGenerated = true;
+        }
+
+        // Update status timeline
+        const updatedTimeline = (p.statusTimeline || []).map((stepItem, idx) => {
+          if (newStatus === 'shortlisted' && idx <= 1) return { ...stepItem, isCompleted: true };
+          if (newStatus === 'escrow_funded' && idx <= 2) return { ...stepItem, isCompleted: true };
+          if (newStatus === 'draft_submitted' && idx <= 3) return { ...stepItem, isCompleted: true };
+          if (newStatus === 'approved' && idx <= 4) return { ...stepItem, isCompleted: true };
+          if (newStatus === 'completed') return { ...stepItem, isCompleted: true };
+          return stepItem;
+        });
+
+        return {
+          ...p,
+          status: newStatus,
+          escrowStatus,
+          upiRefId,
+          invoiceNumber,
+          invoiceGenerated,
+          brandFeedback: brandFeedback !== undefined ? brandFeedback : p.brandFeedback,
+          statusTimeline: updatedTimeline
+        };
+      });
+
+      saveState(STORAGE_KEYS.BRAND_PROPOSALS, next);
+      return next;
+    });
+  };
+
+  // Submit deliverable link (Draft preview or live social link)
+  const submitProposalDeliverable = (
+    proposalId: string,
+    deliverable: {
+      title: string;
+      url: string;
+      platform: string;
+      viewsCount?: string;
+      engagement?: string;
+    }
+  ) => {
+    setBrandProposals((prev) => {
+      const next = prev.map((p) => {
+        if (p.id !== proposalId) return p;
+
+        const newLink = {
+          ...deliverable,
+          submittedAt: 'Just now'
+        };
+
+        const existingLinks = p.deliverableLinks || [];
+        const isLive = deliverable.url.includes('instagram.com') || deliverable.url.includes('youtube.com');
+        const nextStatus = isLive ? ('approved' as const) : ('draft_submitted' as const);
+
+        return {
+          ...p,
+          status: nextStatus,
+          deliverableLinks: [newLink, ...existingLinks]
+        };
+      });
+
+      saveState(STORAGE_KEYS.BRAND_PROPOSALS, next);
+      return next;
+    });
   };
 
   // AI Media Kit regenerate / update
@@ -478,8 +638,8 @@ export function useCreatorStore() {
     setOrders(INITIAL_ORDERS);
     setWhatsappLogs(INITIAL_WHATSAPP_NOTIFS);
     setBrandBriefs(INITIAL_BRAND_BRIEFS);
+    setBrandProposals(INITIAL_BRAND_PROPOSALS);
     setMediaKit(INITIAL_MEDIA_KIT);
-    setBrandProposals([]);
     setAppointments([]);
     if (typeof window !== 'undefined') {
       localStorage.clear();
@@ -517,6 +677,8 @@ export function useCreatorStore() {
     updateInvoiceStatus,
     deleteInvoice,
     applyToBrandBrief,
+    updateProposalStatus,
+    submitProposalDeliverable,
     updateMediaKit,
     resetDemoData
   };

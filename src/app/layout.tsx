@@ -59,16 +59,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const clerkPublishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-  const isClerkConfigured = Boolean(
-    clerkPublishableKey &&
-    !clerkPublishableKey.includes('your_clerk_') &&
-    !clerkPublishableKey.includes('test_fallback') &&
-    (clerkPublishableKey.startsWith('pk_test_') || clerkPublishableKey.startsWith('pk_live_'))
-  );
 
   return (
     <ClerkProvider
-      publishableKey={isClerkConfigured ? clerkPublishableKey : 'pk_test_ZmFrZS1jbGVyay1rZXktZm9yLWRlbW8tYnVpbGQtb25seS1ub3QtcmVhbCQ'}
+      publishableKey={clerkPublishableKey}
       appearance={{
         baseTheme: dark,
         variables: {

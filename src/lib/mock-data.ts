@@ -7,6 +7,7 @@ import {
   Order,
   WhatsAppNotification,
   BrandCollabBrief,
+  BrandProposal,
   MediaKitData
 } from '@/types';
 
@@ -507,132 +508,1338 @@ export const INITIAL_BRAND_BRIEFS: BrandCollabBrief[] = [
   {
     id: 'brief_boat',
     brandName: 'boAt',
-    brandLogo: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=120&q=80',
+    brandLogo: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=140&q=80',
+    brandCoverImage: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=1200&q=80',
     industry: 'Consumer Electronics',
     category: 'Audio & Wearables',
+    tier: 'D2C Unicorn',
     matchScore: 98,
-    title: 'boAt Airdopes Pro Wireless ANC — Deep Focus Study & Coding Routine',
-    description: 'Looking for tech, student, and developer creators to showcase 100-hour battery life and Active Noise Cancellation during intense coding sprints, college study sessions, or daily commutes.',
-    budgetMin: 60000,
-    budgetMax: 120000,
+    matchBreakdown: {
+      audienceDemographics: 98,
+      contentStyle: 97,
+      engagementRate: 96,
+      brandSafety: 100,
+      reasons: [
+        '84% audience match in 18-28 Gen-Z & Tech professional demographic',
+        'Your avg tech reel retention (68%) outperforms sector benchmark (44%)',
+        'Strong audience affinity for desk setup, deep work, and noise cancellation'
+      ]
+    },
+    title: 'boAt Nirvana Space ANC — Deep Focus Study & Coding Routine',
+    description: 'Looking for tech, student, and developer creators to showcase 100-hour battery life and 32dB Hybrid Active Noise Cancellation during intense coding sprints, college study sessions, or daily commutes.',
+    fullBrief: 'boAt is launching the next-generation Nirvana Space Wireless ANC series tailored for creators, programmers, and students in India. We want high-retention, aesthetically pleasing video content demonstrating how Nirvana Space silences noisy environments (cafes, transit, loud hostels) to enable uninterrupted flow state. Highlights must emphasize 32dB Hybrid ANC, 100-hour battery reserve, dual-device pairing between laptop & phone, and ASAP fast-charge (10 mins = 10 hrs).',
+    guidelines: {
+      dos: [
+        'Demonstrate the real-time audio difference when toggling ANC ON vs OFF',
+        'Feature your genuine desk setup or coding/study workspace in 4K resolution',
+        'Include your exclusive discount coupon "CREATORBOAT20" in caption & pinned comment',
+        'Highlight dual-device pairing seamlessly switching from laptop video to phone call'
+      ],
+      donts: [
+        'Do not compare directly against Sony, Apple, or Bose by name',
+        'Avoid low-light blurry video without clear audio voiceover',
+        'Do not skip showing the physical case and ASAP charge port'
+      ],
+      mandatoryMentions: ['32dB Hybrid ANC', '100-Hour Playback', 'Dual Device Pairing', '#boAtNirvanaSpace'],
+      hashtags: ['#boAtNirvanaSpace', '#DoWhatFloatsYourboAt', '#DeskSetup', '#CodingRoutine']
+    },
+    budgetMin: 75000,
+    budgetMax: 150000,
+    escrowGuaranteed: true,
+    payoutStructure: {
+      upfrontAdvancePercent: 50,
+      milestoneReleasePercent: 50,
+      bonusTerms: '₹15,000 performance bonus if Reel reaches 350k+ views in first 7 days'
+    },
     targetNiches: ['Tech & Gadgets', 'Study & Productivity', 'Software Engineering'],
+    targetAudience: {
+      ageRange: '18-28 Years (College Students & Early Techies)',
+      topCities: ['Bengaluru', 'Delhi NCR', 'Pune', 'Hyderabad', 'Mumbai'],
+      minFollowers: '50,000+'
+    },
     deliverables: [
-      '1x High-production Instagram Reel (Desk Setup / Study with Me)',
-      '1x YouTube 60s Integration mid-roll',
-      '2x Story Slides with swipe-up discount coupon'
+      '1x High-production Instagram Reel (60s 4K Desk Setup / Study with Me)',
+      '1x YouTube 60s Integration mid-roll segment',
+      '2x Story Slides with swipe-up discount coupon link'
+    ],
+    deliverableBreakdown: [
+      {
+        title: '60s 4K Instagram Reel',
+        platform: 'Instagram',
+        specs: '9:16 Vertical, 4K 60fps, engaging first 3-second hook, audio toggle demo',
+        suggestedRate: 65000
+      },
+      {
+        title: 'YouTube 60s Mid-Roll Integration',
+        platform: 'YouTube',
+        specs: '16:9 4K, natural transition from tutorial to sponsor mention, pinned comment link',
+        suggestedRate: 45000
+      },
+      {
+        title: '2x Story Sequence with Link Sticker',
+        platform: 'Instagram',
+        specs: 'Interactive link sticker with custom UTM tracking code & coupon pill',
+        suggestedRate: 20000
+      }
     ],
     deadline: 'In 4 days (Sep 20)',
+    deadlineDate: '2026-09-20',
+    daysRemaining: 4,
     applicantsCount: 28,
+    maxApplicants: 40,
     verifiedBrand: true,
-    status: 'open'
+    featured: true,
+    status: 'open',
+    sampleHooks: [
+      '“How I survive 12-hour coding sprints in noisy Bangalore cafes without losing focus...”',
+      '“The single best ₹2,999 desk gadget every developer needs in 2026.”',
+      '“Toggling ANC on for the first time in a crowded metro — watch my reaction.”'
+    ]
   },
   {
     id: 'brief_swiggy',
     brandName: 'Swiggy',
-    brandLogo: 'https://images.unsplash.com/photo-1526367790999-0150786686a2?auto=format&fit=crop&w=120&q=80',
+    brandLogo: 'https://images.unsplash.com/photo-1526367790999-0150786686a2?auto=format&fit=crop&w=140&q=80',
+    brandCoverImage: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1200&q=80',
     industry: 'Quick Commerce',
     category: 'Instamart & Late Night Snacks',
+    tier: 'Enterprise',
     matchScore: 97,
+    matchBreakdown: {
+      audienceDemographics: 96,
+      contentStyle: 98,
+      engagementRate: 97,
+      brandSafety: 100,
+      reasons: [
+        '92% Tier-1 Metro audience distribution with high Swiggy delivery coverage',
+        'Proven viral reach with relatable lifestyle and work-from-home comedic sketches',
+        'High audience conversion on past quick commerce and discount codes'
+      ]
+    },
     title: 'Swiggy Instamart 10-Minute Desk Snacks & Brain Fuel for Creators',
     description: 'Create an engaging reel highlighting instantaneous 10-minute midnight deliveries of caffeine, munchies, and stationery during deadline crunches, exams, or weekend hackathons.',
+    fullBrief: 'Swiggy Instamart is expanding 24x7 instant 10-minute delivery of late-night study and coding essentials across all major Indian cities. We want high-energy, relatable video scenarios showing a creator or engineer hitting a mental wall at 1:30 AM, ordering cold brew / energy bars / notebooks on Instamart, and receiving it before their code even finishes compiling.',
+    guidelines: {
+      dos: [
+        'Show the actual Swiggy app UI screen recording placing the quick order',
+        'Capture the delivery partner handover and unbagging of fresh snacks',
+        'Include your personal promo code "INSTACREATOR100" for ₹100 off on first 2 orders',
+        'Keep the pacing fast, upbeat, and humorous'
+      ],
+      donts: [
+        'Do not show damaged packaging or unbranded bags',
+        'Do not mention Blinkit or Zepto',
+        'Avoid making delivery partners wait or look uncomfortable on camera'
+      ],
+      mandatoryMentions: ['10-Minute Delivery', '24x7 Midnight Instamart', 'Swiggy App', '#SwiggyInstamart'],
+      hashtags: ['#SwiggyInstamart', '#LateNightFuel', '#QuickCommerce', '#CreatorLife']
+    },
     budgetMin: 90000,
-    budgetMax: 180000,
+    budgetMax: 185000,
+    escrowGuaranteed: true,
+    payoutStructure: {
+      upfrontAdvancePercent: 50,
+      milestoneReleasePercent: 50,
+      bonusTerms: '₹20,000 bonus if promo code generates >200 first-time order redemptions'
+    },
     targetNiches: ['Lifestyle', 'Tech & Coding', 'College Life'],
+    targetAudience: {
+      ageRange: '18-32 Years (Metro Working Professionals & Students)',
+      topCities: ['Bengaluru', 'Mumbai', 'Delhi NCR', 'Hyderabad', 'Chennai', 'Kolkata'],
+      minFollowers: '75,000+'
+    },
     deliverables: [
-      '1x Relatable Problem-Solution Reel with Live Delivery',
-      '1x Interactive Story Poll with Exclusive Coupon code',
-      'Pinned comment with UTM tracking link'
+      '1x Relatable Problem-Solution Reel with Live Delivery (60s)',
+      '1x Interactive Story Poll with Exclusive Coupon code sticker',
+      'Pinned comment with direct UTM app install link'
+    ],
+    deliverableBreakdown: [
+      {
+        title: '60s Comedic Problem-Solution Reel',
+        platform: 'Instagram',
+        specs: '9:16 Vertical, fast-paced cuts, sound design, live delivery shot',
+        suggestedRate: 95000
+      },
+      {
+        title: 'Story Poll & Voucher Drop',
+        platform: 'Instagram',
+        specs: 'Interactive swipe sticker with ₹100 discount coupon',
+        suggestedRate: 35000
+      }
     ],
     deadline: 'In 3 days (Sep 16)',
+    deadlineDate: '2026-09-16',
+    daysRemaining: 3,
     applicantsCount: 34,
+    maxApplicants: 50,
     verifiedBrand: true,
-    status: 'open'
+    featured: true,
+    status: 'urgent',
+    sampleHooks: [
+      '“It’s 1:45 AM, my production code just crashed, and I’m out of coffee...”',
+      '“Ordering brain fuel in the middle of a hackathon: Swiggy vs my patience.”',
+      '“Tell me you’re a night owl in India without telling me you’re a night owl.”'
+    ]
   },
   {
-    id: 'brief_zomato',
-    brandName: 'Zomato',
-    brandLogo: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=120&q=80',
-    industry: 'Food Tech',
-    category: 'Food Delivery & Dining',
+    id: 'brief_cred',
+    brandName: 'CRED',
+    brandLogo: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=140&q=80',
+    brandCoverImage: 'https://images.unsplash.com/photo-1556742049-0a67e557b686?auto=format&fit=crop&w=1200&q=80',
+    industry: 'FinTech & Wealth',
+    category: 'CRED Garage & Smart UPI',
+    tier: 'Enterprise',
     matchScore: 96,
-    title: 'Zomato Gold: Ultimate Weekend Treat & Late-Night Coding Fuel',
-    description: 'Craft funny, highly relatable reels featuring Zomato Gold 1+1 dining and free delivery benefits. Perfect for engineers celebrating placed job offers or student group orders.',
-    budgetMin: 80000,
-    budgetMax: 160000,
-    targetNiches: ['Comedy & Skits', 'Food & Dining', 'Tech Culture'],
+    matchBreakdown: {
+      audienceDemographics: 95,
+      contentStyle: 98,
+      engagementRate: 95,
+      brandSafety: 100,
+      reasons: [
+        'Top 10% creditworthy audience demographic with high disposable income',
+        'Editorial alignment with premium minimalism and modern financial literacy',
+        'Strong track record of high-ticket sponsorship deliverables'
+      ]
+    },
+    title: 'CRED Garage & Smart Scan & Pay — Frictionless Money Management',
+    description: 'Showcase how high-earning creators and tech professionals optimize their credit score, manage vehicle telemetry via CRED Garage, and unlock cashback on premium UPI payments.',
+    fullBrief: 'CRED is highlighting the unified financial OS experience for India’s top 1% creditworthy individuals. We want creators to share their honest workflow managing multiple credit cards, tracking auto maintenance & fastag recharges through CRED Garage, and using CRED UPI for seamless QR payments.',
+    guidelines: {
+      dos: [
+        'Maintain a sleek, cinematic, high-contrast aesthetic matching CRED design language',
+        'Showcase the CRED Garage dashboard tracking maintenance and fuel costs',
+        'Emphasize credit score monitoring and timely bill repayment benefits',
+        'Include your custom referral invite link in bio and description'
+      ],
+      donts: [
+        'Do not show sensitive credit card numbers or personal CVVs on screen',
+        'Avoid cluttered backgrounds or noisy casual formats',
+        'Do not make unrealistic guaranteed return investment claims'
+      ],
+      mandatoryMentions: ['CRED Garage', 'CRED UPI', 'Credit Score Protection', '#CREDLife'],
+      hashtags: ['#CRED', '#CREDGarage', '#FintechIndia', '#SmartMoney']
+    },
+    budgetMin: 150000,
+    budgetMax: 320000,
+    escrowGuaranteed: true,
+    payoutStructure: {
+      upfrontAdvancePercent: 50,
+      milestoneReleasePercent: 50,
+      bonusTerms: '₹30,000 kicker for >150 verified CRED member sign-ups'
+    },
+    targetNiches: ['FinTech', 'Career & Productivity', 'Automobile & Tech'],
+    targetAudience: {
+      ageRange: '22-38 Years (High-Income Engineers, Founders, Creators)',
+      topCities: ['Bengaluru', 'Mumbai', 'Delhi NCR', 'Hyderabad', 'Pune'],
+      minFollowers: '100,000+'
+    },
     deliverables: [
-      '1x Relatable Humor / Developer Celebration Reel',
-      '2x Story Slides with Zomato Gold referral link'
+      '1x Cinematic 4K Instagram Reel (60s)',
+      '1x Dedicated YouTube Financial Breakdown Segment (90s)',
+      '1x LinkedIn Authority Post on smart cash-flow management'
     ],
-    deadline: 'In 6 days (Sep 22)',
-    applicantsCount: 42,
+    deliverableBreakdown: [
+      {
+        title: 'Cinematic 4K Reel',
+        platform: 'Instagram',
+        specs: '9:16 Vertical, moody lighting, sound design, CRED UI showcase',
+        suggestedRate: 110000
+      },
+      {
+        title: '90s YouTube Dedicated Segment',
+        platform: 'YouTube',
+        specs: '16:9 4K, deep dive into credit score mechanics and Garage features',
+        suggestedRate: 85000
+      },
+      {
+        title: 'LinkedIn Thought Leadership Carousel',
+        platform: 'LinkedIn',
+        specs: '8-slide PDF carousel analyzing personal finance architecture for devs',
+        suggestedRate: 45000
+      }
+    ],
+    deadline: 'In 7 days (Sep 24)',
+    deadlineDate: '2026-09-24',
+    daysRemaining: 7,
+    applicantsCount: 18,
+    maxApplicants: 25,
     verifiedBrand: true,
-    status: 'open'
+    featured: true,
+    status: 'open',
+    sampleHooks: [
+      '“The financial dashboard every engineer making >₹25 LPA needs to set up today.”',
+      '“Why I stopped carrying physical wallets and how CRED Garage manages my car expenses.”',
+      '“3 subtle credit score mistakes that cost Indian techies lakhs in home loans.”'
+    ]
+  },
+  {
+    id: 'brief_nothing',
+    brandName: 'Nothing',
+    brandLogo: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=140&q=80',
+    brandCoverImage: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80',
+    industry: 'Consumer Tech',
+    category: 'Nothing Phone & Glyph Ecosystem',
+    tier: 'Global',
+    matchScore: 99,
+    matchBreakdown: {
+      audienceDemographics: 99,
+      contentStyle: 99,
+      engagementRate: 98,
+      brandSafety: 100,
+      reasons: [
+        'Highest creator match score across the entire platform for dev/minimalist tech',
+        'Audience has 88% interest index in industrial design, custom OS, and Android mods',
+        'Prior organic videos featuring clean monochrome setups averaged 120k+ impressions'
+      ]
+    },
+    title: 'Nothing Phone (2a) Plus: Dark Minimalist Tech & Code Integration',
+    description: 'Looking for top developer and aesthetic tech creators to highlight the Glyph Interface, Nothing OS 2.6 dark mode widgets, and clean distraction-free productivity.',
+    fullBrief: 'Nothing is championing transparent industrial design and mindful tech usage. We want tech creators and software developers to showcase how Nothing Phone (2a) Plus and Nothing OS widgets streamline day-to-day coding, terminal notifications via Glyph lights, and calendar focus timers without endless social media doomscrolling.',
+    guidelines: {
+      dos: [
+        'Shoot in clean, low-glare, dark minimalist lighting highlighting Glyph LED pulses',
+        'Showcase real-world developer utilities (timer glyphs, custom dot-matrix widgets)',
+        'Demonstrate camera quality and crisp macro shots of the transparent hardware',
+        'Emphasize pure bloatware-free Nothing OS experience'
+      ],
+      donts: [
+        'Do not put loud garish neon RGB lights that clash with Nothing monochrome design',
+        'Avoid generic spec-sheet reading — focus on real user experience and design feel',
+        'Do not use low-framerate video recordings'
+      ],
+      mandatoryMentions: ['Glyph Interface', 'Nothing OS 2.6', 'Transparent Design', '#NothingPhone2aPlus'],
+      hashtags: ['#NothingPhone2aPlus', '#NothingIndia', '#TechAesthetics', '#CleanSetup']
+    },
+    budgetMin: 120000,
+    budgetMax: 250000,
+    escrowGuaranteed: true,
+    payoutStructure: {
+      upfrontAdvancePercent: 50,
+      milestoneReleasePercent: 50,
+      bonusTerms: 'Free Nothing Phone (2a) Plus unit + Ear (a) gifted to creator for permanent keep'
+    },
+    targetNiches: ['Tech & Gadgets', 'Design & Aesthetics', 'Developer Lifestyle'],
+    targetAudience: {
+      ageRange: '18-35 Years (Designers, Developers, Tech Enthusiasts)',
+      topCities: ['Bengaluru', 'Mumbai', 'Delhi NCR', 'Hyderabad', 'Chennai'],
+      minFollowers: '60,000+'
+    },
+    deliverables: [
+      '1x 4K Cinematic Instagram Reel with Sound Design',
+      '1x Dedicated YouTube Review / Desk Setup Feature (8-10 mins)',
+      '3x High-Res Still Photo Carousels on Instagram & X'
+    ],
+    deliverableBreakdown: [
+      {
+        title: 'Cinematic Reel (Glyph in the Dark)',
+        platform: 'Instagram',
+        specs: '9:16 Vertical, 4K 60fps, macro lens hardware shots, ambient audio',
+        suggestedRate: 80000
+      },
+      {
+        title: 'Dedicated YouTube Video',
+        platform: 'YouTube',
+        specs: '16:9 4K, 8+ minutes, in-depth Nothing OS workflow for programmers',
+        suggestedRate: 110000
+      }
+    ],
+    deadline: 'In 8 days (Sep 25)',
+    deadlineDate: '2026-09-25',
+    daysRemaining: 8,
+    applicantsCount: 22,
+    maxApplicants: 30,
+    verifiedBrand: true,
+    featured: true,
+    status: 'open',
+    sampleHooks: [
+      '“I replaced my iPhone with the Nothing Phone for 14 days of software engineering...”',
+      '“Why every software developer is obsessed with this transparent monochrome phone.”',
+      '“How Glyph lighting turned my phone into an anti-distraction coding timer.”'
+    ]
   },
   {
     id: 'brief_nykaa',
     brandName: 'Nykaa',
-    brandLogo: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=120&q=80',
+    brandLogo: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=140&q=80',
+    brandCoverImage: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=1200&q=80',
     industry: 'Beauty & Wellness',
     category: 'Beauty & Personal Care',
-    matchScore: 94,
-    title: 'Nykaa Festive Glow & Daily Screen-Time Skincare Routine',
-    description: 'Showcase your morning or evening desk skincare ritual protecting against screen blue light and urban pollution. Highlight top serums and sunscreen from Nykaa.',
-    budgetMin: 75000,
-    budgetMax: 140000,
+    tier: 'Enterprise',
+    matchScore: 95,
+    matchBreakdown: {
+      audienceDemographics: 94,
+      contentStyle: 96,
+      engagementRate: 95,
+      brandSafety: 100,
+      reasons: [
+        '58% female and 42% male audience interested in daily self-care & skincare routines',
+        'High conversion on festive sale recommendations and beauty routines',
+        'Strong visual aesthetic and color grading in previous video uploads'
+      ]
+    },
+    title: 'Nykaa Mega Festive Beauty Gala — Screen-Time Skincare Routine',
+    description: 'Showcase your morning or evening desk skincare ritual protecting against screen blue light and urban pollution. Highlight top serums and sunscreen from Nykaa with festive sale vouchers.',
+    fullBrief: 'Nykaa Mega Festive Gala is India’s biggest annual beauty and self-care shopping celebration. We are collaborating with lifestyle, professional, and desk creators to show how simple 3-step skincare (Hydration, Vitamin C, SPF 50 Blue Light Screen) keeps skin radiant during long working hours in front of screens and festive events.',
+    guidelines: {
+      dos: [
+        'Show the actual texture and gentle application of products on bare skin',
+        'Highlight Nykaa Festive Sale discounts (up to 50% off top curated brands)',
+        'Include your personalized creator affiliate link in bio and stories',
+        'Tag @NykaaBeauty with #NykaaFestiveGala in the first line of the caption'
+      ],
+      donts: [
+        'Do not apply heavy beauty smoothing filters that obscure real skin texture',
+        'Avoid making medical acne cure claims',
+        'Do not mix competitor shopping platform links'
+      ],
+      mandatoryMentions: ['Nykaa Festive Gala', 'Blue Light Protection', 'Up to 50% Off', '#NykaaFestiveGala'],
+      hashtags: ['#NykaaFestiveGala', '#SkincareRoutine', '#FestiveGlow', '#NykaaBeauty']
+    },
+    budgetMin: 80000,
+    budgetMax: 160000,
+    escrowGuaranteed: true,
+    payoutStructure: {
+      upfrontAdvancePercent: 50,
+      milestoneReleasePercent: 50,
+      bonusTerms: '₹20,000 performance reward for >300 affiliate cart checkouts'
+    },
     targetNiches: ['Lifestyle & Beauty', 'Self Care', 'Creator Routine'],
+    targetAudience: {
+      ageRange: '18-34 Years (Urban Men & Women)',
+      topCities: ['Mumbai', 'Delhi NCR', 'Bengaluru', 'Kolkata', 'Chennai', 'Pune'],
+      minFollowers: '50,000+'
+    },
     deliverables: [
-      '1x Aesthetic GRWM / Desk Skincare Reel',
+      '1x Aesthetic GRWM / Desk Skincare Reel (60s)',
       '2x High-res Product Story Slides with Direct Nykaa Tags',
-      '1x Pinned Comment with affiliate voucher'
+      '1x Pinned Comment with affiliate voucher code'
     ],
-    deadline: 'In 8 days (Sep 18)',
+    deliverableBreakdown: [
+      {
+        title: '60s Aesthetic GRWM Reel',
+        platform: 'Instagram',
+        specs: '9:16 Vertical, warm aesthetic lighting, product close-ups, gentle BGM',
+        suggestedRate: 75000
+      },
+      {
+        title: '2x Story Product Showcase with Stickers',
+        platform: 'Instagram',
+        specs: 'Direct tap-to-buy links with special festive promo discount code',
+        suggestedRate: 25000
+      }
+    ],
+    deadline: 'In 5 days (Sep 21)',
+    deadlineDate: '2026-09-21',
+    daysRemaining: 5,
     applicantsCount: 19,
+    maxApplicants: 35,
     verifiedBrand: true,
-    status: 'open'
+    featured: false,
+    status: 'open',
+    sampleHooks: [
+      '“The 3-step morning routine that saved my skin from 10 hours of monitor blue light...”',
+      '“Unboxing the Nykaa Festive Gala box — here are the only 3 products actually worth buying.”',
+      '“Get ready with me for a festive creator meetup in under 7 minutes.”'
+    ]
+  },
+  {
+    id: 'brief_zomato',
+    brandName: 'Zomato',
+    brandLogo: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=140&q=80',
+    brandCoverImage: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80',
+    industry: 'Food Tech',
+    category: 'Food Delivery & Dining',
+    tier: 'Enterprise',
+    matchScore: 96,
+    matchBreakdown: {
+      audienceDemographics: 96,
+      contentStyle: 97,
+      engagementRate: 96,
+      brandSafety: 100,
+      reasons: [
+        'High organic humor and skit performance with over 8.2% comment rate',
+        '94% urban youth following across major foodie hubs (Delhi, Bangalore, Mumbai)',
+        'Proven viral shareability with group dining and developer skits'
+      ]
+    },
+    title: 'Zomato Gold: Ultimate Weekend Treat & Late-Night Coding Fuel',
+    description: 'Craft funny, highly relatable reels featuring Zomato Gold 1+1 dining and free delivery benefits. Perfect for engineers celebrating placed job offers or student group orders.',
+    fullBrief: 'Zomato Gold offers 1+1 on food and up to 40% off on dining out across 20,000+ top restaurants in India, along with free delivery perks on food orders. We want high-energy, humorous skits showcasing friends or coworkers taking advantage of Zomato Gold privileges.',
+    guidelines: {
+      dos: [
+        'Incorporate witty, relatable dialogue centered around Indian food cravings',
+        'Showcase the Zomato Gold VIP banner and seamless bill settlement',
+        'Use comedic punchlines and fast editing cuts',
+        'Tag @Zomato and use #ZomatoGold in all captions'
+      ],
+      donts: [
+        'Do not mock restaurant staff or show rude behavior',
+        'Avoid messy unappealing food shots',
+        'Do not mention Swiggy or competitive delivery apps'
+      ],
+      mandatoryMentions: ['Zomato Gold', '1+1 Dining Out', 'Free Delivery', '#ZomatoGold'],
+      hashtags: ['#ZomatoGold', '#ZomatoIndia', '#FoodieSkits', '#WeekendVibes']
+    },
+    budgetMin: 85000,
+    budgetMax: 170000,
+    escrowGuaranteed: true,
+    payoutStructure: {
+      upfrontAdvancePercent: 50,
+      milestoneReleasePercent: 50,
+      bonusTerms: '₹25,000 bonus if video crosses 500k views on Instagram within 10 days'
+    },
+    targetNiches: ['Comedy & Skits', 'Food & Dining', 'Tech Culture'],
+    targetAudience: {
+      ageRange: '18-32 Years (Students, Office Teams & Young Couples)',
+      topCities: ['Bengaluru', 'Delhi NCR', 'Mumbai', 'Hyderabad', 'Kolkata', 'Pune'],
+      minFollowers: '70,000+'
+    },
+    deliverables: [
+      '1x Relatable Humor / Developer Celebration Reel (60s)',
+      '2x Story Slides with Zomato Gold referral link and interactive poll'
+    ],
+    deliverableBreakdown: [
+      {
+        title: '60s Comedic Reel',
+        platform: 'Instagram',
+        specs: '9:16 Vertical, character skit / situational comedy, high energy',
+        suggestedRate: 90000
+      },
+      {
+        title: '2x Story Slides',
+        platform: 'Instagram',
+        specs: 'Zomato Gold coupon sticker + restaurant recommendation poll',
+        suggestedRate: 25000
+      }
+    ],
+    deadline: 'In 6 days (Sep 22)',
+    deadlineDate: '2026-09-22',
+    daysRemaining: 6,
+    applicantsCount: 42,
+    maxApplicants: 60,
+    verifiedBrand: true,
+    featured: false,
+    status: 'open',
+    sampleHooks: [
+      '“POV: Your friend got placed in a FAANG company and you opened Zomato Gold...”',
+      '“The math Indian engineers do to extract maximum value from Zomato Gold 1+1.”',
+      '“When it’s Friday 8 PM and no one wants to cook — enter Zomato Gold.”'
+    ]
+  },
+  {
+    id: 'brief_zerodha',
+    brandName: 'Zerodha',
+    brandLogo: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=140&q=80',
+    brandCoverImage: 'https://images.unsplash.com/photo-1642543492481-44e81e3914a7?auto=format&fit=crop&w=1200&q=80',
+    industry: 'FinTech & Education',
+    category: 'Varsity & Long-Term Wealth',
+    tier: 'Enterprise',
+    matchScore: 97,
+    matchBreakdown: {
+      audienceDemographics: 98,
+      contentStyle: 97,
+      engagementRate: 96,
+      brandSafety: 100,
+      reasons: [
+        'Over 75% audience interest in software engineering, index funds, and financial independence',
+        'Educator tone and transparent breakdowns have exceptional audience credibility',
+        'Zero regulatory strikes and 100% compliant educational formatting'
+      ]
+    },
+    title: 'Zerodha Varsity: Demystifying Algorithmic Trading & Finance for Devs',
+    description: 'Create an educational video explaining how software developers can understand market fundamentals, API automation, and long-term compounding using 100% free Zerodha Varsity modules.',
+    fullBrief: 'Zerodha Varsity is India’s premier free financial education resource with zero ads, zero paywalls, and zero upsells. We want technical creators to introduce their audience to Varsity’s free modules — from stock market basics to personal finance, mutual funds, and technical analysis — emphasizing disciplined long-term investing over reckless speculation.',
+    guidelines: {
+      dos: [
+        'Emphasize that Zerodha Varsity is 100% free with no hidden charges or paid courses',
+        'Showcase the clean Zerodha Varsity mobile app and browser interface',
+        'Highlight the SEBI compliance disclaimer clearly in video & description',
+        'Focus on financial discipline, risk management, and compounding concepts'
+      ],
+      donts: [
+        'NEVER give specific stock buy/sell tips or promise guaranteed returns',
+        'Do not promote intraday speculation or high-leverage trading',
+        'Avoid sensationalist thumbnail clickbait with cash piles or sports cars'
+      ],
+      mandatoryMentions: ['Zerodha Varsity', '100% Free Financial Education', 'Disciplined Investing', '#ZerodhaVarsity'],
+      hashtags: ['#ZerodhaVarsity', '#FinancialEducation', '#InvestingForDevs', '#Zerodha']
+    },
+    budgetMin: 100000,
+    budgetMax: 220000,
+    escrowGuaranteed: true,
+    payoutStructure: {
+      upfrontAdvancePercent: 50,
+      milestoneReleasePercent: 50,
+      bonusTerms: '₹25,000 educational grant bonus for highest-rated community discussion thread'
+    },
+    targetNiches: ['FinTech & Education', 'Software Engineering', 'Career Growth'],
+    targetAudience: {
+      ageRange: '20-35 Years (Early Career Professionals & College Graduates)',
+      topCities: ['Bengaluru', 'Hyderabad', 'Pune', 'Delhi NCR', 'Chennai', 'Mumbai'],
+      minFollowers: '60,000+'
+    },
+    deliverables: [
+      '1x Comprehensive YouTube Video (8-10 mins on Dev to Investor Journey)',
+      '1x LinkedIn Authority Breakdown on FinTech APIs and Varsity',
+      '2x Educational Instagram Carousel Slides'
+    ],
+    deliverableBreakdown: [
+      {
+        title: '8-Min Educational YouTube Video',
+        platform: 'YouTube',
+        specs: '16:9 4K, deep-dive walkthrough of Varsity modules, screen share',
+        suggestedRate: 110000
+      },
+      {
+        title: 'LinkedIn In-Depth Carousel Post',
+        platform: 'LinkedIn',
+        specs: '10-slide visual guide to systematic compounding for engineers',
+        suggestedRate: 40000
+      }
+    ],
+    deadline: 'In 10 days (Sep 27)',
+    deadlineDate: '2026-09-27',
+    daysRemaining: 10,
+    applicantsCount: 15,
+    maxApplicants: 25,
+    verifiedBrand: true,
+    featured: true,
+    status: 'open',
+    sampleHooks: [
+      '“Why 90% of software engineers suck at investing (and how free Zerodha Varsity fixes it).”',
+      '“How I automated my investment mental model without paying for ₹10,000 courses.”',
+      '“The only 3 chapters of Zerodha Varsity you must read before turning 25.”'
+    ]
   },
   {
     id: 'brief_myntra',
     brandName: 'Myntra',
-    brandLogo: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=120&q=80',
+    brandLogo: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=140&q=80',
+    brandCoverImage: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1200&q=80',
     industry: 'Fashion & E-Commerce',
     category: 'Fashion & Gen-Z Trends',
-    matchScore: 91,
+    tier: 'Enterprise',
+    matchScore: 92,
+    matchBreakdown: {
+      audienceDemographics: 91,
+      contentStyle: 93,
+      engagementRate: 92,
+      brandSafety: 100,
+      reasons: [
+        'Audience actively engages with style upgrades, wardrobe transitions, and office-wear',
+        'Strong visual aesthetics with quick-cut transition editing capabilities',
+        'Proven affiliate conversion track record with lifestyle e-commerce'
+      ]
+    },
     title: 'Myntra Big Fashion Festival: Techie Workwear to Weekend Fits',
     description: 'Transform your look from smart-casual developer WFH hoodies to festive weekend outfits using Myntra top curated brands with express delivery.',
+    fullBrief: 'Myntra Big Fashion Festival brings over 6,000 top fashion brands at 50-80% off. We want relatable tech and creative professionals to showcase how upgrading from faded oversized t-shirts to sharp, minimalist smart-casuals and festive kurtas boosts confidence in meetings and festive parties.',
+    guidelines: {
+      dos: [
+        'Show 3 distinct outfit transitions (WFH Casual, Office Pitch, Festive Evening)',
+        'Include clear Myntra product IDs and direct affiliate links in description',
+        'Use upbeat music and dynamic snap/kick transitions',
+        'Mention 100% original brands and easy 14-day returns'
+      ],
+      donts: [
+        'Do not wear visibly wrinkled or unironed clothes on camera',
+        'Avoid messy background clutter',
+        'Do not mention Amazon Fashion or Ajio'
+      ],
+      mandatoryMentions: ['Myntra Big Fashion Festival', '50-80% Off', '100% Original Brands', '#MyntraBFF'],
+      hashtags: ['#MyntraBFF', '#MyntraBigFashionFestival', '#StyleUpgrade', '#OOTD']
+    },
     budgetMin: 70000,
     budgetMax: 150000,
+    escrowGuaranteed: true,
+    payoutStructure: {
+      upfrontAdvancePercent: 50,
+      milestoneReleasePercent: 50,
+      bonusTerms: '₹20,000 wardrobe shopping voucher gifted to creator'
+    },
     targetNiches: ['Fashion & Styling', 'Gen-Z Culture', 'Lifestyle'],
+    targetAudience: {
+      ageRange: '18-30 Years (College Students, Techies, Young Creatives)',
+      topCities: ['Bengaluru', 'Delhi NCR', 'Mumbai', 'Kolkata', 'Pune', 'Jaipur'],
+      minFollowers: '50,000+'
+    },
     deliverables: [
       '1x Fast-Paced Transition Lookbook Reel (3 Outfits)',
       '3x Story Slides with Direct Myntra Product Shortlinks'
     ],
-    deadline: 'In 11 days (Sep 25)',
+    deliverableBreakdown: [
+      {
+        title: '60s Transition Lookbook Reel',
+        platform: 'Instagram',
+        specs: '9:16 Vertical, 3 outfit changes, sound synced transitions',
+        suggestedRate: 70000
+      },
+      {
+        title: '3x Story Swipe-Up Sequence',
+        platform: 'Instagram',
+        specs: 'Direct product card tags with price and discount callouts',
+        suggestedRate: 20000
+      }
+    ],
+    deadline: 'In 9 days (Sep 26)',
+    deadlineDate: '2026-09-26',
+    daysRemaining: 9,
     applicantsCount: 23,
+    maxApplicants: 40,
     verifiedBrand: true,
-    status: 'open'
+    featured: false,
+    status: 'open',
+    sampleHooks: [
+      '“Upgrading my developer wardrobe from ₹200 college tees to sharp Myntra fits.”',
+      '“3 outfits every guy needs for the upcoming Indian festive season under ₹2,000.”',
+      '“Myntra Big Fashion Festival haul: what I ordered vs how it actually looks.”'
+    ]
+  },
+  {
+    id: 'brief_lenskart',
+    brandName: 'Lenskart',
+    brandLogo: 'https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=140&q=80',
+    brandCoverImage: 'https://images.unsplash.com/photo-1574258495973-f010dfbb5371?auto=format&fit=crop&w=1200&q=80',
+    industry: 'Eyewear & Wellness',
+    category: 'Lenskart Air & Blu Lenses',
+    tier: 'D2C Unicorn',
+    matchScore: 94,
+    matchBreakdown: {
+      audienceDemographics: 95,
+      contentStyle: 93,
+      engagementRate: 94,
+      brandSafety: 100,
+      reasons: [
+        '85% of audience spends 8+ hours daily in front of computer and mobile screens',
+        'High empathy with eye fatigue, headaches, and work-from-home wellness',
+        'Strong visual match with modern ultra-lightweight titanium eyewear aesthetics'
+      ]
+    },
+    title: 'Lenskart Air Flex: Blue Cut Glasses for 10-Hour Screen Sprints',
+    description: 'Demonstrate how Lenskart Air ultra-lightweight frames and Blu Cut anti-glare lenses eliminate eye strain and headaches for coders, designers, and gamers.',
+    fullBrief: 'Lenskart Air is India’s lightest flexible eyewear designed for people who wear glasses all day long. We want tech creators to show the contrast between eye fatigue with ordinary lenses vs the comfort of Lenskart Blu lenses that filter harmful blue light emitted by laptops, iPads, and phones.',
+    guidelines: {
+      dos: [
+        'Demonstrate frame flexibility and ultra-lightweight feather feel on camera',
+        'Show blue light laser test on the Lenskart Blu lens',
+        'Include your exclusive coupon code "CREATORLENS" for Free Gold Membership',
+        'Tag @Lenskart with #LenskartAir in your posts'
+      ],
+      donts: [
+        'Do not bend frames aggressively past structural tolerance',
+        'Avoid dirty, smudged lenses in close-up beauty shots',
+        'Do not claim medical prevention of vision disorders'
+      ],
+      mandatoryMentions: ['Lenskart Air', 'Blu Cut Anti-Glare', 'Ultra Lightweight', '#LenskartAir'],
+      hashtags: ['#LenskartAir', '#BluCutLenses', '#EyeCareForDevs', '#Lenskart']
+    },
+    budgetMin: 60000,
+    budgetMax: 125000,
+    escrowGuaranteed: true,
+    payoutStructure: {
+      upfrontAdvancePercent: 50,
+      milestoneReleasePercent: 50,
+      bonusTerms: '2x Free Custom Prescription Lenskart Air Glasses delivered to your door'
+    },
+    targetNiches: ['Eyewear & Wellness', 'Productivity', 'Tech & Coding'],
+    targetAudience: {
+      ageRange: '18-35 Years (Engineers, Students, Gamers, Remote Workers)',
+      topCities: ['Bengaluru', 'Delhi NCR', 'Mumbai', 'Pune', 'Hyderabad'],
+      minFollowers: '40,000+'
+    },
+    deliverables: [
+      '1x Problem-Solution Reel on screen fatigue (60s)',
+      '2x High-resolution Story Slides with 3D Try-On link'
+    ],
+    deliverableBreakdown: [
+      {
+        title: '60s Problem-Solution Reel',
+        platform: 'Instagram',
+        specs: '9:16 Vertical, blue light demo, lightweight frame flex showcase',
+        suggestedRate: 60000
+      },
+      {
+        title: '2x Story Slides with 3D Try-On link',
+        platform: 'Instagram',
+        specs: 'Interactive link sticker taking viewers directly to Lenskart 3D Try-On',
+        suggestedRate: 18000
+      }
+    ],
+    deadline: 'In 4 days (Sep 21)',
+    deadlineDate: '2026-09-21',
+    daysRemaining: 4,
+    applicantsCount: 20,
+    maxApplicants: 35,
+    verifiedBrand: true,
+    featured: false,
+    status: 'urgent',
+    sampleHooks: [
+      '“The reason you get headaches after 4 PM at your desk isn’t your coffee...”',
+      '“Testing the lightest pair of glasses in India on a 10-hour coding sprint.”',
+      '“What blue light actually does to your eyes (and how Blu Cut lenses stop it).”'
+    ]
+  },
+  {
+    id: 'brief_zepto',
+    brandName: 'Zepto',
+    brandLogo: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=140&q=80',
+    brandCoverImage: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=1200&q=80',
+    industry: 'Quick Commerce',
+    category: 'Zepto Cafe & Snacks',
+    tier: 'D2C Unicorn',
+    matchScore: 95,
+    matchBreakdown: {
+      audienceDemographics: 95,
+      contentStyle: 96,
+      engagementRate: 95,
+      brandSafety: 100,
+      reasons: [
+        'Exceptional alignment with fast-paced urban developer lifestyle and hackathons',
+        '96% of audience lives in Zepto 10-minute delivery serviceable pin codes',
+        'High conversion rate on quick food and coffee recommendations'
+      ]
+    },
+    title: 'Zepto Cafe: 10-Minute Fresh Cold Brew & Brain Fuel for Hackathons',
+    description: 'Highlight instantaneous 10-minute deliveries of freshly brewed cafe drinks, Vietnamese iced coffee, and gourmet croissants delivered piping hot or icy cold during intense sprint sessions.',
+    fullBrief: 'Zepto Cafe is disrupting daily office and home coffee runs by delivering hot espresso, iced frappes, and bakery treats in 10 minutes flat. We want content showing creators ordering high-grade cafe coffee during an urgent project deadline and taking their first refreshing sip before their meeting starts.',
+    guidelines: {
+      dos: [
+        'Show the actual steam on hot coffee or condensation on iced cold brew',
+        'Highlight the lightning-fast 10-minute countdown in the Zepto app',
+        'Include exclusive promo code "ZEPTOCAFE50" for flat 50% off on first cafe order',
+        'Keep the video vibe high-energy and modern'
+      ],
+      donts: [
+        'Do not spill coffee or show crushed packaging',
+        'Avoid dull or low-energy presentation',
+        'Do not mention Blinkit or Swiggy'
+      ],
+      mandatoryMentions: ['Zepto Cafe', '10-Minute Fresh Coffee', 'Vietnamese Cold Brew', '#ZeptoCafe'],
+      hashtags: ['#ZeptoCafe', '#10MinCoffee', '#WorkFromHomeFuel', '#ZeptoIndia']
+    },
+    budgetMin: 65000,
+    budgetMax: 135000,
+    escrowGuaranteed: true,
+    payoutStructure: {
+      upfrontAdvancePercent: 50,
+      milestoneReleasePercent: 50,
+      bonusTerms: '₹15,000 bonus for >180 first-time Zepto Cafe orders'
+    },
+    targetNiches: ['Quick Commerce', 'Coffee & Food', 'Developer Lifestyle'],
+    targetAudience: {
+      ageRange: '18-32 Years (Metro Techies, Founders & College Students)',
+      topCities: ['Bengaluru', 'Mumbai', 'Delhi NCR', 'Hyderabad', 'Pune', 'Chennai'],
+      minFollowers: '50,000+'
+    },
+    deliverables: [
+      '1x High-Energy 60s Reel with Live Delivery & Taste Test',
+      '2x Story Slides with ₹50 Off Voucher Link'
+    ],
+    deliverableBreakdown: [
+      {
+        title: '60s High-Energy Reel',
+        platform: 'Instagram',
+        specs: '9:16 Vertical, ASMR ice pour sound design, live 10-min delivery timer',
+        suggestedRate: 65000
+      },
+      {
+        title: '2x Story Voucher Drop',
+        platform: 'Instagram',
+        specs: 'Interactive voucher sticker with direct Zepto Cafe link',
+        suggestedRate: 20000
+      }
+    ],
+    deadline: 'In 2 days (Sep 15)',
+    deadlineDate: '2026-09-15',
+    daysRemaining: 2,
+    applicantsCount: 31,
+    maxApplicants: 45,
+    verifiedBrand: true,
+    featured: false,
+    status: 'urgent',
+    sampleHooks: [
+      '“I ordered iced Vietnamese coffee on Zepto Cafe to see if it actually arrives in 10 mins...”',
+      '“Stop paying ₹350 at Starbucks: how I get fresh cafe cold brew at my desk in 10 mins.”',
+      '“The 10-minute hack that saved our hackathon team from falling asleep at 3 AM.”'
+    ]
   },
   {
     id: 'brief_mamaearth',
     brandName: 'Mamaearth',
-    brandLogo: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=120&q=80',
+    brandLogo: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=140&q=80',
+    brandCoverImage: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=1200&q=80',
     industry: 'D2C Personal Care',
     category: 'Toxin-Free Skincare',
-    matchScore: 89,
+    tier: 'D2C Unicorn',
+    matchScore: 90,
+    matchBreakdown: {
+      audienceDemographics: 89,
+      contentStyle: 91,
+      engagementRate: 90,
+      brandSafety: 100,
+      reasons: [
+        'Growing audience interest in toxin-free natural personal care products',
+        'Strong creator credibility with honest, transparent review formats',
+        'High engagement on daily morning routine and lifestyle vlogs'
+      ]
+    },
     title: 'Mamaearth Vitamin C Daily Defense for Working Professionals',
     description: 'Highlight the benefits of natural, toxin-free Vitamin C face wash and sunscreen for creators and professionals who spend 10+ hours in front of monitors and cameras.',
+    fullBrief: 'Mamaearth is Asia’s first MadeSafe certified brand bringing toxin-free, natural personal care products. We want creators to show how simple daily skin defense using Vitamin C Daily Glow Face Wash and Ultra Light Indian Sunscreen protects skin from dullness and pollution.',
+    guidelines: {
+      dos: [
+        'Show genuine before-and-after skin glow in natural daylight',
+        'Highlight the tree planting initiative on every order via Mamaearth app',
+        'Include coupon code "MAMACREATOR20" for 20% off on Mamaearth website & app',
+        'Tag @mamaearth.india in all social media posts'
+      ],
+      donts: [
+        'Do not make exaggerated medicinal claims',
+        'Avoid unrealistic filtered skin shots',
+        'Do not mention competitor chemical brands by name'
+      ],
+      mandatoryMentions: ['MadeSafe Certified', 'Toxin Free', 'Plant Goodness', '#MamaearthIndia'],
+      hashtags: ['#MamaearthIndia', '#VitaminCSkincare', '#PlantGoodness', '#CleanBeauty']
+    },
     budgetMin: 50000,
     budgetMax: 110000,
+    escrowGuaranteed: true,
+    payoutStructure: {
+      upfrontAdvancePercent: 50,
+      milestoneReleasePercent: 50,
+      bonusTerms: '₹15,000 bonus for >120 website orders using creator code'
+    },
     targetNiches: ['Clean Beauty', 'Daily Routine', 'Health & Wellness'],
+    targetAudience: {
+      ageRange: '18-35 Years (Urban Professionals & Students)',
+      topCities: ['Delhi NCR', 'Bengaluru', 'Mumbai', 'Jaipur', 'Lucknow', 'Pune'],
+      minFollowers: '35,000+'
+    },
     deliverables: [
-      '1x Honest Review / Routine Integration Reel',
+      '1x Honest Review / Routine Integration Reel (60s)',
       '1x WhatsApp Broadcast mention to community members',
       '1x Story Slide with Mamaearth 20% Coupon Code'
     ],
-    deadline: 'In 14 days (Sep 28)',
+    deliverableBreakdown: [
+      {
+        title: '60s Review & Routine Reel',
+        platform: 'Instagram',
+        specs: '9:16 Vertical, natural daylight, honest texture application',
+        suggestedRate: 55000
+      },
+      {
+        title: 'Story Slide & WhatsApp Broadcast',
+        platform: 'Multi-Platform',
+        specs: 'Coupon code drop + community link broadcast',
+        suggestedRate: 20000
+      }
+    ],
+    deadline: 'In 12 days (Sep 29)',
+    deadlineDate: '2026-09-29',
+    daysRemaining: 12,
     applicantsCount: 16,
+    maxApplicants: 30,
     verifiedBrand: true,
-    status: 'open'
+    featured: false,
+    status: 'open',
+    sampleHooks: [
+      '“The single most important skincare step for anyone sitting in front of a laptop all day.”',
+      '“Testing Mamaearth Vitamin C routine for 7 days — here is what happened to my skin.”',
+      '“3 toxin-free grooming essentials every young professional in India should keep at their desk.”'
+    ]
+  },
+  {
+    id: 'brief_snitch',
+    brandName: 'Snitch',
+    brandLogo: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=140&q=80',
+    brandCoverImage: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=1200&q=80',
+    industry: 'Fashion & D2C',
+    category: 'Founder & Techie Streetwear',
+    tier: 'ScaleUp',
+    matchScore: 89,
+    matchBreakdown: {
+      audienceDemographics: 88,
+      contentStyle: 90,
+      engagementRate: 89,
+      brandSafety: 100,
+      reasons: [
+        'Strong male Gen-Z and millennial audience demographic looking for modern smart-casuals',
+        'Proven viral reach with creator aesthetic lookbooks and transition reels',
+        'High conversion on D2C website apparel orders'
+      ]
+    },
+    title: 'Snitch Menswear: Modern Techie & Founder Streetwear Collection',
+    description: 'Showcase how Snitch oversized tees, linen resort shirts, and tailored cargo pants deliver the ultimate effortless founder and techie aesthetic for meetups, podcasts, and casual Fridays.',
+    fullBrief: 'Snitch is India’s fastest-growing fast-fashion brand for men. We want creators to style Snitch’s latest Korean-fit linen shirts, heavyweight tees, and tech trousers, showing that Indian founders and engineers can look exceptionally sharp without spending designer luxury money.',
+    guidelines: {
+      dos: [
+        'Style 3 distinct looks (Podcast / Investor Pitch, Coffee Shop Co-working, Weekend Party)',
+        'Show close-up fabric texture, stitching quality, and fit',
+        'Include discount code "SNITCHCREATOR" for 15% off sitewide',
+        'Tag @snitch.co.in with #SnitchMen'
+      ],
+      donts: [
+        'Do not wear dusty dirty sneakers with outfits',
+        'Avoid poorly lit indoor rooms',
+        'Do not compare against Zara or H&M negatively'
+      ],
+      mandatoryMentions: ['Snitch Menswear', 'Effortless Fit', 'Korean Minimalist Style', '#SnitchMen'],
+      hashtags: ['#SnitchMen', '#FounderFashion', '#StreetwearIndia', '#OOTDMens']
+    },
+    budgetMin: 55000,
+    budgetMax: 115000,
+    escrowGuaranteed: true,
+    payoutStructure: {
+      upfrontAdvancePercent: 50,
+      milestoneReleasePercent: 50,
+      bonusTerms: '₹15,000 shopping credit for creator + affiliate rev share on sales'
+    },
+    targetNiches: ['Fashion & D2C', 'Founder Culture', 'Lifestyle'],
+    targetAudience: {
+      ageRange: '18-32 Years (Men: College Students, Techies & Founders)',
+      topCities: ['Bengaluru', 'Mumbai', 'Delhi NCR', 'Pune', 'Hyderabad', 'Ahmedabad'],
+      minFollowers: '40,000+'
+    },
+    deliverables: [
+      '1x 60s Fast-Paced Lookbook Reel with Beat Drops',
+      '3x High-Res Still Photo Carousels on Instagram'
+    ],
+    deliverableBreakdown: [
+      {
+        title: '60s Lookbook Reel',
+        platform: 'Instagram',
+        specs: '9:16 Vertical, beat-synced cuts, urban background, 3 outfit changes',
+        suggestedRate: 55000
+      },
+      {
+        title: '3x Story Swipe-Up Sequence',
+        platform: 'Instagram',
+        specs: 'Direct product links with fit guide and discount code',
+        suggestedRate: 18000
+      }
+    ],
+    deadline: 'In 14 days (Sep 30)',
+    deadlineDate: '2026-09-30',
+    daysRemaining: 14,
+    applicantsCount: 14,
+    maxApplicants: 30,
+    verifiedBrand: true,
+    featured: false,
+    status: 'open',
+    sampleHooks: [
+      '“3 outfits that make software engineers look like funded startup founders.”',
+      '“Snitch streetwear haul: the best Korean-fit linen shirts under ₹1,499.”',
+      '“How I stopped dressing like a college fresher in 3 easy wardrobe changes.”'
+    ]
+  }
+];
+
+export const INITIAL_BRAND_PROPOSALS: BrandProposal[] = [
+  {
+    id: 'prop_boat_active',
+    briefId: 'brief_boat',
+    briefTitle: 'boAt Nirvana Space ANC — Deep Focus Study & Coding Routine',
+    brandName: 'boAt',
+    brandLogo: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=140&q=80',
+    creatorId: 'creator_aarav',
+    proposedAmount: 110000,
+    gstAmount: 19800,
+    netPayout: 108900,
+    pitch: 'Hey boAt team! As an active Indian tech & creator educator with 245k+ followers and 7.8% engagement rate, I will create a cinematic 4K Reel demonstrating 32dB Hybrid ANC in noisy Bangalore cafes during intense coding sprints, paired with an authentic YouTube integration and story link vouchers.',
+    creativeHook: '“How I survive 12-hour coding sprints in noisy Bangalore cafes without losing focus...”',
+    deliverablesProposed: [
+      '1x High-production Instagram Reel (60s 4K Desk Setup / Study with Me)',
+      '1x YouTube 60s Integration mid-roll segment',
+      '2x Story Slides with swipe-up discount coupon link'
+    ],
+    timelineDays: 7,
+    scriptDraftDate: '18 Sep 2026',
+    contentGoLiveDate: '22 Sep 2026',
+    addons: {
+      whitelisting: true,
+      rawFootage: false,
+      exclusiveCategory: false
+    },
+    mediaKitAttached: true,
+    escrowStatus: 'escrow_locked',
+    escrowAmount: 110000,
+    status: 'escrow_funded',
+    brandFeedback: 'Script approved with 10/10 rating by boAt Brand Marketing! ₹1,10,000 is safely locked into NPCI Escrow. Please submit your rough-cut draft video before 22 Sep.',
+    statusTimeline: [
+      {
+        step: 'Proposal Submitted',
+        timestamp: '14 Sep, 11:30 AM',
+        note: 'Submitted proposal with AI Verified Media Kit attached (245k reach).',
+        isCompleted: true
+      },
+      {
+        step: 'Shortlisted by boAt',
+        timestamp: '15 Sep, 02:15 PM',
+        note: 'boAt Influencer Marketing team shortlisted creative angle.',
+        isCompleted: true
+      },
+      {
+        step: 'NPCI Escrow Funded (₹1,10,000)',
+        timestamp: '16 Sep, 09:45 AM',
+        note: '100% brand funds deposited into verified escrow account #ESC_774921.',
+        isCompleted: true
+      },
+      {
+        step: 'Draft Video Submission',
+        timestamp: 'Pending Submission',
+        note: 'Awaiting creator rough-cut video preview link before final publish.',
+        isCompleted: false
+      },
+      {
+        step: 'Approved & Live on Socials',
+        timestamp: 'Pending',
+        note: 'Content go-live with tracking UTM links and promo code.',
+        isCompleted: false
+      },
+      {
+        step: '1-Click UPI Escrow Settlement',
+        timestamp: 'Pending',
+        note: 'Instant payout disbursement to creator bank account.',
+        isCompleted: false
+      }
+    ],
+    submittedAt: '2 days ago'
+  },
+  {
+    id: 'prop_swiggy_review',
+    briefId: 'brief_swiggy',
+    briefTitle: 'Swiggy Instamart 10-Minute Desk Snacks & Brain Fuel for Creators',
+    brandName: 'Swiggy',
+    brandLogo: 'https://images.unsplash.com/photo-1526367790999-0150786686a2?auto=format&fit=crop&w=140&q=80',
+    creatorId: 'creator_aarav',
+    proposedAmount: 145000,
+    gstAmount: 26100,
+    netPayout: 143550,
+    pitch: 'We will film a high-energy midnight problem-solution sketch showing code crashing at 1:45 AM, ordering brain fuel on Instamart, and having the delivery partner arrive before the build finishes compiling.',
+    creativeHook: '“It’s 1:45 AM, my production code just crashed, and I’m out of coffee...”',
+    deliverablesProposed: [
+      '1x Relatable Problem-Solution Reel with Live Delivery (60s)',
+      '1x Interactive Story Poll with Exclusive Coupon code sticker',
+      'Pinned comment with direct UTM app install link'
+    ],
+    timelineDays: 5,
+    scriptDraftDate: '15 Sep 2026',
+    contentGoLiveDate: '19 Sep 2026',
+    addons: {
+      whitelisting: true,
+      rawFootage: true,
+      exclusiveCategory: false
+    },
+    mediaKitAttached: true,
+    escrowStatus: 'escrow_locked',
+    escrowAmount: 145000,
+    status: 'draft_submitted',
+    brandFeedback: 'Draft video received via Frame.io! Brand marketing team is reviewing the first 3 seconds hook and logo visibility. Final approval expected within 24 hours.',
+    deliverableLinks: [
+      {
+        title: 'Draft Rough-Cut Preview (Frame.io)',
+        url: 'https://app.frame.io/v/swiggy_instamart_aarav_v2',
+        platform: 'Instagram',
+        submittedAt: 'Yesterday, 04:30 PM'
+      }
+    ],
+    statusTimeline: [
+      {
+        step: 'Proposal Submitted',
+        timestamp: '12 Sep, 10:00 AM',
+        note: 'Submitted fee of ₹1,45,000 + 18% GST.',
+        isCompleted: true
+      },
+      {
+        step: 'Shortlisted by Swiggy',
+        timestamp: '13 Sep, 12:40 PM',
+        note: 'Campaign manager assigned: Ananya S. (Swiggy Growth).',
+        isCompleted: true
+      },
+      {
+        step: 'NPCI Escrow Funded (₹1,45,000)',
+        timestamp: '13 Sep, 05:20 PM',
+        note: 'Escrow ref #ESC_883019 locked.',
+        isCompleted: true
+      },
+      {
+        step: 'Draft Video Submitted',
+        timestamp: '14 Sep, 04:30 PM',
+        note: 'Draft 4K reel submitted for brand quality check.',
+        isCompleted: true
+      },
+      {
+        step: 'Approved & Live on Socials',
+        timestamp: 'In Review',
+        note: 'Review in progress by Swiggy brand team.',
+        isCompleted: false
+      },
+      {
+        step: '1-Click UPI Escrow Settlement',
+        timestamp: 'Pending',
+        note: 'Instant payout upon publish.',
+        isCompleted: false
+      }
+    ],
+    submittedAt: '4 days ago'
+  },
+  {
+    id: 'prop_zomato_settled',
+    briefId: 'brief_zomato',
+    briefTitle: 'Zomato Gold: Ultimate Weekend Treat & Late-Night Coding Fuel',
+    brandName: 'Zomato',
+    brandLogo: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=140&q=80',
+    creatorId: 'creator_aarav',
+    proposedAmount: 140000,
+    gstAmount: 25200,
+    netPayout: 138600,
+    pitch: 'Created a viral FAANG placement comedy skit extracting maximum math value from Zomato Gold 1+1 dining. Video achieved 482k organic views and 1,420 promo redemptions!',
+    creativeHook: '“POV: Your friend got placed in a FAANG company and you opened Zomato Gold...”',
+    deliverablesProposed: [
+      '1x Relatable Humor / Developer Celebration Reel (60s)',
+      '2x Story Slides with Zomato Gold referral link and interactive poll'
+    ],
+    timelineDays: 5,
+    addons: {
+      whitelisting: false,
+      rawFootage: false,
+      exclusiveCategory: false
+    },
+    mediaKitAttached: true,
+    escrowStatus: 'fully_released',
+    escrowAmount: 140000,
+    status: 'completed',
+    brandFeedback: 'Phenomenal performance! Reel reached 482k organic views with 38k likes and 1,420 app downloads. 100% Escrow disbursed to your Bank Account via UPI Ref: UPI-984021984210.',
+    deliverableLinks: [
+      {
+        title: 'Instagram Reel (Live)',
+        url: 'https://instagram.com/reel/zomato_gold_aarav',
+        platform: 'Instagram',
+        submittedAt: '8 days ago',
+        viewsCount: '482,000 Views',
+        engagement: '8.4%'
+      },
+      {
+        title: 'Story Link Analytics',
+        url: 'https://zomato.link/utm_aarav_stats',
+        platform: 'Instagram',
+        submittedAt: '7 days ago',
+        viewsCount: '58,400 Taps',
+        engagement: '1,420 Installs'
+      }
+    ],
+    invoiceGenerated: true,
+    invoiceNumber: 'INV-2026-BR-0042',
+    upiRefId: 'UPI-984021984210',
+    statusTimeline: [
+      {
+        step: 'Proposal Submitted',
+        timestamp: '01 Sep, 09:30 AM',
+        note: 'Submitted proposal with rate card.',
+        isCompleted: true
+      },
+      {
+        step: 'Shortlisted by Zomato',
+        timestamp: '02 Sep, 11:15 AM',
+        note: 'Zomato Social team approved concept.',
+        isCompleted: true
+      },
+      {
+        step: 'NPCI Escrow Funded (₹1,40,000)',
+        timestamp: '02 Sep, 04:00 PM',
+        note: 'Escrow ref #ESC_610492 locked.',
+        isCompleted: true
+      },
+      {
+        step: 'Draft Video Approved',
+        timestamp: '04 Sep, 02:30 PM',
+        note: 'Approved on first review without revisions.',
+        isCompleted: true
+      },
+      {
+        step: 'Content Published Live',
+        timestamp: '06 Sep, 06:00 PM',
+        note: 'Reel went viral with 482k impressions.',
+        isCompleted: true
+      },
+      {
+        step: '1-Click UPI Escrow Settlement (₹1,40,000)',
+        timestamp: '07 Sep, 11:20 AM',
+        note: '100% Escrow disbursed via UPI Ref #UPI-984021984210.',
+        isCompleted: true
+      }
+    ],
+    submittedAt: '12 days ago'
+  },
+  {
+    id: 'prop_cred_shortlisted',
+    briefId: 'brief_cred',
+    briefTitle: 'CRED Garage & Smart Scan & Pay — Frictionless Money Management',
+    brandName: 'CRED',
+    brandLogo: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=140&q=80',
+    creatorId: 'creator_aarav',
+    proposedAmount: 220000,
+    gstAmount: 39600,
+    netPayout: 217800,
+    pitch: 'Cinematic 4K walkthrough exploring the financial OS for high-earning software developers. We will showcase CRED Garage tracking vehicle maintenance alongside smart credit score optimization.',
+    creativeHook: '“The financial dashboard every engineer making >₹25 LPA needs to set up today.”',
+    deliverablesProposed: [
+      '1x Cinematic 4K Instagram Reel (60s)',
+      '1x Dedicated YouTube Financial Breakdown Segment (90s)',
+      '1x LinkedIn Authority Post on smart cash-flow management'
+    ],
+    timelineDays: 10,
+    scriptDraftDate: '22 Sep 2026',
+    contentGoLiveDate: '28 Sep 2026',
+    addons: {
+      whitelisting: true,
+      rawFootage: true,
+      exclusiveCategory: true
+    },
+    mediaKitAttached: true,
+    escrowStatus: 'awaiting_funding',
+    escrowAmount: 220000,
+    status: 'shortlisted',
+    brandFeedback: 'Shortlisted among top 3 tech creators for this cycle. CRED Growth team is reviewing the script outline and initiating contract signing & Escrow deposit.',
+    statusTimeline: [
+      {
+        step: 'Proposal Submitted',
+        timestamp: '13 Sep, 03:00 PM',
+        note: 'Submitted custom proposal for ₹2,20,000 + 18% GST.',
+        isCompleted: true
+      },
+      {
+        step: 'Shortlisted by CRED',
+        timestamp: '14 Sep, 05:45 PM',
+        note: 'CRED Brand Growth team shortlisted Aarav.',
+        isCompleted: true
+      },
+      {
+        step: 'NPCI Escrow Funding',
+        timestamp: 'In Progress',
+        note: 'Brand finance team processing Escrow deposit.',
+        isCompleted: false
+      },
+      {
+        step: 'Draft Submission',
+        timestamp: 'Pending',
+        note: 'Awaiting video production.',
+        isCompleted: false
+      },
+      {
+        step: 'Approved & Live on Socials',
+        timestamp: 'Pending',
+        note: 'Awaiting live date.',
+        isCompleted: false
+      },
+      {
+        step: '1-Click UPI Escrow Settlement',
+        timestamp: 'Pending',
+        note: 'Disbursement upon delivery sign-off.',
+        isCompleted: false
+      }
+    ],
+    submittedAt: '3 days ago'
   }
 ];
 

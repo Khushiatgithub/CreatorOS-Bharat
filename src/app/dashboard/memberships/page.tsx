@@ -64,7 +64,8 @@ export default function MembershipsDashboardPage() {
     updateSubscriptionPlan,
     deleteSubscriptionPlan,
     cancelSubscription,
-    changeSubscriptionPlan
+    changeSubscriptionPlan,
+    renewSubscription
   } = useCreatorStore();
 
   // Navigation tab for secondary management views
@@ -756,10 +757,12 @@ export default function MembershipsDashboardPage() {
                             </td>
 
                             <td className="py-3.5 px-4">
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${
+                              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold capitalize border ${
                                 sub.status === 'active'
-                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                                  : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                                  : sub.status === 'cancelled'
+                                  ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                                  : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
                               }`}>
                                 {sub.cancelAtPeriodEnd ? 'Cancels at End' : sub.status}
                               </span>
@@ -1355,20 +1358,33 @@ export default function MembershipsDashboardPage() {
                   </select>
                 </div>
 
-                <div className="pt-2 flex items-center justify-between gap-3">
-                  <button
-                    onClick={() => {
-                      cancelSubscription(managingSubscriber.id, true);
-                      setManagingSubscriber(null);
-                    }}
-                    className="px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-xs font-semibold text-rose-400 transition"
-                  >
-                    Cancel Subscription
-                  </button>
+                <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-2.5">
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <button
+                      onClick={() => {
+                        renewSubscription(managingSubscriber.id);
+                        setManagingSubscriber(null);
+                      }}
+                      className="flex-1 sm:flex-none px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-semibold text-emerald-300 border border-emerald-500/30 transition flex items-center justify-center gap-1.5"
+                    >
+                      <Sparkles className="h-3.5 w-3.5" />
+                      <span>Simulate Auto-Renewal</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        cancelSubscription(managingSubscriber.id, true);
+                        setManagingSubscriber(null);
+                      }}
+                      className="flex-1 sm:flex-none px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-xs font-semibold text-rose-400 border border-rose-500/20 transition"
+                    >
+                      Cancel Sub
+                    </button>
+                  </div>
 
                   <button
                     onClick={() => setManagingSubscriber(null)}
-                    className="px-4 py-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.12] text-xs font-semibold text-white transition"
+                    className="w-full sm:w-auto px-4 py-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.12] text-xs font-semibold text-white transition"
                   >
                     Done
                   </button>

@@ -1206,6 +1206,8 @@ export function useCreatorStore() {
   };
 
   const cancelSubscription = (subscriptionId: string, immediate: boolean = false) => {
+    const targetSub = subscriptions.find((s) => s.id === subscriptionId);
+
     setSubscriptions((prev) => {
       const next = prev.map((s) => {
         if (s.id !== subscriptionId) return s;
@@ -1220,7 +1222,19 @@ export function useCreatorStore() {
       return next;
     });
 
-    // Async cancel in PostgreSQL API
+    // Auto-update member count if cancelled immediately
+    if (immediate && targetSub) {
+      setSubscriptionPlans((prev) => {
+        const next = prev.map((p) => {
+          if (p.id !== targetSub.planId) return p;
+          return { ...p, memberCount: Math.max(0, p.memberCount - 1) };
+        });
+        saveState(STORAGE_KEYS.SUBSCRIPTION_PLANS, next);
+        return next;
+      });
+    }
+
+    // Async cancel in PostgreSQL API & Razorpay
     try {
       fetch('/api/subscriptions/cancel', {
         method: 'POST',
@@ -1237,9 +1251,11 @@ export function useCreatorStore() {
     newPlanId: string,
     newBillingCycle: 'monthly' | 'yearly' = 'monthly'
   ) => {
+    const targetSub = subscriptions.find((s) => s.id === subscriptionId);
     const newPlan = subscriptionPlans.find((p) => p.id === newPlanId);
     if (!newPlan) return;
 
+    const oldPlanId = targetSub?.planId;
     const newAmount = newBillingCycle === 'yearly' ? newPlan.yearlyPrice : newPlan.monthlyPrice;
 
     setSubscriptions((prev) => {
@@ -1252,6 +1268,7 @@ export function useCreatorStore() {
           planType: newPlan.type,
           amount: newAmount,
           billingCycle: newBillingCycle,
+          status: 'active' as const,
           updatedAt: 'Just now'
         };
       });
@@ -1259,7 +1276,68 @@ export function useCreatorStore() {
       return next;
     });
 
-    // Async upgrade/downgrade in PostgreSQL API
+    // Automatically update member counts across old and new plans
+    if (oldPlanId && oldPlanId !== newPlanId) {
+      setSubscriptionPlans((prev) => {
+        const next = prev.map((p) => {
+          if (p.id === oldPlanId) return { ...p, memberCount: Math.max(0, p.memberCount - 1) };
+          if (p.id === newPlanId) return { ...p, memberCount: p.memberCount + 1 };
+          return p;
+        });
+        saveState(STORAGE_KEYS.SUBSCRIPTION_PLANS, next);
+        return next;
+      });
+    }
+
+    // Automatically generate GST Tax Invoice for upgraded plan
+    if (newAmount > 0 && targetSub) {
+      const invoiceNumber = `INV-SUB-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const upgradePay: SubscriptionPayment = {
+        id: `spay_${Date.now()}`,
+        subscriptionId,
+        creatorId: activeCreatorId,
+        planName: newPlan.name,
+        subscriberName: targetSub.userName,
+        subscriberEmail: targetSub.userEmail,
+        amount: newAmount,
+        currency: 'INR',
+        status: 'paid',
+        paymentMethod: 'Razorpay Autopay',
+        razorpayPaymentId: `pay_upg_${Math.floor(10000000 + Math.random() * 90000000)}`,
+        invoiceNumber,
+        billingCycle: newBillingCycle,
+        createdAt: 'Just now'
+      };
+
+      setSubscriptionPayments((prev) => {
+        const next = [upgradePay, ...prev];
+        saveState(STORAGE_KEYS.SUBSCRIPTION_PAYMENTS, next);
+        return next;
+      });
+
+      try {
+        fetch('/api/subscriptions/payments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            subscription_id: subscriptionId,
+            amount: newAmount,
+            payment_status: 'success',
+            payment_method: 'UPI',
+            transaction_id: upgradePay.razorpayPaymentId,
+            creatorId: activeCreatorId,
+            planName: newPlan.name,
+            subscriberName: targetSub.userName,
+            subscriberEmail: targetSub.userEmail,
+            billingCycle: newBillingCycle
+          })
+        }).catch((e) => console.warn('Background payment sync:', e));
+      } catch (e) {
+        console.warn('API error:', e);
+      }
+    }
+
+    // Async upgrade/downgrade in PostgreSQL API & Razorpay
     try {
       fetch('/api/subscriptions/upgrade', {
         method: 'POST',
@@ -1268,6 +1346,80 @@ export function useCreatorStore() {
       }).catch((e) => console.warn('Background PostgreSQL plan change sync:', e));
     } catch (e) {
       console.warn('API error:', e);
+    }
+  };
+
+  const renewSubscription = (subscriptionId: string) => {
+    const targetSub = subscriptions.find((s) => s.id === subscriptionId);
+    if (!targetSub) return;
+
+    const now = new Date();
+    const currentStart = now.toISOString().split('T')[0];
+    const days = targetSub.billingCycle === 'yearly' ? 365 : 30;
+    const endDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+    const currentEnd = endDate.toISOString().split('T')[0];
+
+    setSubscriptions((prev) => {
+      const next = prev.map((s) => {
+        if (s.id !== subscriptionId) return s;
+        return {
+          ...s,
+          status: 'active' as const,
+          currentPeriodStart: currentStart,
+          currentPeriodEnd: currentEnd,
+          cancelAtPeriodEnd: false,
+          updatedAt: 'Just now'
+        };
+      });
+      saveState(STORAGE_KEYS.SUBSCRIPTIONS, next);
+      return next;
+    });
+
+    if (targetSub.amount > 0) {
+      const invoiceNumber = `INV-SUB-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const renewalPay: SubscriptionPayment = {
+        id: `spay_${Date.now()}`,
+        subscriptionId,
+        creatorId: activeCreatorId,
+        planName: targetSub.planName,
+        subscriberName: targetSub.userName,
+        subscriberEmail: targetSub.userEmail,
+        amount: targetSub.amount,
+        currency: 'INR',
+        status: 'paid',
+        paymentMethod: 'Razorpay Autopay',
+        razorpayPaymentId: `pay_rnw_${Math.floor(10000000 + Math.random() * 90000000)}`,
+        invoiceNumber,
+        billingCycle: targetSub.billingCycle,
+        createdAt: 'Just now'
+      };
+
+      setSubscriptionPayments((prev) => {
+        const next = [renewalPay, ...prev];
+        saveState(STORAGE_KEYS.SUBSCRIPTION_PAYMENTS, next);
+        return next;
+      });
+
+      try {
+        fetch('/api/subscriptions/payments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            subscription_id: subscriptionId,
+            amount: targetSub.amount,
+            payment_status: 'success',
+            payment_method: 'UPI',
+            transaction_id: renewalPay.razorpayPaymentId,
+            creatorId: activeCreatorId,
+            planName: targetSub.planName,
+            subscriberName: targetSub.userName,
+            subscriberEmail: targetSub.userEmail,
+            billingCycle: targetSub.billingCycle
+          })
+        }).catch((e) => console.warn('Background payment sync:', e));
+      } catch (e) {
+        console.warn('API error:', e);
+      }
     }
   };
 
@@ -1386,6 +1538,7 @@ export function useCreatorStore() {
     deleteSubscriptionPlan,
     subscribeToPlan,
     cancelSubscription,
-    changeSubscriptionPlan
+    changeSubscriptionPlan,
+    renewSubscription
   };
 }

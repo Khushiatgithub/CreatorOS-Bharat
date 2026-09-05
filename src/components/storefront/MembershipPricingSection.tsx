@@ -49,7 +49,7 @@ export default function MembershipPricingSection({
   const plans = subscriptionPlans.filter((p) => p.creatorId === creator.id && p.isActive !== false);
 
   // Handle Subscribe Click
-  const handleSubscribeClick = (plan: SubscriptionPlan) => {
+  const handleSubscribeClick = async (plan: SubscriptionPlan) => {
     if (plan.type === 'invite_only') {
       setShowInviteModal(plan);
       setInviteError('');

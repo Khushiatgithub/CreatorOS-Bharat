@@ -17,7 +17,10 @@ import {
   CommunityComment,
   SubscriptionPlan,
   Subscription,
-  SubscriptionPayment
+  SubscriptionPayment,
+  GoogleCalendarIntegration,
+  DayAvailability,
+  CalendarMeeting
 } from '@/types';
 
 export const THEMES: StoreTheme[] = [
@@ -2583,5 +2586,144 @@ export const INITIAL_SUBSCRIPTION_PAYMENTS: SubscriptionPayment[] = [
     createdAt: '2026-08-28 02:45 PM'
   }
 ];
+
+export const INITIAL_GOOGLE_CALENDAR: GoogleCalendarIntegration = {
+  id: 'gcal_creator_aarav',
+  creatorId: 'creator_aarav',
+  provider: 'google_calendar',
+  accountEmail: 'aarav.sharma@gmail.com',
+  isConnected: true,
+  syncStatus: 'synced',
+  lastSyncedAt: 'Today at 02:45 PM',
+  createdAt: '2025-01-01',
+  updatedAt: '2025-01-01'
+};
+
+export const INITIAL_WEEKLY_AVAILABILITY: DayAvailability[] = [
+  {
+    day: 'Monday',
+    isEnabled: true,
+    timeRanges: [
+      { id: 'mon_1', start: '10:00', end: '13:00' },
+      { id: 'mon_2', start: '15:00', end: '19:00' }
+    ]
+  },
+  {
+    day: 'Tuesday',
+    isEnabled: true,
+    timeRanges: [
+      { id: 'tue_1', start: '10:00', end: '13:00' },
+      { id: 'tue_2', start: '15:00', end: '19:00' }
+    ]
+  },
+  {
+    day: 'Wednesday',
+    isEnabled: true,
+    timeRanges: [
+      { id: 'wed_1', start: '10:00', end: '13:00' },
+      { id: 'wed_2', start: '15:00', end: '19:00' }
+    ]
+  },
+  {
+    day: 'Thursday',
+    isEnabled: true,
+    timeRanges: [
+      { id: 'thu_1', start: '10:00', end: '13:00' },
+      { id: 'thu_2', start: '15:00', end: '19:00' }
+    ]
+  },
+  {
+    day: 'Friday',
+    isEnabled: true,
+    timeRanges: [
+      { id: 'fri_1', start: '10:00', end: '13:00' },
+      { id: 'fri_2', start: '14:30', end: '18:00' }
+    ]
+  },
+  {
+    day: 'Saturday',
+    isEnabled: true,
+    timeRanges: [
+      { id: 'sat_1', start: '11:00', end: '16:00' }
+    ]
+  },
+  {
+    day: 'Sunday',
+    isEnabled: false,
+    timeRanges: []
+  }
+];
+
+export const INITIAL_CALENDAR_MEETINGS: CalendarMeeting[] = [
+  {
+    id: 'meet_101',
+    creatorId: 'creator_aarav',
+    studentName: 'Priya Sundaram',
+    studentEmail: 'priya.sundaram@gmail.com',
+    studentAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80',
+    studentPhone: '+91 98450 11223',
+    meetingTitle: '1:1 Fullstack System Design & Resume Review',
+    meetingDate: 'Tomorrow, Sep 6, 2026',
+    meetingTime: '04:30 PM - 05:15 PM',
+    durationMinutes: 45,
+    meetingStatus: 'confirmed',
+    meetingUrl: 'https://meet.google.com/xyz-bharat-osm',
+    googleEventId: 'gevent_priya_101',
+    topic: 'FAANG Interview Strategy & Low-Level Design (LLD)',
+    createdAt: '2026-09-04'
+  },
+  {
+    id: 'meet_102',
+    creatorId: 'creator_aarav',
+    studentName: 'Rohan Varma',
+    studentEmail: 'rohan.varma@gmail.com',
+    studentAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
+    studentPhone: '+91 98110 33445',
+    meetingTitle: 'Senior SDE Mock Interview & DSA Teardown',
+    meetingDate: 'Mon, Sep 8, 2026',
+    meetingTime: '11:00 AM - 12:00 PM',
+    durationMinutes: 60,
+    meetingStatus: 'upcoming',
+    meetingUrl: 'https://meet.google.com/abc-creator-meet',
+    googleEventId: 'gevent_rohan_102',
+    topic: 'Graph Algorithms & Concurrency in Node.js',
+    createdAt: '2026-09-05'
+  },
+  {
+    id: 'meet_103',
+    creatorId: 'creator_aarav',
+    studentName: 'Ananya Iyer',
+    studentEmail: 'ananya.iyer@gmail.com',
+    studentAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+    studentPhone: '+91 97220 55667',
+    meetingTitle: 'Creator Strategy & Bio-Storefront Launch 1:1',
+    meetingDate: 'Wed, Sep 10, 2026',
+    meetingTime: '06:00 PM - 06:45 PM',
+    durationMinutes: 45,
+    meetingStatus: 'confirmed',
+    meetingUrl: 'https://meet.google.com/cre-live-iyer',
+    googleEventId: 'gevent_ananya_103',
+    topic: 'Packaging Cohorts & Razorpay UPI Autopay Setup',
+    createdAt: '2026-09-05'
+  },
+  {
+    id: 'meet_104',
+    creatorId: 'creator_aarav',
+    studentName: 'Vikramaditya Roy',
+    studentEmail: 'vikram.roy@techmail.com',
+    studentAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80',
+    studentPhone: '+91 99001 77889',
+    meetingTitle: 'Cloud Architecture & Distributed Microservices Q&A',
+    meetingDate: 'Fri, Sep 12, 2026',
+    meetingTime: '03:00 PM - 03:45 PM',
+    durationMinutes: 45,
+    meetingStatus: 'upcoming',
+    meetingUrl: 'https://meet.google.com/vkm-arch-meet',
+    googleEventId: 'gevent_vikram_104',
+    topic: 'Kubernetes on AWS & Cost Optimization',
+    createdAt: '2026-09-05'
+  }
+];
+
 
 

@@ -21,7 +21,11 @@ import {
   SubscriptionPlan,
   Subscription,
   SubscriptionPayment,
-  MembershipMetrics
+  MembershipMetrics,
+  GoogleCalendarIntegration,
+  DayAvailability,
+  CalendarMeeting,
+  MeetingStatus
 } from '@/types';
 import {
   INITIAL_CREATORS,
@@ -39,6 +43,9 @@ import {
   INITIAL_SUBSCRIPTION_PLANS,
   INITIAL_SUBSCRIPTIONS,
   INITIAL_SUBSCRIPTION_PAYMENTS,
+  INITIAL_GOOGLE_CALENDAR,
+  INITIAL_WEEKLY_AVAILABILITY,
+  INITIAL_CALENDAR_MEETINGS,
   THEMES
 } from './mock-data';
 import { calculateGST, SAC_CODES } from './gst';
@@ -61,7 +68,11 @@ const STORAGE_KEYS = {
   COMMUNITY_MEMBERS: 'creatoros_community_members',
   SUBSCRIPTION_PLANS: 'creatoros_subscription_plans',
   SUBSCRIPTIONS: 'creatoros_subscriptions',
-  SUBSCRIPTION_PAYMENTS: 'creatoros_subscription_payments'
+  SUBSCRIPTION_PAYMENTS: 'creatoros_subscription_payments',
+  GOOGLE_CALENDAR: 'creatoros_google_calendar',
+  WEEKLY_AVAILABILITY: 'creatoros_weekly_availability',
+  BUFFER_MINUTES: 'creatoros_buffer_minutes',
+  CALENDAR_MEETINGS: 'creatoros_calendar_meetings'
 };
 
 // Initial state loader with safe hydration
@@ -84,6 +95,10 @@ export function useCreatorStore() {
   const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>(INITIAL_SUBSCRIPTION_PLANS);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>(INITIAL_SUBSCRIPTIONS);
   const [subscriptionPayments, setSubscriptionPayments] = useState<SubscriptionPayment[]>(INITIAL_SUBSCRIPTION_PAYMENTS);
+  const [googleCalendar, setGoogleCalendar] = useState<GoogleCalendarIntegration>(INITIAL_GOOGLE_CALENDAR);
+  const [weeklyAvailability, setWeeklyAvailability] = useState<DayAvailability[]>(INITIAL_WEEKLY_AVAILABILITY);
+  const [bufferMinutes, setBufferMinutes] = useState<number>(15);
+  const [calendarMeetings, setCalendarMeetings] = useState<CalendarMeeting[]>(INITIAL_CALENDAR_MEETINGS);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Load from localStorage on client mount
@@ -142,11 +157,48 @@ export function useCreatorStore() {
 
       const savedSubPayments = localStorage.getItem(STORAGE_KEYS.SUBSCRIPTION_PAYMENTS);
       if (savedSubPayments) setSubscriptionPayments(JSON.parse(savedSubPayments));
+
+      const savedGcal = localStorage.getItem(STORAGE_KEYS.GOOGLE_CALENDAR);
+      if (savedGcal) setGoogleCalendar(JSON.parse(savedGcal));
+
+      const savedAvail = localStorage.getItem(STORAGE_KEYS.WEEKLY_AVAILABILITY);
+      if (savedAvail) setWeeklyAvailability(JSON.parse(savedAvail));
+
+      const savedBuffer = localStorage.getItem(STORAGE_KEYS.BUFFER_MINUTES);
+      if (savedBuffer) setBufferMinutes(JSON.parse(savedBuffer));
+
+      const savedMeetings = localStorage.getItem(STORAGE_KEYS.CALENDAR_MEETINGS);
+      if (savedMeetings) setCalendarMeetings(JSON.parse(savedMeetings));
     } catch (e) {
       console.warn('LocalStorage error or not available', e);
     } finally {
       setIsLoaded(true);
     }
+
+    // Async sync from PostgreSQL API endpoints
+    fetch('/api/calendar/google')
+      .then((res) => res.json())
+      .then((d) => {
+        if (d.success && d.data) setGoogleCalendar(d.data);
+      })
+      .catch((e) => console.warn('GCal sync error:', e));
+
+    fetch('/api/calendar/availability')
+      .then((res) => res.json())
+      .then((d) => {
+        if (d.success && d.data) {
+          if (d.data.availability) setWeeklyAvailability(d.data.availability);
+          if (d.data.bufferMinutes) setBufferMinutes(d.data.bufferMinutes);
+        }
+      })
+      .catch((e) => console.warn('Availability sync error:', e));
+
+    fetch('/api/calendar/meetings')
+      .then((res) => res.json())
+      .then((d) => {
+        if (d.success && d.data) setCalendarMeetings(d.data);
+      })
+      .catch((e) => console.warn('Meetings sync error:', e));
   }, []);
 
   // Save changes
@@ -1444,6 +1496,131 @@ export function useCreatorStore() {
     growthPercentage: 18.4
   };
 
+  // Google Calendar Integration actions
+  const connectGoogleCalendar = (accountEmail: string = 'aarav.sharma@gmail.com') => {
+    const updated: GoogleCalendarIntegration = {
+      ...googleCalendar,
+      accountEmail,
+      isConnected: true,
+      syncStatus: 'synced',
+      lastSyncedAt: 'Just now'
+    };
+    setGoogleCalendar(updated);
+    saveState(STORAGE_KEYS.GOOGLE_CALENDAR, updated);
+
+    fetch('/api/calendar/google', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        creatorId: activeCreatorId,
+        accountEmail,
+        isConnected: true,
+        syncStatus: 'synced'
+      })
+    }).catch((e) => console.warn('Background GCal connect sync:', e));
+  };
+
+  const disconnectGoogleCalendar = () => {
+    const updated: GoogleCalendarIntegration = {
+      ...googleCalendar,
+      isConnected: false,
+      syncStatus: 'disconnected',
+      lastSyncedAt: 'Never'
+    };
+    setGoogleCalendar(updated);
+    saveState(STORAGE_KEYS.GOOGLE_CALENDAR, updated);
+
+    fetch('/api/calendar/google', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        creatorId: activeCreatorId,
+        accountEmail: googleCalendar.accountEmail,
+        isConnected: false,
+        syncStatus: 'disconnected'
+      })
+    }).catch((e) => console.warn('Background GCal disconnect sync:', e));
+  };
+
+  const updateWeeklyAvailability = (newAvailability: DayAvailability[], newBuffer?: number) => {
+    setWeeklyAvailability(newAvailability);
+    saveState(STORAGE_KEYS.WEEKLY_AVAILABILITY, newAvailability);
+
+    const bufferToUse = newBuffer !== undefined ? newBuffer : bufferMinutes;
+    if (newBuffer !== undefined) {
+      setBufferMinutes(newBuffer);
+      saveState(STORAGE_KEYS.BUFFER_MINUTES, newBuffer);
+    }
+
+    fetch('/api/calendar/availability', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        creatorId: activeCreatorId,
+        availability: newAvailability,
+        bufferMinutes: bufferToUse
+      })
+    }).catch((e) => console.warn('Background availability sync:', e));
+  };
+
+  const updateBufferMinutes = (buffer: number) => {
+    setBufferMinutes(buffer);
+    saveState(STORAGE_KEYS.BUFFER_MINUTES, buffer);
+
+    fetch('/api/calendar/availability', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        creatorId: activeCreatorId,
+        availability: weeklyAvailability,
+        bufferMinutes: buffer
+      })
+    }).catch((e) => console.warn('Background buffer sync:', e));
+  };
+
+  const createCalendarMeeting = (meeting: Omit<CalendarMeeting, 'id' | 'createdAt' | 'creatorId'> & { creatorId?: string }) => {
+    const id = `meet_${Date.now()}`;
+    const newMeeting: CalendarMeeting = {
+      ...meeting,
+      id,
+      creatorId: meeting.creatorId || activeCreatorId,
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+
+    setCalendarMeetings((prev) => {
+      const next = [newMeeting, ...prev];
+      saveState(STORAGE_KEYS.CALENDAR_MEETINGS, next);
+      return next;
+    });
+
+    fetch('/api/calendar/meetings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...newMeeting
+      })
+    }).catch((e) => console.warn('Background meeting create sync:', e));
+
+    return newMeeting;
+  };
+
+  const updateMeetingStatus = (meetingId: string, status: MeetingStatus) => {
+    setCalendarMeetings((prev) => {
+      const next = prev.map((m) => (m.id === meetingId ? { ...m, meetingStatus: status } : m));
+      saveState(STORAGE_KEYS.CALENDAR_MEETINGS, next);
+      return next;
+    });
+
+    fetch('/api/calendar/meetings', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: meetingId,
+        status
+      })
+    }).catch((e) => console.warn('Background meeting status sync:', e));
+  };
+
   // Reset demo data
   const resetDemoData = () => {
     setCreators(INITIAL_CREATORS);
@@ -1462,6 +1639,10 @@ export function useCreatorStore() {
     setSubscriptionPlans(INITIAL_SUBSCRIPTION_PLANS);
     setSubscriptions(INITIAL_SUBSCRIPTIONS);
     setSubscriptionPayments(INITIAL_SUBSCRIPTION_PAYMENTS);
+    setGoogleCalendar(INITIAL_GOOGLE_CALENDAR);
+    setWeeklyAvailability(INITIAL_WEEKLY_AVAILABILITY);
+    setBufferMinutes(15);
+    setCalendarMeetings(INITIAL_CALENDAR_MEETINGS);
     setAppointments([]);
     if (typeof window !== 'undefined') {
       localStorage.clear();
@@ -1504,6 +1685,12 @@ export function useCreatorStore() {
     subscriptionPayments: subscriptionPayments.filter((p) => p.creatorId === activeCreatorId),
     allSubscriptionPayments: subscriptionPayments,
     membershipMetrics,
+    // Calendar State
+    googleCalendar,
+    weeklyAvailability,
+    bufferMinutes,
+    calendarMeetings: calendarMeetings.filter((m) => m.creatorId === activeCreatorId || activeCreatorId === 'all'),
+    allCalendarMeetings: calendarMeetings,
     // Actions
     updateCreator,
     switchActiveCreator,
@@ -1539,6 +1726,13 @@ export function useCreatorStore() {
     subscribeToPlan,
     cancelSubscription,
     changeSubscriptionPlan,
-    renewSubscription
+    renewSubscription,
+    // Calendar Actions
+    connectGoogleCalendar,
+    disconnectGoogleCalendar,
+    updateWeeklyAvailability,
+    updateBufferMinutes,
+    createCalendarMeeting,
+    updateMeetingStatus
   };
 }

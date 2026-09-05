@@ -585,5 +585,55 @@ export interface MembershipMetrics {
   growthPercentage: number;
 }
 
+// ============================================================================
+// CALENDAR & AVAILABILITY SYSTEM TYPES
+// ============================================================================
+
+export interface GoogleCalendarIntegration {
+  id: string;
+  creatorId: string;
+  provider: 'google_calendar';
+  accountEmail: string;
+  isConnected: boolean;
+  syncStatus: 'synced' | 'syncing' | 'disconnected' | 'error';
+  lastSyncedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DayTimeRange {
+  id: string;
+  start: string; // e.g. '09:00'
+  end: string;   // e.g. '13:00'
+}
+
+export type DayOfWeek = 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
+
+export interface DayAvailability {
+  day: DayOfWeek;
+  isEnabled: boolean;
+  timeRanges: DayTimeRange[];
+}
+
+export type MeetingStatus = 'confirmed' | 'upcoming' | 'completed' | 'cancelled' | 'rescheduled';
+
+export interface CalendarMeeting {
+  id: string;
+  creatorId: string;
+  studentName: string;
+  studentEmail: string;
+  studentAvatar?: string;
+  studentPhone?: string;
+  meetingTitle: string;
+  meetingDate: string;
+  meetingTime: string;
+  durationMinutes: number;
+  meetingStatus: MeetingStatus;
+  meetingUrl: string;
+  googleEventId?: string;
+  topic?: string;
+  createdAt: string;
+}
+
 
 

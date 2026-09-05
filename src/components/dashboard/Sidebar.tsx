@@ -34,6 +34,7 @@ const NAV_ITEMS = [
   { href: '/dashboard/products', label: 'Digital Products', icon: FileText },
   { href: '/dashboard/courses', label: 'Courses & Cohorts', icon: Video },
   { href: '/dashboard/bookings', label: '1:1 Bookings', icon: Calendar },
+  { href: '/dashboard/calendar', label: 'Calendar', icon: Calendar, badge: 'Sync' },
   { href: '/dashboard/whatsapp', label: 'WhatsApp Automation', icon: MessageSquare, badge: 'Auto' },
   { href: '/dashboard/media-kit', label: 'AI Media Kit', icon: Sparkles },
   { href: '/dashboard/marketplace', label: 'Brand Marketplace', icon: Briefcase, badge: 'Deals' },

@@ -15,36 +15,24 @@ import {
   Users,
   Zap,
   ArrowUpRight,
-  ShieldCheck,
-  Calendar,
-  DollarSign,
   TrendingUp,
+  Activity,
   Receipt,
-  Download,
-  Filter,
   Check,
-  AlertCircle,
-  Copy,
-  ExternalLink,
-  Lock,
-  Unlock,
-  Key,
+  DollarSign,
   CreditCard,
   Building2,
-  RefreshCw,
-  Smartphone,
-  Eye,
-  SlidersHorizontal,
-  ChevronRight,
-  Shield,
-  HelpCircle,
-  Clock,
-  Send,
-  Flame,
-  Activity
+  Layers,
+  ArrowRight
 } from 'lucide-react';
-import { SubscriptionPlan, Subscription, SubscriptionPayment, SubscriptionPlanType, SubscriptionBillingCycle, Order } from '@/types';
-import { PageTransition, HoverCard, RippleButton, AnimatedCounter } from '@/components/ui/motion';
+import {
+  SubscriptionPlan,
+  Subscription,
+  SubscriptionPayment,
+  SubscriptionPlanType,
+  Order
+} from '@/types';
+import { PageTransition } from '@/components/ui/motion';
 import { motion, AnimatePresence } from 'framer-motion';
 import GSTInvoiceModal from '@/components/invoice/GSTInvoiceModal';
 import Link from 'next/link';
@@ -71,20 +59,18 @@ export default function MembershipsDashboardPage() {
     changeSubscriptionPlan
   } = useCreatorStore();
 
-  // Navigation tab
-  const [activeTab, setActiveTab] = useState<'plans' | 'subscribers' | 'payments' | 'settings'>('plans');
+  // Navigation tab for secondary management views
+  const [activeTab, setActiveTab] = useState<'plans' | 'subscribers' | 'payments'>('plans');
 
-  // Search & Filter state
+  // Search query for plans
   const [searchQuery, setSearchQuery] = useState('');
-  const [planFilter, setPlanFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
 
   // Modals state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<SubscriptionPlan | null>(null);
+  const [planToDelete, setPlanToDelete] = useState<SubscriptionPlan | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<Order | null>(null);
   const [managingSubscriber, setManagingSubscriber] = useState<Subscription | null>(null);
-  const [copiedWebhook, setCopiedWebhook] = useState(false);
 
   // Create / Edit Form State
   const [formName, setFormName] = useState('');
@@ -96,10 +82,10 @@ export default function MembershipsDashboardPage() {
   const [formMonthlyPrice, setFormMonthlyPrice] = useState(799);
   const [formYearlyPrice, setFormYearlyPrice] = useState(7999);
   const [formBenefits, setFormBenefits] = useState<string[]>([
-    'Private VIP Discord / WhatsApp Channels',
-    'Bi-Weekly Live Masterclasses & Whiteboarding',
-    'Direct 1:1 Resume & Code Review',
-    'Curated Notion templates & Cheat Sheets'
+    'Private VIP Discord / WhatsApp Community',
+    'Bi-Weekly Live Masterclasses & AMA Sessions',
+    'Direct 1:1 Review & Mentorship',
+    'Curated Notion Templates & Cheat Sheets'
   ]);
   const [newBenefitInput, setNewBenefitInput] = useState('');
   const [formIsPopular, setFormIsPopular] = useState(false);
@@ -107,25 +93,39 @@ export default function MembershipsDashboardPage() {
   const [formBadgeText, setFormBadgeText] = useState('Most Popular');
   const [formInviteCode, setFormInviteCode] = useState('');
 
-  // Filtered subscribers
-  const filteredSubscribers = useMemo(() => {
-    return subscriptions.filter((sub) => {
-      if (planFilter !== 'all' && sub.planId !== planFilter) return false;
-      if (statusFilter !== 'all' && sub.status !== statusFilter) return false;
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        return (
-          sub.userName.toLowerCase().includes(q) ||
-          sub.userEmail.toLowerCase().includes(q) ||
-          sub.userPhone.toLowerCase().includes(q) ||
-          sub.planName.toLowerCase().includes(q)
-        );
-      }
-      return true;
-    });
-  }, [subscriptions, planFilter, statusFilter, searchQuery]);
+  // Calculate active plans count
+  const activePlansCount = useMemo(() => {
+    return subscriptionPlans.filter((p) => p.isActive !== false).length;
+  }, [subscriptionPlans]);
 
-  // Open Create Modal with clean fields
+  // Calculate plan-specific revenue and subscriber counts
+  const planRevenueMap = useMemo(() => {
+    const map = new Map<string, number>();
+    subscriptionPlans.forEach((plan) => {
+      // Find actual completed payments for this plan or compute from memberCount
+      const directPayments = subscriptionPayments
+        .filter((pay) => pay.planName === plan.name)
+        .reduce((sum, pay) => sum + pay.amount, 0);
+
+      const estimatedRevenue = (plan.memberCount || 0) * (plan.monthlyPrice || 0);
+      map.set(plan.id, directPayments > 0 ? directPayments : estimatedRevenue);
+    });
+    return map;
+  }, [subscriptionPlans, subscriptionPayments]);
+
+  // Filtered plans based on search
+  const filteredPlans = useMemo(() => {
+    if (!searchQuery.trim()) return subscriptionPlans;
+    const q = searchQuery.toLowerCase();
+    return subscriptionPlans.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.tagline?.toLowerCase().includes(q) ||
+        p.description?.toLowerCase().includes(q)
+    );
+  }, [subscriptionPlans, searchQuery]);
+
+  // Open Create Modal
   const handleOpenCreateModal = () => {
     setEditingPlan(null);
     setFormName('');
@@ -137,10 +137,10 @@ export default function MembershipsDashboardPage() {
     setFormMonthlyPrice(799);
     setFormYearlyPrice(7999);
     setFormBenefits([
-      'Private VIP Discord / WhatsApp Channels',
-      'Bi-Weekly Live Masterclasses & Whiteboarding',
-      'Direct 1:1 Resume & Code Review',
-      'Curated Notion templates & Cheat Sheets'
+      'Private VIP Discord / WhatsApp Community',
+      'Bi-Weekly Live Masterclasses & AMA Sessions',
+      'Direct 1:1 Review & Mentorship',
+      'Curated Notion Templates & Cheat Sheets'
     ]);
     setFormIsPopular(false);
     setFormIsActive(true);
@@ -149,18 +149,18 @@ export default function MembershipsDashboardPage() {
     setIsCreateModalOpen(true);
   };
 
-  // Open Edit Modal with existing plan values
+  // Open Edit Modal
   const handleOpenEditModal = (plan: SubscriptionPlan) => {
     setEditingPlan(plan);
     setFormName(plan.name);
-    setFormSlug(plan.slug);
-    setFormTagline(plan.tagline);
-    setFormDescription(plan.description);
+    setFormSlug(plan.slug || plan.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+    setFormTagline(plan.tagline || '');
+    setFormDescription(plan.description || '');
     setFormCoverUrl(plan.coverUrl || COVER_PRESETS[0]);
     setFormType(plan.type);
-    setFormMonthlyPrice(plan.monthlyPrice);
-    setFormYearlyPrice(plan.yearlyPrice);
-    setFormBenefits(plan.benefits || []);
+    setFormMonthlyPrice(plan.monthlyPrice || 0);
+    setFormYearlyPrice(plan.yearlyPrice || 0);
+    setFormBenefits(plan.benefits && plan.benefits.length > 0 ? plan.benefits : ['Exclusive Members-only Access']);
     setFormIsPopular(Boolean(plan.isPopular));
     setFormIsActive(plan.isActive !== false);
     setFormBadgeText(plan.badgeText || 'Most Popular');
@@ -180,7 +180,7 @@ export default function MembershipsDashboardPage() {
     setFormBenefits(formBenefits.filter((_, i) => i !== index));
   };
 
-  // Save Plan Submission
+  // Save Plan
   const handleSavePlan = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formName.trim()) return;
@@ -224,41 +224,46 @@ export default function MembershipsDashboardPage() {
     setIsCreateModalOpen(false);
   };
 
-  // Copy Webhook
-  const handleCopyWebhook = () => {
-    navigator.clipboard.writeText('https://creatoros.in/api/webhooks/razorpay');
-    setCopiedWebhook(true);
-    setTimeout(() => setCopiedWebhook(false), 2000);
+  // Confirm Delete Plan
+  const handleConfirmDelete = () => {
+    if (planToDelete) {
+      deleteSubscriptionPlan(planToDelete.id);
+      setPlanToDelete(null);
+    }
   };
 
   return (
     <PageTransition>
-      <div className="min-h-screen bg-[#05070B] text-slate-100 p-4 sm:p-6 lg:p-8 space-y-6">
+      <div className="min-h-screen bg-[#05070B] text-slate-100 p-4 sm:p-6 lg:p-8 space-y-8">
         
-        {/* HEADER: Title, live bio-storefront link & New Plan CTA */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-6">
+        {/* ==================================================================== */}
+        {/* 1. HEADER SECTION                                                    */}
+        {/* ==================================================================== */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.08] pb-6">
           <div>
-            <div className="flex items-center gap-2.5">
-              <div className="h-9 w-9 rounded-xl bg-royal-600/20 border border-royal-500/30 flex items-center justify-center text-royal-400 shadow-glow">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-royal-600/20 border border-royal-500/30 flex items-center justify-center text-royal-400 shadow-glow">
                 <Crown className="h-5 w-5" />
               </div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white flex items-center gap-2">
-                Membership Subscriptions
-                <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  Razorpay Subscriptions
-                </span>
-              </h1>
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2.5">
+                  Memberships
+                  <span className="text-[11px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                    Live
+                  </span>
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
+                  Create and manage recurring plans
+                </p>
+              </div>
             </div>
-            <p className="text-xs sm:text-sm text-slate-400 mt-1">
-              Create recurring monthly & yearly tiers, auto-renew with UPI & Cards, and track MRR in real time.
-            </p>
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
             <Link
-              href={`/${activeCreator?.username}#memberships`}
+              href={`/${activeCreator?.username || 'aarav'}#memberships`}
               target="_blank"
-              className="flex items-center gap-1.5 rounded-xl border border-white/[0.1] bg-white/[0.04] px-3.5 py-2.5 text-xs font-semibold text-slate-200 hover:bg-white/[0.08] transition btn-press"
+              className="flex items-center gap-1.5 rounded-xl border border-white/[0.1] bg-white/[0.04] px-4 py-2.5 text-xs font-semibold text-slate-200 hover:bg-white/[0.08] hover:text-white transition btn-press"
             >
               <span>Public Storefront</span>
               <ArrowUpRight className="h-3.5 w-3.5 text-royal-400" />
@@ -266,561 +271,547 @@ export default function MembershipsDashboardPage() {
 
             <button
               onClick={handleOpenCreateModal}
-              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-royal-600 to-royal-700 px-4 py-2.5 text-xs font-semibold text-white shadow-royal hover:brightness-110 transition btn-press"
+              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-royal-600 via-royal-500 to-royal-700 px-5 py-2.5 text-xs font-bold text-white shadow-royal hover:brightness-110 transition btn-press"
             >
               <Plus className="h-4 w-4" />
-              <span>Create New Plan</span>
+              <span>Create Plan</span>
             </button>
           </div>
         </div>
 
-        {/* METRICS ROW: MRR, ARR, Active Subscribers, Churn & ARPU */}
+        {/* ==================================================================== */}
+        {/* 2. STATS CARDS SECTION                                               */}
+        {/* ==================================================================== */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           
-          {/* MRR Card */}
-          <div className="rounded-2xl border border-royal-500/30 bg-gradient-to-br from-[#0E1528] to-[#0A0D17] p-5 shadow-glass relative overflow-hidden">
+          {/* Card 1: Active Members */}
+          <div className="rounded-2xl border border-white/[0.08] bg-[#0E1322]/80 backdrop-blur-xl p-5 shadow-glass-subtle relative overflow-hidden group hover:border-emerald-500/30 transition duration-300">
             <div className="flex items-center justify-between text-slate-400 mb-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-royal-300">Monthly Recurring Revenue</span>
-              <div className="h-8 w-8 rounded-lg bg-royal-600/20 flex items-center justify-center text-royal-400">
-                <TrendingUp className="h-4 w-4" />
-              </div>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl sm:text-3xl font-extrabold text-white">
-                {formatINR(membershipMetrics.mrr)}
-              </span>
-              <span className="text-xs text-emerald-400 font-mono font-semibold flex items-center gap-0.5">
-                +{membershipMetrics.growthPercentage}%
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-400 mt-1.5 flex items-center gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Auto-billed monthly via UPI & Cards
-            </p>
-          </div>
-
-          {/* ARR Card */}
-          <div className="rounded-2xl border border-white/[0.08] bg-[#0E1322]/80 backdrop-blur-xl p-5 shadow-glass-subtle">
-            <div className="flex items-center justify-between text-slate-400 mb-2">
-              <span className="text-xs font-bold uppercase tracking-wider">Annual Run Rate (ARR)</span>
-              <div className="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400">
-                <Sparkles className="h-4 w-4" />
-              </div>
-            </div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-white">
-              {formatINR(membershipMetrics.arr)}
-            </div>
-            <p className="text-[11px] text-slate-400 mt-1.5">
-              Projected 12-month recurring cash flow
-            </p>
-          </div>
-
-          {/* Active Subscribers Card */}
-          <div className="rounded-2xl border border-white/[0.08] bg-[#0E1322]/80 backdrop-blur-xl p-5 shadow-glass-subtle">
-            <div className="flex items-center justify-between text-slate-400 mb-2">
-              <span className="text-xs font-bold uppercase tracking-wider">Active Subscribers</span>
-              <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-300">Active Members</span>
+              <div className="h-9 w-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition">
                 <Users className="h-4 w-4" />
               </div>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl sm:text-3xl font-extrabold text-white">
+              <span className="text-2xl sm:text-3xl font-extrabold text-white font-mono">
                 {membershipMetrics.activeSubscribers}
               </span>
-              <span className="text-xs text-emerald-400 font-mono">
+              <span className="text-xs text-emerald-400 font-mono font-semibold flex items-center gap-0.5">
                 +{membershipMetrics.newThisMonth} new
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 mt-1.5">
-              Across {subscriptionPlans.length} published membership tiers
+            <p className="text-[11px] text-slate-400 mt-1.5 flex items-center gap-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Active paid & VIP subscribers
             </p>
           </div>
 
-          {/* ARPU & Churn Card */}
-          <div className="rounded-2xl border border-white/[0.08] bg-[#0E1322]/80 backdrop-blur-xl p-5 shadow-glass-subtle">
+          {/* Card 2: Monthly Recurring Revenue (MRR) */}
+          <div className="rounded-2xl border border-royal-500/40 bg-gradient-to-br from-[#0E1528] to-[#0A0D17] p-5 shadow-royal relative overflow-hidden group">
             <div className="flex items-center justify-between text-slate-400 mb-2">
-              <span className="text-xs font-bold uppercase tracking-wider">ARPU & Retention</span>
-              <div className="h-8 w-8 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-400">
+              <span className="text-xs font-bold uppercase tracking-wider text-royal-300">Monthly Recurring Revenue (MRR)</span>
+              <div className="h-9 w-9 rounded-xl bg-royal-600/20 border border-royal-500/30 flex items-center justify-center text-royal-400 group-hover:scale-110 transition">
+                <TrendingUp className="h-4 w-4" />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl sm:text-3xl font-extrabold text-white font-mono">
+                {formatINR(membershipMetrics.mrr)}
+              </span>
+              <span className="text-xs text-emerald-400 font-mono font-semibold">
+                +{membershipMetrics.growthPercentage}%
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-1.5">
+              Auto-renewing recurring monthly revenue
+            </p>
+          </div>
+
+          {/* Card 3: Active Plans */}
+          <div className="rounded-2xl border border-white/[0.08] bg-[#0E1322]/80 backdrop-blur-xl p-5 shadow-glass-subtle relative overflow-hidden group hover:border-amber-500/30 transition duration-300">
+            <div className="flex items-center justify-between text-slate-400 mb-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-300">Active Plans</span>
+              <div className="h-9 w-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 group-hover:scale-110 transition">
+                <Layers className="h-4 w-4" />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl sm:text-3xl font-extrabold text-white font-mono">
+                {activePlansCount}
+              </span>
+              <span className="text-xs text-slate-400 font-mono">
+                of {subscriptionPlans.length} total
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-1.5">
+              Published tiers on storefront
+            </p>
+          </div>
+
+          {/* Card 4: Churn Rate */}
+          <div className="rounded-2xl border border-white/[0.08] bg-[#0E1322]/80 backdrop-blur-xl p-5 shadow-glass-subtle relative overflow-hidden group hover:border-purple-500/30 transition duration-300">
+            <div className="flex items-center justify-between text-slate-400 mb-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-300">Churn Rate</span>
+              <div className="h-9 w-9 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 group-hover:scale-110 transition">
                 <Activity className="h-4 w-4" />
               </div>
             </div>
-            <div className="flex items-baseline justify-between">
+            <div className="flex items-baseline gap-2">
               <span className="text-2xl sm:text-3xl font-extrabold text-white font-mono">
-                {formatINR(membershipMetrics.arpu)}
-                <span className="text-xs text-slate-400 font-sans font-normal">/mo</span>
+                {membershipMetrics.churnRate}%
               </span>
-              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                {membershipMetrics.churnRate}% Churn
+              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono">
+                Healthy
               </span>
             </div>
             <p className="text-[11px] text-slate-400 mt-1.5">
-              Industry-leading creator retention in Bharat
+              98%+ recurring subscriber retention
             </p>
           </div>
 
         </div>
 
-        {/* NAVIGATION TABS */}
-        <div className="flex items-center gap-2 border-b border-white/[0.08] overflow-x-auto pb-2 scrollbar-none">
-          {[
-            { id: 'plans', label: 'Membership Plans', icon: Crown, count: subscriptionPlans.length },
-            { id: 'subscribers', label: 'Active Subscribers', icon: Users, count: subscriptions.length },
-            { id: 'payments', label: 'Recurring Payments & GST', icon: Receipt, count: subscriptionPayments.length },
-            { id: 'settings', label: 'Razorpay Auto-Renew Config', icon: CreditCard }
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition whitespace-nowrap ${
-                  isActive
-                    ? 'bg-royal-600 text-white shadow-royal'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.05]'
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                <span>{tab.label}</span>
-                {tab.count !== undefined && (
-                  <span className={`px-1.5 py-0.2 rounded-md text-[10px] font-mono ${
-                    isActive ? 'bg-white/20 text-white' : 'bg-white/[0.06] text-slate-400'
-                  }`}>
-                    {tab.count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* TAB 1: MEMBERSHIP PLANS */}
-        {activeTab === 'plans' && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {subscriptionPlans.map((plan) => {
-                const isFree = plan.type === 'free';
-                const isInviteOnly = plan.type === 'invite_only';
-
-                return (
-                  <div
-                    key={plan.id}
-                    className={`rounded-2xl border flex flex-col justify-between overflow-hidden transition-all duration-300 relative ${
-                      plan.isPopular
-                        ? 'border-royal-500/50 bg-gradient-to-b from-[#0F172E] to-[#0A0D17] shadow-royal'
-                        : 'border-white/[0.08] bg-[#0E1322]/80 hover:border-white/[0.15]'
-                    }`}
-                  >
-                    {/* Cover Header */}
-                    {plan.coverUrl && (
-                      <div className="h-32 w-full relative overflow-hidden bg-slate-900">
-                        <img
-                          src={plan.coverUrl}
-                          alt={plan.name}
-                          className="w-full h-full object-cover opacity-60"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#0E1322] to-transparent" />
-                        
-                        <div className="absolute top-3 right-3 flex items-center gap-1.5">
-                          {plan.isPopular && (
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-royal-600 text-white shadow-sm flex items-center gap-1">
-                              <Crown className="h-3 w-3" /> {plan.badgeText || 'Popular'}
-                            </span>
-                          )}
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                            isFree
-                              ? 'bg-white/20 text-slate-200'
-                              : isInviteOnly
-                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                              : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                          }`}>
-                            {plan.type.replace('_', ' ')}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Plan Body */}
-                    <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                      <div>
-                        <h3 className="text-base font-bold text-white mb-1">{plan.name}</h3>
-                        <p className="text-xs text-slate-300 line-clamp-2">{plan.tagline || plan.description}</p>
-
-                        {/* Price Display */}
-                        <div className="mt-4 pt-3 border-t border-white/[0.08]">
-                          <div className="flex items-baseline gap-1.5">
-                            <span className="text-2xl font-extrabold text-white font-mono">
-                              {isFree ? 'Free' : formatINR(plan.monthlyPrice)}
-                            </span>
-                            {!isFree && <span className="text-xs text-slate-400 font-mono">/month</span>}
-                          </div>
-                          {!isFree && plan.yearlyPrice > 0 && (
-                            <p className="text-[11px] text-emerald-400 font-mono mt-0.5">
-                              or {formatINR(plan.yearlyPrice)}/yr (save ~{Math.round((1 - plan.yearlyPrice / (plan.monthlyPrice * 12)) * 100)}%)
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Benefits list */}
-                        <div className="mt-4 space-y-2">
-                          <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                            Included Perks:
-                          </div>
-                          {plan.benefits?.slice(0, 4).map((b, i) => (
-                            <div key={i} className="flex items-start gap-2 text-xs text-slate-300">
-                              <CheckCircle2 className="h-3.5 w-3.5 text-royal-400 shrink-0 mt-0.5" />
-                              <span className="line-clamp-1">{b}</span>
-                            </div>
-                          ))}
-                          {plan.benefits?.length > 4 && (
-                            <p className="text-[11px] text-royal-400 font-medium">
-                              +{plan.benefits.length - 4} more benefits
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Footer Actions & Subscriber Count */}
-                      <div className="pt-4 border-t border-white/[0.08] flex items-center justify-between">
-                        <div className="text-xs text-slate-400 font-mono flex items-center gap-1">
-                          <Users className="h-3.5 w-3.5 text-royal-400" />
-                          <strong className="text-white">{plan.memberCount}</strong> subscribers
-                        </div>
-
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => handleOpenEditModal(plan)}
-                            className="p-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-slate-300 hover:text-white transition"
-                            title="Edit Plan"
-                          >
-                            <Edit2 className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            onClick={() => deleteSubscriptionPlan(plan.id)}
-                            className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition"
-                            title="Delete Plan"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      </div>
-
-                    </div>
-                  </div>
-                );
-              })}
+        {/* ==================================================================== */}
+        {/* 3. MEMBERSHIP PLANS LIST SECTION                                     */}
+        {/* ==================================================================== */}
+        <div className="space-y-6">
+          
+          {/* Section Header with Search */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <span>Membership Plans</span>
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-royal-600/20 text-royal-300 border border-royal-500/30">
+                  {filteredPlans.length}
+                </span>
+              </h2>
             </div>
-          </div>
-        )}
 
-        {/* TAB 2: ACTIVE SUBSCRIBERS ROSTER */}
-        {activeTab === 'subscribers' && (
-          <div className="space-y-4">
-            
-            {/* Search & Filter bar */}
-            <div className="flex flex-col sm:flex-row gap-3 justify-between items-center">
-              <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
-                <select
-                  value={planFilter}
-                  onChange={(e) => setPlanFilter(e.target.value)}
-                  className="bg-[#0E1322] border border-white/[0.1] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-royal-500"
-                >
-                  <option value="all">All Plans</option>
-                  {subscriptionPlans.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="bg-[#0E1322] border border-white/[0.1] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-royal-500"
-                >
-                  <option value="all">All Statuses</option>
-                  <option value="active">Active</option>
-                  <option value="cancelled">Cancelled</option>
-                  <option value="past_due">Past Due</option>
-                </select>
-              </div>
-
-              <div className="relative w-full sm:w-72">
+            <div className="flex items-center gap-3">
+              <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by name, email or phone..."
-                  className="w-full bg-[#0E1322] border border-white/[0.1] rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-royal-500"
+                  placeholder="Filter plans..."
+                  className="w-full bg-[#0E1322] border border-white/[0.1] rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-royal-500 transition"
                 />
               </div>
-            </div>
 
-            {/* Subscribers Table */}
-            <div className="rounded-2xl border border-white/[0.08] bg-[#0E1322]/80 backdrop-blur-xl overflow-hidden shadow-glass-subtle">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-black/30 border-b border-white/[0.08] text-[11px] uppercase tracking-wider text-slate-400">
-                    <tr>
-                      <th className="py-3 px-4">Subscriber</th>
-                      <th className="py-3 px-4">Plan & Tier</th>
-                      <th className="py-3 px-4">Billing Cycle</th>
-                      <th className="py-3 px-4">Amount</th>
-                      <th className="py-3 px-4">Next Renewal</th>
-                      <th className="py-3 px-4">Status</th>
-                      <th className="py-3 px-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/[0.06]">
-                    {filteredSubscribers.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} className="py-12 text-center text-slate-500">
-                          No subscribers found matching your search filters.
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredSubscribers.map((sub) => (
-                        <tr key={sub.id} className="hover:bg-white/[0.02] transition">
-                          <td className="py-3.5 px-4">
-                            <div className="flex items-center gap-3">
-                              <img
-                                src={sub.userAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80'}
-                                alt={sub.userName}
-                                className="h-8 w-8 rounded-full object-cover ring-1 ring-white/10"
-                              />
-                              <div>
-                                <h4 className="font-semibold text-white">{sub.userName}</h4>
-                                <p className="text-[11px] text-slate-400">{sub.userEmail}</p>
+              {/* View Switcher Tabs (Plans / Subscribers / Invoices) */}
+              <div className="flex items-center rounded-xl bg-[#0E1322] border border-white/[0.1] p-0.5">
+                <button
+                  onClick={() => setActiveTab('plans')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                    activeTab === 'plans' ? 'bg-royal-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Plans
+                </button>
+                <button
+                  onClick={() => setActiveTab('subscribers')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                    activeTab === 'subscribers' ? 'bg-royal-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Members ({subscriptions.length})
+                </button>
+                <button
+                  onClick={() => setActiveTab('payments')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                    activeTab === 'payments' ? 'bg-royal-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Invoices ({subscriptionPayments.length})
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* MAIN TAB: Plans Grid */}
+          {activeTab === 'plans' && (
+            <div>
+              {filteredPlans.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-white/[0.1] bg-[#0E1322]/40 p-12 text-center space-y-4">
+                  <div className="h-12 w-12 rounded-2xl bg-white/[0.05] border border-white/[0.08] flex items-center justify-center text-slate-400 mx-auto">
+                    <Crown className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-white">No membership plans found</h3>
+                    <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                      {searchQuery
+                        ? `No plans matching "${searchQuery}". Try clearing your search filter.`
+                        : 'Get started by creating your first recurring monthly or yearly membership tier.'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleOpenCreateModal}
+                    className="inline-flex items-center gap-2 rounded-xl bg-royal-600 px-4 py-2 text-xs font-bold text-white shadow-royal hover:bg-royal-500 transition btn-press"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>Create Plan</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredPlans.map((plan) => {
+                    const isFree = plan.type === 'free';
+                    const isInviteOnly = plan.type === 'invite_only';
+                    const revenue = planRevenueMap.get(plan.id) || 0;
+                    const coverImg = plan.coverUrl || COVER_PRESETS[0];
+
+                    return (
+                      <div
+                        key={plan.id}
+                        className={`rounded-2xl border flex flex-col justify-between overflow-hidden transition-all duration-300 relative group ${
+                          plan.isPopular
+                            ? 'border-royal-500/50 bg-gradient-to-b from-[#0F172E] to-[#0A0D17] shadow-royal hover:border-royal-400/80'
+                            : 'border-white/[0.08] bg-[#0E1322]/90 hover:border-white/[0.2] hover:bg-[#0E1322]'
+                        }`}
+                      >
+                        {/* 1. Cover Image with Badge Overlay */}
+                        <div className="h-40 w-full relative overflow-hidden bg-slate-900 shrink-0">
+                          <img
+                            src={coverImg}
+                            alt={plan.name}
+                            className="w-full h-full object-cover opacity-75 group-hover:scale-105 transition duration-500"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-[#0E1322] via-[#0E1322]/40 to-transparent" />
+
+                          {/* Top Badges */}
+                          <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2 pointer-events-none">
+                            {/* Popular Badge */}
+                            {plan.isPopular ? (
+                              <span className="px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg flex items-center gap-1.5 pointer-events-auto">
+                                <Crown className="h-3.5 w-3.5 fill-white" />
+                                <span>{plan.badgeText || 'Most Popular'}</span>
+                              </span>
+                            ) : (
+                              <span />
+                            )}
+
+                            {/* Monthly or Yearly / Plan Type Badge */}
+                            <div className="flex items-center gap-1.5 pointer-events-auto">
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-black/60 backdrop-blur-md text-slate-200 border border-white/20">
+                                {isFree
+                                  ? 'Free'
+                                  : plan.yearlyPrice && plan.yearlyPrice > 0
+                                  ? 'Monthly & Yearly'
+                                  : 'Monthly'}
+                              </span>
+                              {isInviteOnly && (
+                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                  Invite Only
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 2. Plan Details & Metrics Body */}
+                        <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                          <div className="space-y-3">
+                            <div>
+                              <div className="flex items-start justify-between gap-2">
+                                <h3 className="text-base font-bold text-white group-hover:text-royal-300 transition">
+                                  {plan.name}
+                                </h3>
+                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-white/[0.06] text-slate-400 capitalize">
+                                  {plan.type}
+                                </span>
+                              </div>
+                              <p className="text-xs text-slate-300 mt-1 line-clamp-2">
+                                {plan.tagline || plan.description || 'Exclusive community membership tier.'}
+                              </p>
+                            </div>
+
+                            {/* Price in INR */}
+                            <div className="pt-2 border-t border-white/[0.08]">
+                              <div className="flex items-baseline gap-1.5">
+                                <span className="text-2xl font-extrabold text-white font-mono tracking-tight">
+                                  {isFree ? 'Free' : formatINR(plan.monthlyPrice)}
+                                </span>
+                                {!isFree && (
+                                  <span className="text-xs text-slate-400 font-mono">/month</span>
+                                )}
+                              </div>
+                              {!isFree && plan.yearlyPrice > 0 && (
+                                <div className="text-[11px] text-emerald-400 font-mono font-medium mt-0.5 flex items-center gap-1">
+                                  <span>or {formatINR(plan.yearlyPrice)}/year</span>
+                                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                                    Save ~{Math.round((1 - plan.yearlyPrice / (plan.monthlyPrice * 12)) * 100)}%
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Member Count & Revenue Generated Stat Bar */}
+                            <div className="grid grid-cols-2 gap-2 pt-2 pb-1">
+                              <div className="p-2.5 rounded-xl bg-black/40 border border-white/[0.06]">
+                                <div className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1">
+                                  <Users className="h-3 w-3 text-royal-400" />
+                                  <span>Members</span>
+                                </div>
+                                <div className="text-sm font-extrabold text-white font-mono mt-0.5">
+                                  {plan.memberCount || 0}
+                                </div>
+                              </div>
+
+                              <div className="p-2.5 rounded-xl bg-black/40 border border-white/[0.06]">
+                                <div className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1">
+                                  <TrendingUp className="h-3 w-3 text-emerald-400" />
+                                  <span>Revenue</span>
+                                </div>
+                                <div className="text-sm font-extrabold text-emerald-300 font-mono mt-0.5">
+                                  {formatINR(revenue)}
+                                </div>
                               </div>
                             </div>
-                          </td>
 
+                            {/* Benefits checklist preview */}
+                            {plan.benefits && plan.benefits.length > 0 && (
+                              <div className="space-y-1.5 pt-1">
+                                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                  Key Benefits:
+                                </div>
+                                {plan.benefits.slice(0, 3).map((benefit, i) => (
+                                  <div key={i} className="flex items-start gap-2 text-xs text-slate-300">
+                                    <CheckCircle2 className="h-3.5 w-3.5 text-royal-400 shrink-0 mt-0.5" />
+                                    <span className="line-clamp-1">{benefit}</span>
+                                  </div>
+                                ))}
+                                {plan.benefits.length > 3 && (
+                                  <div className="text-[11px] text-royal-400 font-medium pl-5">
+                                    +{plan.benefits.length - 3} more perks
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* 3. Footer with Edit and Delete Buttons */}
+                          <div className="pt-4 border-t border-white/[0.08] flex items-center justify-between gap-3">
+                            <span className="text-[11px] text-slate-400 font-mono flex items-center gap-1.5">
+                              <span className={`h-2 w-2 rounded-full ${plan.isActive !== false ? 'bg-emerald-400' : 'bg-slate-500'}`} />
+                              {plan.isActive !== false ? 'Active' : 'Archived'}
+                            </span>
+
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleOpenEditModal(plan)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-xs font-semibold text-slate-200 hover:text-white transition btn-press border border-white/[0.08]"
+                              >
+                                <Edit2 className="h-3.5 w-3.5 text-royal-400" />
+                                <span>Edit</span>
+                              </button>
+
+                              <button
+                                onClick={() => setPlanToDelete(plan)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-xs font-semibold text-rose-400 hover:text-rose-300 transition btn-press border border-rose-500/20"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                                <span>Delete</span>
+                              </button>
+                            </div>
+                          </div>
+
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* SECONDARY TAB 2: ACTIVE SUBSCRIBERS ROSTER */}
+          {activeTab === 'subscribers' && (
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-white/[0.08] bg-[#0E1322]/80 backdrop-blur-xl overflow-hidden shadow-glass-subtle">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-black/30 border-b border-white/[0.08] text-[11px] uppercase tracking-wider text-slate-400">
+                      <tr>
+                        <th className="py-3 px-4">Subscriber</th>
+                        <th className="py-3 px-4">Plan & Tier</th>
+                        <th className="py-3 px-4">Billing Cycle</th>
+                        <th className="py-3 px-4">Amount</th>
+                        <th className="py-3 px-4">Next Renewal</th>
+                        <th className="py-3 px-4">Status</th>
+                        <th className="py-3 px-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/[0.06]">
+                      {subscriptions.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="py-12 text-center text-slate-500">
+                            No active subscribers found.
+                          </td>
+                        </tr>
+                      ) : (
+                        subscriptions.map((sub) => (
+                          <tr key={sub.id} className="hover:bg-white/[0.02] transition">
+                            <td className="py-3.5 px-4">
+                              <div className="flex items-center gap-3">
+                                <img
+                                  src={sub.userAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80'}
+                                  alt={sub.userName}
+                                  className="h-8 w-8 rounded-full object-cover ring-1 ring-white/10"
+                                />
+                                <div>
+                                  <h4 className="font-semibold text-white">{sub.userName}</h4>
+                                  <p className="text-[11px] text-slate-400">{sub.userEmail}</p>
+                                </div>
+                              </div>
+                            </td>
+
+                            <td className="py-3.5 px-4">
+                              <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold ${
+                                sub.planType === 'free'
+                                  ? 'bg-white/[0.06] text-slate-300'
+                                  : sub.planType === 'invite_only'
+                                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                  : 'bg-royal-600/20 text-royal-300 border border-royal-500/30'
+                              }`}>
+                                {sub.planName}
+                              </span>
+                            </td>
+
+                            <td className="py-3.5 px-4 font-mono capitalize text-slate-300">
+                              {sub.billingCycle}
+                            </td>
+
+                            <td className="py-3.5 px-4 font-mono font-semibold text-white">
+                              {sub.amount === 0 ? 'Free' : formatINR(sub.amount)}
+                            </td>
+
+                            <td className="py-3.5 px-4 font-mono text-slate-300">
+                              {sub.currentPeriodEnd}
+                            </td>
+
+                            <td className="py-3.5 px-4">
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${
+                                sub.status === 'active'
+                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                  : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                              }`}>
+                                {sub.cancelAtPeriodEnd ? 'Cancels at End' : sub.status}
+                              </span>
+                            </td>
+
+                            <td className="py-3.5 px-4 text-right">
+                              <button
+                                onClick={() => setManagingSubscriber(sub)}
+                                className="px-3 py-1 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-xs text-royal-400 font-medium transition"
+                              >
+                                Manage
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SECONDARY TAB 3: RECURRING PAYMENTS & INVOICES */}
+          {activeTab === 'payments' && (
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-white/[0.08] bg-[#0E1322]/80 backdrop-blur-xl overflow-hidden shadow-glass-subtle">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-black/30 border-b border-white/[0.08] text-[11px] uppercase tracking-wider text-slate-400">
+                      <tr>
+                        <th className="py-3 px-4">Invoice #</th>
+                        <th className="py-3 px-4">Subscriber</th>
+                        <th className="py-3 px-4">Plan</th>
+                        <th className="py-3 px-4">Cycle</th>
+                        <th className="py-3 px-4">Amount</th>
+                        <th className="py-3 px-4">Payment Method</th>
+                        <th className="py-3 px-4">Date & Time</th>
+                        <th className="py-3 px-4 text-right">Receipt</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/[0.06]">
+                      {subscriptionPayments.map((pay) => (
+                        <tr key={pay.id} className="hover:bg-white/[0.02] transition">
+                          <td className="py-3.5 px-4 font-mono text-royal-400 font-medium">
+                            {pay.invoiceNumber}
+                          </td>
                           <td className="py-3.5 px-4">
-                            <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold ${
-                              sub.planType === 'free'
-                                ? 'bg-white/[0.06] text-slate-300'
-                                : sub.planType === 'invite_only'
-                                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                                : 'bg-royal-600/20 text-royal-300 border border-royal-500/30'
-                            }`}>
-                              {sub.planName}
+                            <div className="font-semibold text-white">{pay.subscriberName}</div>
+                            <div className="text-[10px] text-slate-400">{pay.subscriberEmail}</div>
+                          </td>
+                          <td className="py-3.5 px-4 text-slate-300 font-medium">
+                            {pay.planName}
+                          </td>
+                          <td className="py-3.5 px-4 font-mono capitalize text-slate-400">
+                            {pay.billingCycle}
+                          </td>
+                          <td className="py-3.5 px-4 font-mono font-bold text-white">
+                            {formatINR(pay.amount)}
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <span className="px-2 py-0.5 rounded bg-white/[0.06] text-[10px] font-mono text-slate-300">
+                              {pay.paymentMethod}
                             </span>
                           </td>
-
-                          <td className="py-3.5 px-4 font-mono capitalize text-slate-300">
-                            {sub.billingCycle}
+                          <td className="py-3.5 px-4 font-mono text-slate-400">
+                            {pay.createdAt}
                           </td>
-
-                          <td className="py-3.5 px-4 font-mono font-semibold text-white">
-                            {sub.amount === 0 ? 'Free' : formatINR(sub.amount)}
-                          </td>
-
-                          <td className="py-3.5 px-4 font-mono text-slate-300">
-                            {sub.currentPeriodEnd}
-                          </td>
-
-                          <td className="py-3.5 px-4">
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${
-                              sub.status === 'active'
-                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                                : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                            }`}>
-                              {sub.cancelAtPeriodEnd ? 'Cancels at End' : sub.status}
-                            </span>
-                          </td>
-
                           <td className="py-3.5 px-4 text-right">
                             <button
-                              onClick={() => setManagingSubscriber(sub)}
-                              className="px-3 py-1 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-xs text-royal-400 font-medium transition"
+                              onClick={() => {
+                                setSelectedInvoice({
+                                  id: pay.id,
+                                  orderNumber: pay.invoiceNumber,
+                                  date: pay.createdAt,
+                                  creatorId: activeCreator?.id || 'creator_1',
+                                  buyerName: pay.subscriberName,
+                                  buyerEmail: pay.subscriberEmail,
+                                  buyerPhone: '+91 98765 43210',
+                                  buyerState: 'Karnataka',
+                                  itemType: 'course',
+                                  itemId: pay.subscriptionId,
+                                  itemTitle: `${pay.planName} (${pay.billingCycle.toUpperCase()} Membership)`,
+                                  amount: Math.round(pay.amount / 1.18),
+                                  gstRate: 18,
+                                  cgst: Math.round((pay.amount * 0.09) / 1.18),
+                                  sgst: Math.round((pay.amount * 0.09) / 1.18),
+                                  igst: 0,
+                                  totalAmount: pay.amount,
+                                  paymentMethod: (pay.paymentMethod as any) || 'UPI',
+                                  invoiceNumber: pay.invoiceNumber,
+                                  sacCode: '998439',
+                                  status: 'completed',
+                                  deliverySentWhatsapp: true,
+                                  deliverySentEmail: true
+                                });
+                              }}
+                              className="px-2.5 py-1 rounded-lg bg-royal-600/15 hover:bg-royal-600/25 text-royal-300 border border-royal-500/30 text-[11px] font-semibold transition flex items-center gap-1 ml-auto"
                             >
-                              Manage
+                              <Receipt className="h-3 w-3" />
+                              <span>GST Invoice</span>
                             </button>
                           </td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-          </div>
-        )}
-
-        {/* TAB 3: RECURRING PAYMENTS & GST INVOICES */}
-        {activeTab === 'payments' && (
-          <div className="space-y-4">
-            <div className="rounded-2xl border border-white/[0.08] bg-[#0E1322]/80 backdrop-blur-xl overflow-hidden shadow-glass-subtle">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-black/30 border-b border-white/[0.08] text-[11px] uppercase tracking-wider text-slate-400">
-                    <tr>
-                      <th className="py-3 px-4">Invoice #</th>
-                      <th className="py-3 px-4">Subscriber</th>
-                      <th className="py-3 px-4">Plan</th>
-                      <th className="py-3 px-4">Cycle</th>
-                      <th className="py-3 px-4">Amount</th>
-                      <th className="py-3 px-4">Payment Method</th>
-                      <th className="py-3 px-4">Date & Time</th>
-                      <th className="py-3 px-4 text-right">Receipt</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/[0.06]">
-                    {subscriptionPayments.map((pay) => (
-                      <tr key={pay.id} className="hover:bg-white/[0.02] transition">
-                        <td className="py-3.5 px-4 font-mono text-royal-400 font-medium">
-                          {pay.invoiceNumber}
-                        </td>
-                        <td className="py-3.5 px-4">
-                          <div className="font-semibold text-white">{pay.subscriberName}</div>
-                          <div className="text-[10px] text-slate-400">{pay.subscriberEmail}</div>
-                        </td>
-                        <td className="py-3.5 px-4 text-slate-300 font-medium">
-                          {pay.planName}
-                        </td>
-                        <td className="py-3.5 px-4 font-mono capitalize text-slate-400">
-                          {pay.billingCycle}
-                        </td>
-                        <td className="py-3.5 px-4 font-mono font-bold text-white">
-                          {formatINR(pay.amount)}
-                        </td>
-                        <td className="py-3.5 px-4">
-                          <span className="px-2 py-0.5 rounded bg-white/[0.06] text-[10px] font-mono text-slate-300">
-                            {pay.paymentMethod}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4 font-mono text-slate-400">
-                          {pay.createdAt}
-                        </td>
-                        <td className="py-3.5 px-4 text-right">
-                          <button
-                            onClick={() => {
-                              setSelectedInvoice({
-                                id: pay.id,
-                                orderNumber: pay.invoiceNumber,
-                                date: pay.createdAt,
-                                creatorId: activeCreator?.id || 'creator_1',
-                                buyerName: pay.subscriberName,
-                                buyerEmail: pay.subscriberEmail,
-                                buyerPhone: '+91 98765 43210',
-                                buyerState: 'Karnataka',
-                                itemType: 'course',
-                                itemId: pay.subscriptionId,
-                                itemTitle: `${pay.planName} (${pay.billingCycle.toUpperCase()} Membership)`,
-                                amount: Math.round(pay.amount / 1.18),
-                                gstRate: 18,
-                                cgst: Math.round((pay.amount * 0.09) / 1.18),
-                                sgst: Math.round((pay.amount * 0.09) / 1.18),
-                                igst: 0,
-                                totalAmount: pay.amount,
-                                paymentMethod: (pay.paymentMethod as any) || 'UPI',
-                                invoiceNumber: pay.invoiceNumber,
-                                sacCode: '998439',
-                                status: 'completed',
-                                deliverySentWhatsapp: true,
-                                deliverySentEmail: true
-                              });
-                            }}
-                            className="px-2.5 py-1 rounded-lg bg-royal-600/15 hover:bg-royal-600/25 text-royal-300 border border-royal-500/30 text-[11px] font-semibold transition flex items-center gap-1 ml-auto"
-                          >
-                            <Receipt className="h-3 w-3" />
-                            <span>GST Invoice</span>
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 4: RAZORPAY SUBSCRIPTION SETTINGS */}
-        {activeTab === 'settings' && (
-          <div className="max-w-4xl mx-auto space-y-6">
-            
-            {/* Webhook & API Status Box */}
-            <div className="rounded-2xl border border-royal-500/30 bg-[#0E1528] p-6 space-y-4 shadow-xl">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-royal-600/20 border border-royal-500/30 flex items-center justify-center text-royal-400">
-                  <Key className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-white">Razorpay Subscriptions & Autopay Webhooks</h3>
-                  <p className="text-xs text-slate-400">Real-time webhook listener for recurring subscription charges & cancellations</p>
-                </div>
-              </div>
-
-              <div className="pt-2 space-y-3 text-xs">
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                    Your Webhook Endpoint URL
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      readOnly
-                      value="https://creatoros.in/api/webhooks/razorpay"
-                      className="flex-1 bg-black/60 border border-white/[0.12] rounded-xl px-3.5 py-2.5 text-xs text-royal-300 font-mono"
-                    />
-                    <button
-                      onClick={handleCopyWebhook}
-                      className="px-4 py-2.5 rounded-xl bg-royal-600 hover:bg-royal-500 text-xs font-semibold text-white transition flex items-center gap-1.5 shrink-0"
-                    >
-                      {copiedWebhook ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                      <span>{copiedWebhook ? 'Copied' : 'Copy'}</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                  <div className="p-3.5 rounded-xl bg-black/40 border border-white/[0.06] space-y-1">
-                    <h4 className="font-semibold text-white text-xs flex items-center gap-1.5">
-                      <Zap className="h-3.5 w-3.5 text-amber-400" />
-                      Instant UPI Autopay
-                    </h4>
-                    <p className="text-[11px] text-slate-400">
-                      Subscribers can authorize recurring debits via PhonePe, Google Pay, Paytm UPI Autopay mandates.
-                    </p>
-                  </div>
-
-                  <div className="p-3.5 rounded-xl bg-black/40 border border-white/[0.06] space-y-1">
-                    <h4 className="font-semibold text-white text-xs flex items-center gap-1.5">
-                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-                      Automated GST Tax Invoices
-                    </h4>
-                    <p className="text-[11px] text-slate-400">
-                      B2C and B2B GST tax invoices are automatically generated and emailed to subscribers upon each renewal.
-                    </p>
-                  </div>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
+          )}
 
-            {/* Payout Details */}
-            <div className="rounded-2xl border border-white/[0.08] bg-[#0E1322] p-6 space-y-3">
-              <h3 className="text-sm font-bold text-white">Bank Settlement Destination</h3>
-              <p className="text-xs text-slate-400">
-                Subscription payouts are cleared every morning directly to your verified Indian bank account:
-              </p>
-              <div className="p-3.5 rounded-xl bg-black/40 border border-white/[0.08] flex items-center justify-between">
-                <div>
-                  <div className="font-semibold text-xs text-white">{activeCreator?.bankAccount.bankName}</div>
-                  <div className="text-[11px] font-mono text-slate-400">{activeCreator?.bankAccount.accountNumberMasked} • {activeCreator?.bankAccount.ifsc}</div>
-                </div>
-                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                  <Check className="h-3 w-3" /> IMPS Active
-                </span>
-              </div>
-            </div>
+        </div>
 
-          </div>
-        )}
-
-        {/* MODAL: CREATE / EDIT MEMBERSHIP PLAN */}
+        {/* ==================================================================== */}
+        {/* MODAL: CREATE / EDIT MEMBERSHIP PLAN                                 */}
+        {/* ==================================================================== */}
         <AnimatePresence>
           {isCreateModalOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
@@ -837,7 +828,7 @@ export default function MembershipsDashboardPage() {
                     </div>
                     <div>
                       <h3 className="text-base font-bold text-white">
-                        {editingPlan ? 'Edit Membership Plan' : 'Create New Membership Plan'}
+                        {editingPlan ? 'Edit Membership Plan' : 'Create Plan'}
                       </h3>
                       <p className="text-xs text-slate-400">Configure recurring billing, price, and perks</p>
                     </div>
@@ -872,30 +863,30 @@ export default function MembershipsDashboardPage() {
                         className="w-full bg-black/50 border border-white/[0.12] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-royal-500"
                       >
                         <option value="paid">Paid Recurring Subscription</option>
-                        <option value="free">Free Forever Community</option>
-                        <option value="invite_only">Invite Only / Premium Guild</option>
+                        <option value="free">Free Community</option>
+                        <option value="invite_only">Invite Only / Exclusive Guild</option>
                       </select>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">Short Tagline *</label>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Short Description / Tagline *</label>
                     <input
                       type="text"
                       required
                       value={formTagline}
                       onChange={(e) => setFormTagline(e.target.value)}
-                      placeholder="e.g. Fast-track your FAANG & tier-1 product startup placements"
+                      placeholder="e.g. Daily mentorship, exclusive community access & code reviews"
                       className="w-full bg-black/50 border border-white/[0.12] rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-royal-500"
                     />
                   </div>
 
-                  {/* Pricing Section (if not free) */}
+                  {/* Pricing Section */}
                   {formType !== 'free' && (
                     <div className="rounded-xl border border-royal-500/30 bg-royal-600/10 p-4 space-y-3">
                       <div className="text-xs font-bold text-white flex items-center gap-1.5">
                         <DollarSign className="h-3.5 w-3.5 text-royal-400" />
-                        Pricing (₹ INR)
+                        <span>Pricing in INR (₹)</span>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -905,13 +896,12 @@ export default function MembershipsDashboardPage() {
                           </label>
                           <input
                             type="number"
-                            min="99"
+                            min="0"
                             required
                             value={formMonthlyPrice}
                             onChange={(e) => {
                               const val = Number(e.target.value);
                               setFormMonthlyPrice(val);
-                              // Auto calculate yearly with 2 months free discount
                               setFormYearlyPrice(val * 10);
                             }}
                             className="w-full bg-black/60 border border-white/[0.12] rounded-xl px-3 py-2 text-xs text-white font-mono"
@@ -924,7 +914,7 @@ export default function MembershipsDashboardPage() {
                           </label>
                           <input
                             type="number"
-                            min="499"
+                            min="0"
                             required
                             value={formYearlyPrice}
                             onChange={(e) => setFormYearlyPrice(Number(e.target.value))}
@@ -956,7 +946,7 @@ export default function MembershipsDashboardPage() {
 
                   {/* Benefits List Builder */}
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">Benefits Checklist</label>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Benefits List</label>
                     <div className="space-y-2">
                       {formBenefits.map((benefit, i) => (
                         <div key={i} className="flex items-center gap-2 bg-black/40 border border-white/[0.08] px-3 py-1.5 rounded-xl text-xs">
@@ -983,7 +973,7 @@ export default function MembershipsDashboardPage() {
                               handleAddBenefit();
                             }
                           }}
-                          placeholder="Add new perk (e.g. 1:1 Resume Roast)..."
+                          placeholder="Add new perk (e.g. 1:1 Resume Review)..."
                           className="flex-1 bg-black/50 border border-white/[0.1] rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-royal-500"
                         />
                         <button
@@ -1007,7 +997,7 @@ export default function MembershipsDashboardPage() {
                       className="rounded bg-black border-white/20 text-royal-600 focus:ring-royal-500 cursor-pointer"
                     />
                     <label htmlFor="popularCheck" className="text-xs text-slate-300 font-medium cursor-pointer">
-                      Highlight as "Most Popular" / Best Value on storefront
+                      Highlight with "Most Popular" badge on storefront
                     </label>
                   </div>
 
@@ -1023,7 +1013,7 @@ export default function MembershipsDashboardPage() {
                       type="submit"
                       className="rounded-xl bg-gradient-to-r from-royal-600 to-royal-700 hover:brightness-110 px-5 py-2.5 text-xs font-bold text-white shadow-royal transition btn-press"
                     >
-                      {editingPlan ? 'Save Plan Changes' : 'Publish Plan'}
+                      {editingPlan ? 'Save Changes' : 'Publish Plan'}
                     </button>
                   </div>
                 </form>
@@ -1032,7 +1022,56 @@ export default function MembershipsDashboardPage() {
           )}
         </AnimatePresence>
 
-        {/* MODAL: MANAGE SUBSCRIBER */}
+        {/* ==================================================================== */}
+        {/* MODAL: DELETE PLAN CONFIRMATION                                      */}
+        {/* ==================================================================== */}
+        <AnimatePresence>
+          {planToDelete && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="relative w-full max-w-md rounded-2xl border border-rose-500/30 bg-[#0A0D17] p-6 shadow-2xl space-y-4"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400">
+                    <Trash2 className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-white">Delete Membership Plan</h3>
+                    <p className="text-xs text-slate-400">Are you sure you want to remove this plan?</p>
+                  </div>
+                </div>
+
+                <p className="text-xs text-slate-300 bg-rose-500/10 border border-rose-500/20 p-3 rounded-xl">
+                  Deleting <strong className="text-white">"{planToDelete.name}"</strong> will remove it from your public storefront and prevent any new subscriptions.
+                </p>
+
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setPlanToDelete(null)}
+                    className="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirmDelete}
+                    className="rounded-xl bg-rose-600 hover:bg-rose-500 px-4 py-2 text-xs font-bold text-white transition btn-press"
+                  >
+                    Yes, Delete Plan
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* ==================================================================== */}
+        {/* MODAL: MANAGE SUBSCRIBER                                             */}
+        {/* ==================================================================== */}
         <AnimatePresence>
           {managingSubscriber && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
@@ -1075,16 +1114,12 @@ export default function MembershipsDashboardPage() {
                     <span className="text-slate-400">Renewal Date:</span>
                     <span className="font-mono text-white">{managingSubscriber.currentPeriodEnd}</span>
                   </div>
-                  <div className="flex justify-between text-slate-300">
-                    <span className="text-slate-400">Subscription ID:</span>
-                    <span className="font-mono text-royal-400 text-[10px]">{managingSubscriber.razorpaySubscriptionId || 'sub_local'}</span>
-                  </div>
                 </div>
 
                 {/* Plan change selector */}
                 <div>
                   <label className="block text-[11px] font-bold uppercase text-slate-400 mb-1">
-                    Upgrade / Switch Tier
+                    Change / Upgrade Tier
                   </label>
                   <select
                     value={managingSubscriber.planId}
@@ -1126,7 +1161,9 @@ export default function MembershipsDashboardPage() {
           )}
         </AnimatePresence>
 
-        {/* GST INVOICE VIEW MODAL */}
+        {/* ==================================================================== */}
+        {/* MODAL: GST INVOICE PREVIEW                                           */}
+        {/* ==================================================================== */}
         {selectedInvoice && (
           <GSTInvoiceModal
             isOpen={!!selectedInvoice}

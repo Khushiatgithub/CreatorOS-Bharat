@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, Outfit, JetBrains_Mono } from 'next/font/google';
-import { ClerkProvider } from '@clerk/nextjs';
-import { dark } from '@clerk/themes';
+import SafeClerkProvider from '@/components/auth/SafeClerkProvider';
 import { ThemeProvider } from '@/components/ui/ThemeProvider';
 import './globals.css';
 
@@ -58,25 +57,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Ensure a valid fallback key is always supplied so ClerkProvider never crashes on Vercel deployments
-  const clerkPublishableKey = 
-    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || 
-    'pk_test_Y3JlYXRvcm9zLWJoYXJhdC5jbGVyay5hY2NvdW50cy5kZXYk';
-
   return (
-    <ClerkProvider
-      publishableKey={clerkPublishableKey}
-      appearance={{
-        baseTheme: dark,
-        variables: {
-          colorPrimary: '#2563EB',
-          colorBackground: '#0A0D17',
-          colorText: '#F8FAFC',
-          colorInputBackground: '#05070B',
-          colorInputText: '#FFFFFF',
-        }
-      }}
-    >
+    <SafeClerkProvider>
       <html lang="en" className="dark scroll-smooth">
         <body className={`${inter.variable} ${outfit.variable} ${jetbrainsMono.variable} min-h-screen bg-[#05070B] text-slate-100 antialiased font-sans selection:bg-royal-600 selection:text-white transition-colors duration-300`}>
           <ThemeProvider>
@@ -84,6 +66,6 @@ export default function RootLayout({
           </ThemeProvider>
         </body>
       </html>
-    </ClerkProvider>
+    </SafeClerkProvider>
   );
 }

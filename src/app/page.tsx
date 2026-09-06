@@ -556,11 +556,12 @@ export default function SaaSGrandLandingPage() {
               <span>• Built for Bharat Creators 🇮🇳</span>
             </div>
 
-            <div className="flex items-center gap-5 text-[11px]">
+            <div className="flex flex-wrap items-center gap-5 text-[11px]">
               <Link href="/dashboard/storefront-builder" className="hover:text-white transition">Bio Builder</Link>
               <Link href="/dashboard/gst-invoices" className="hover:text-white transition">GST Invoicing</Link>
               <Link href="/dashboard/whatsapp" className="hover:text-white transition">WhatsApp API</Link>
               <Link href="/dashboard/media-kit" className="hover:text-white transition">AI Media Kit</Link>
+              <Link href="/privacy" className="text-royal-400 hover:text-royal-300 transition font-semibold">Privacy Policy</Link>
             </div>
           </div>
         </footer>

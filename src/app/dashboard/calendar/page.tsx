@@ -74,7 +74,7 @@ const DAYS_ORDER: DayOfWeek[] = [
   'Sunday'
 ];
 
-export default function CalendarPage() {
+function CalendarPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -116,8 +116,17 @@ export default function CalendarPage() {
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [isHolidayModalOpen, setIsHolidayModalOpen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
-  const [meetingFilter, setMeetingFilter] = useState<'all' | 'confirmed' | 'upcoming' | 'completed'>('all');
+  const [meetingFilter, setMeetingFilter] = useState<'all' | 'confirmed' | 'upcoming' | 'completed' | 'cancelled'>('all');
   const [oauthBanner, setOauthBanner] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const handleCancelMeeting = async (meetingId: string, studentName: string) => {
+    if (!confirm(`Are you sure you want to cancel the session with ${studentName}? This will delete the Google Calendar event and free up the time slot for future bookings.`)) {
+      return;
+    }
+    updateMeetingStatus(meetingId, 'cancelled');
+    setSyncToastMessage(`Session with ${studentName} cancelled. Google Calendar event deleted and slot freed!`);
+    setTimeout(() => setSyncToastMessage(null), 4000);
+  };
 
   // New Holiday form state
   const [newHolidayForm, setNewHolidayForm] = useState({
@@ -977,8 +986,8 @@ export default function CalendarPage() {
             </div>
 
             {/* Filter Tabs */}
-            <div className="flex items-center gap-1.5 bg-[#060812] border border-white/[0.08] rounded-xl p-1">
-              {(['all', 'confirmed', 'upcoming', 'completed'] as const).map((tab) => (
+            <div className="flex flex-wrap items-center gap-1.5 bg-[#060812] border border-white/[0.08] rounded-xl p-1">
+              {(['all', 'confirmed', 'upcoming', 'completed', 'cancelled'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setMeetingFilter(tab)}
@@ -1016,12 +1025,17 @@ export default function CalendarPage() {
                 const isConfirmed = meeting.meetingStatus === 'confirmed';
                 const isUpcoming = meeting.meetingStatus === 'upcoming';
                 const isCompleted = meeting.meetingStatus === 'completed';
+                const isCancelled = meeting.meetingStatus === 'cancelled';
 
                 return (
                   <HoverCard
                     hoverY={-3}
                     key={meeting.id}
-                    className="rounded-2xl border border-white/[0.08] bg-[#0E1322]/85 p-5 shadow-glass-card space-y-4 hover:border-royal-500/35 transition flex flex-col justify-between"
+                    className={`rounded-2xl border p-5 shadow-glass-card space-y-4 transition flex flex-col justify-between ${
+                      isCancelled
+                        ? 'border-rose-500/20 bg-[#0E1322]/50 opacity-75'
+                        : 'border-white/[0.08] bg-[#0E1322]/85 hover:border-royal-500/35'
+                    }`}
                   >
                     <div className="space-y-3.5">
                       
@@ -1061,6 +1075,11 @@ export default function CalendarPage() {
                               Completed
                             </span>
                           )}
+                          {isCancelled && (
+                            <span className="px-2.5 py-0.5 rounded-full bg-rose-500/15 text-rose-400 border border-rose-500/30 text-[10px] font-bold uppercase tracking-wider">
+                              Cancelled
+                            </span>
+                          )}
                         </div>
                       </div>
 
@@ -1070,15 +1089,20 @@ export default function CalendarPage() {
                           <h5 className="font-semibold text-xs text-royal-200">
                             {meeting.meetingTitle}
                           </h5>
-                          {meeting.googleEventId && (
+                          {meeting.googleEventId && !isCancelled && (
                             <span className="shrink-0 px-2 py-0.5 rounded bg-royal-600/15 border border-royal-500/25 text-royal-300 text-[10px] font-mono" title={`Google Calendar Event ID: ${meeting.googleEventId}`}>
                               GCal Synced
+                            </span>
+                          )}
+                          {isCancelled && (
+                            <span className="shrink-0 px-2 py-0.5 rounded bg-rose-500/15 border border-rose-500/25 text-rose-300 text-[10px] font-mono">
+                              Slot Freed
                             </span>
                           )}
                         </div>
                         {meeting.topic && (
                           <p className="text-[11px] text-slate-400 line-clamp-2">
-                            <span className="text-slate-500">Agenda:</span> {meeting.topic}
+                            <span className="text-slate-500">Details:</span> {meeting.topic}
                           </p>
                         )}
                       </div>
@@ -1104,21 +1128,32 @@ export default function CalendarPage() {
                             {meeting.timezone || selectedTimezone}
                           </span>
                           <span className="text-[10px] text-slate-500 font-sans">
-                            Both creator & student invited
+                            {isCancelled ? 'Google Calendar event deleted' : 'Both creator & student invited'}
                           </span>
                         </div>
                       </div>
 
                     </div>
 
-                    {/* Bottom Action: Join Meeting Button */}
+                    {/* Bottom Action: Join Meeting Button & Cancel Action */}
                     <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between gap-3">
                       <div className="text-[11px] text-slate-400 font-mono">
                         {meeting.durationMinutes} mins session
                       </div>
 
                       <div className="flex items-center gap-2">
-                        {meeting.meetingStatus !== 'completed' && (
+                        {!isCancelled && (
+                          <button
+                            onClick={() => handleCancelMeeting(meeting.id, meeting.studentName)}
+                            className="px-2.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/25 text-xs font-semibold transition flex items-center gap-1"
+                            title="Cancel session, delete Google Calendar event, and free time slot"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            <span className="text-[11px]">Cancel</span>
+                          </button>
+                        )}
+
+                        {!isCancelled && meeting.meetingStatus !== 'completed' && (
                           <button
                             onClick={() => updateMeetingStatus(meeting.id, 'completed')}
                             className="px-2.5 py-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white text-xs font-semibold transition"
@@ -1128,16 +1163,25 @@ export default function CalendarPage() {
                           </button>
                         )}
 
-                        <a
-                          href={meeting.meetingUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-950/50 transition btn-press"
-                        >
-                          <Video className="h-3.5 w-3.5" />
-                          <span>Join Meeting</span>
-                          <ExternalLink className="h-3 w-3 opacity-80" />
-                        </a>
+                        {!isCancelled && (
+                          <a
+                            href={meeting.meetingUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-950/50 transition btn-press"
+                          >
+                            <Video className="h-3.5 w-3.5" />
+                            <span>Join Meeting</span>
+                            <ExternalLink className="h-3 w-3 opacity-80" />
+                          </a>
+                        )}
+
+                        {isCancelled && (
+                          <span className="text-[11px] text-rose-400 font-mono flex items-center gap-1">
+                            <AlertCircle className="h-3.5 w-3.5" />
+                            Event Deleted & Slot Freed
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -1572,5 +1616,20 @@ export default function CalendarPage() {
 
       </div>
     </PageTransition>
+  );
+}
+
+export default function CalendarPage() {
+  return (
+    <React.Suspense fallback={
+      <div className="min-h-[70vh] flex items-center justify-center text-slate-400 text-xs font-mono">
+        <div className="flex items-center gap-2">
+          <div className="h-4 w-4 rounded-full border-2 border-royal-400 border-t-transparent animate-spin" />
+          <span>Loading Calendar & Availability...</span>
+        </div>
+      </div>
+    }>
+      <CalendarPageContent />
+    </React.Suspense>
   );
 }

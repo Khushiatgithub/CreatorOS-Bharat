@@ -1,10 +1,33 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { AuthenticateWithRedirectCallback } from '@clerk/nextjs';
+import { isRealClerkKey } from '@/components/auth/SafeAuth';
 import { Zap } from 'lucide-react';
 
+function ClerkCallbackWrapper() {
+  return (
+    <AuthenticateWithRedirectCallback
+      signInFallbackRedirectUrl="/dashboard"
+      signUpFallbackRedirectUrl="/onboarding"
+    />
+  );
+}
+
 export default function SSOCallbackPage() {
+  const router = useRouter();
+  const isClerk = isRealClerkKey(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+
+  useEffect(() => {
+    if (!isClerk) {
+      const timer = setTimeout(() => {
+        router.push('/dashboard');
+      }, 700);
+      return () => clearTimeout(timer);
+    }
+  }, [isClerk, router]);
+
   return (
     <div className="min-h-screen bg-[#05070B] text-slate-100 flex flex-col items-center justify-center p-4 relative overflow-hidden font-sans">
       
@@ -29,11 +52,7 @@ export default function SSOCallbackPage() {
           <div className="h-5 w-5 rounded-full border-2 border-royal-500 border-t-transparent animate-spin" />
         </div>
 
-        {/* Clerk SSO Callback Handler */}
-        <AuthenticateWithRedirectCallback
-          signInFallbackRedirectUrl="/dashboard"
-          signUpFallbackRedirectUrl="/onboarding"
-        />
+        {isClerk && <ClerkCallbackWrapper />}
       </div>
 
     </div>

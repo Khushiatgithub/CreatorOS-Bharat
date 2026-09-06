@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { CalendarIntegrationModel } from '@/lib/db-models';
 import { revokeGoogleToken } from '@/lib/google-calendar';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}));

@@ -13,7 +13,9 @@ import {
   Phone, 
   Mail, 
   Sparkles, 
-  ArrowUpRight 
+  ArrowUpRight,
+  Trash2,
+  AlertCircle
 } from 'lucide-react';
 import { INITIAL_BOOKINGS } from '@/lib/mock-data';
 import { formatINR, formatINRDecimal } from '@/lib/gst';
@@ -21,7 +23,14 @@ import { PageTransition, HoverCard, RippleButton } from '@/components/ui/motion'
 import PremiumEmptyState from '@/components/ui/EmptyState';
 
 export default function BookingsManagerPage() {
-  const { bookingServices, appointments, activeCreator } = useCreatorStore();
+  const { bookingServices, appointments, activeCreator, cancelAppointment } = useCreatorStore();
+
+  const handleCancelAppointment = (aptId: string, buyerName: string) => {
+    if (!confirm(`Are you sure you want to cancel the booking for ${buyerName}? This will delete the event from Google Calendar and free up the time slot.`)) {
+      return;
+    }
+    cancelAppointment(aptId);
+  };
 
   const currentBookings = bookingServices && bookingServices.length > 0 ? bookingServices : INITIAL_BOOKINGS;
 
@@ -142,33 +151,59 @@ export default function BookingsManagerPage() {
                     <th className="pb-3">Client</th>
                     <th className="pb-3">Service</th>
                     <th className="pb-3">Date & Time Slot</th>
-                    <th className="pb-3">Meeting Link</th>
+                    <th className="pb-3">Status & Actions</th>
                     <th className="pb-3 text-right">Fee Paid</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.04] text-slate-300">
-                  {appointments.map((apt) => (
-                    <tr key={apt.id} className="hover:bg-white/[0.03] transition-colors">
-                      <td className="py-3">
-                        <p className="font-semibold text-white">{apt.buyerName}</p>
-                        <p className="text-[10px] text-slate-400 font-mono">{apt.buyerPhone}</p>
-                      </td>
-                      <td className="py-3 font-medium text-slate-200">{apt.serviceTitle}</td>
-                      <td className="py-3 font-mono text-royal-300">{apt.date} • {apt.timeSlot}</td>
-                      <td className="py-3">
-                        <a
-                          href={apt.meetUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1.5 rounded-[10px] bg-royal-600/15 text-royal-300 border border-royal-500/30 px-2.5 py-1 font-semibold hover:bg-royal-600/25 transition btn-press"
-                        >
-                          <Video className="h-3.5 w-3.5" />
-                          <span>Join Meet</span>
-                        </a>
-                      </td>
-                      <td className="py-3 text-right font-bold text-white font-mono">₹{formatINRDecimal(apt.amountPaid)}</td>
-                    </tr>
-                  ))}
+                  {appointments.map((apt) => {
+                    const isCancelled = apt.status === 'cancelled';
+                    return (
+                      <tr key={apt.id} className={`transition-colors ${isCancelled ? 'opacity-60 bg-white/[0.01]' : 'hover:bg-white/[0.03]'}`}>
+                        <td className="py-3">
+                          <p className="font-semibold text-white">{apt.buyerName}</p>
+                          <p className="text-[10px] text-slate-400 font-mono">{apt.buyerEmail || apt.buyerPhone}</p>
+                        </td>
+                        <td className="py-3">
+                          <p className="font-medium text-slate-200">{apt.serviceTitle}</p>
+                          {apt.googleEventId && !isCancelled && (
+                            <span className="text-[9px] font-mono text-royal-400">GCal Synced</span>
+                          )}
+                        </td>
+                        <td className="py-3 font-mono text-royal-300">{apt.date} • {apt.timeSlot}</td>
+                        <td className="py-3">
+                          <div className="flex items-center gap-2">
+                            {!isCancelled ? (
+                              <>
+                                <a
+                                  href={apt.meetUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1.5 rounded-[10px] bg-emerald-600/15 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 font-semibold hover:bg-emerald-600/25 transition btn-press text-[11px]"
+                                >
+                                  <Video className="h-3 w-3" />
+                                  <span>Join Meet</span>
+                                </a>
+                                <button
+                                  onClick={() => handleCancelAppointment(apt.id, apt.buyerName)}
+                                  className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition"
+                                  title="Cancel booking and delete Google Calendar event"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-mono font-semibold">
+                                <AlertCircle className="h-3 w-3" />
+                                Cancelled
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3 text-right font-bold text-white font-mono">₹{formatINRDecimal(apt.amountPaid)}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

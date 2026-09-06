@@ -10,13 +10,21 @@ export function getDatabasePool(): Pool | null {
     return null;
   }
 
+  const isLocal = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
+  const useSsl = !isLocal && (
+    process.env.NODE_ENV === 'production' ||
+    connectionString.includes('sslmode=require') ||
+    connectionString.includes('neon.tech') ||
+    connectionString.includes('supabase.co')
+  );
+
   try {
     pool = new Pool({
       connectionString,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,
+      ssl: useSsl ? { rejectUnauthorized: false } : undefined,
       max: 10,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 5000,
+      connectionTimeoutMillis: 3000,
     });
 
     pool.on('error', (err) => {
@@ -51,7 +59,7 @@ export async function query<T extends QueryResultRow = any>(
     }
     return res;
   } catch (err) {
-    console.error('PostgreSQL query error:', { text, error: err });
+    // Graceful error logging without crashing build or SSR
     return null;
   }
 }

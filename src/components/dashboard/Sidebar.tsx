@@ -20,9 +20,10 @@ import {
   User, 
   Users, 
   Crown, 
-  LogOut 
+  LogOut,
+  Bot
 } from 'lucide-react';
-import { SignOutButton, SignedIn } from '@clerk/nextjs';
+import { SignOutButton, SignedIn } from '@/components/auth/SafeAuth';
 import { useCreatorStore } from '@/lib/store';
 import { formatINR } from '@/lib/gst';
 
@@ -40,6 +41,7 @@ const NAV_ITEMS = [
   { href: '/dashboard/marketplace', label: 'Brand Marketplace', icon: Briefcase, badge: 'Deals' },
   { href: '/dashboard/gst-invoices', label: 'GST Invoices', icon: Receipt },
   { href: '/dashboard/analytics', label: 'Analytics & Payouts', icon: BarChart3 },
+  { href: '/dashboard/ai-coach', label: 'AI Business Coach', icon: Bot, badge: 'AI', highlight: true },
   { href: '/dashboard/profile', label: 'Account & Security', icon: User }
 ];
 

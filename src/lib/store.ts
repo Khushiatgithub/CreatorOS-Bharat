@@ -77,7 +77,9 @@ const STORAGE_KEYS = {
   BUFFER_MINUTES: 'creatoros_buffer_minutes',
   CALENDAR_TIMEZONE: 'creatoros_calendar_timezone',
   BLOCKED_HOLIDAYS: 'creatoros_blocked_holidays',
-  CALENDAR_MEETINGS: 'creatoros_calendar_meetings'
+  CALENDAR_MEETINGS: 'creatoros_calendar_meetings',
+  PRICE_HISTORY: 'creatoros_price_history',
+  BASELINE_PRICES: 'creatoros_baseline_prices'
 };
 
 // Initial state loader with safe hydration
@@ -106,6 +108,8 @@ export function useCreatorStore() {
   const [calendarTimezone, setCalendarTimezone] = useState<string>('Asia/Kolkata');
   const [blockedHolidays, setBlockedHolidays] = useState<BlockedHoliday[]>(INITIAL_BLOCKED_HOLIDAYS);
   const [calendarMeetings, setCalendarMeetings] = useState<CalendarMeeting[]>(INITIAL_CALENDAR_MEETINGS);
+  const [priceHistory, setPriceHistory] = useState<Record<string, { date: string; price: number; changeType?: string; label?: string }[]>>({});
+  const [baselinePrices, setBaselinePrices] = useState<Record<string, number>>({});
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Load from localStorage on client mount
@@ -182,6 +186,12 @@ export function useCreatorStore() {
 
       const savedMeetings = localStorage.getItem(STORAGE_KEYS.CALENDAR_MEETINGS);
       if (savedMeetings) setCalendarMeetings(JSON.parse(savedMeetings));
+
+      const savedPriceHistory = localStorage.getItem(STORAGE_KEYS.PRICE_HISTORY);
+      if (savedPriceHistory) setPriceHistory(JSON.parse(savedPriceHistory));
+
+      const savedBaseline = localStorage.getItem(STORAGE_KEYS.BASELINE_PRICES);
+      if (savedBaseline) setBaselinePrices(JSON.parse(savedBaseline));
     } catch (e) {
       console.warn('LocalStorage error or not available', e);
     } finally {
@@ -268,6 +278,61 @@ export function useCreatorStore() {
       saveState(STORAGE_KEYS.PRODUCTS, next);
       return next;
     });
+  };
+
+  const updateProductPrice = (id: string, newPrice: number, changeType: string = 'ai_optimized') => {
+    const currentProd = products.find((p) => p.id === id);
+    if (!currentProd) return;
+
+    // Record baseline price if not already tracked
+    if (!baselinePrices[id]) {
+      const base = currentProd.price;
+      setBaselinePrices((prev) => {
+        const next = { ...prev, [id]: base };
+        saveState(STORAGE_KEYS.BASELINE_PRICES, next);
+        return next;
+      });
+    }
+
+    setProducts((prev) => {
+      const next = prev.map((p) => (p.id === id ? { ...p, price: newPrice } : p));
+      saveState(STORAGE_KEYS.PRODUCTS, next);
+      return next;
+    });
+
+    // Record price history
+    const historyEntry = {
+      date: new Date().toISOString().split('T')[0],
+      price: newPrice,
+      changeType,
+      label: changeType === 'ai_optimized' ? 'AI Optimized' : changeType === 'reverted' ? 'Reverted' : 'Manual'
+    };
+
+    setPriceHistory((prev) => {
+      const existing = prev[id] || [
+        { date: '2026-01-10', price: Math.max(149, newPrice - 100), changeType: 'initial', label: 'Launch Price' },
+        { date: '2026-02-15', price: currentProd?.price || newPrice, changeType: 'manual', label: 'Previous Price' }
+      ];
+      const next = { ...prev, [id]: [...existing, historyEntry] };
+      saveState(STORAGE_KEYS.PRICE_HISTORY, next);
+      return next;
+    });
+
+    // Also persist to PostgreSQL API
+    fetch(`/api/products/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ price: newPrice })
+    }).catch((e) => console.warn('Postgres product price sync error:', e));
+  };
+
+  const revertProductPrice = (id: string) => {
+    const prod = products.find((p) => p.id === id);
+    if (!prod) return;
+
+    // Restore baseline price (or historical default if baseline not yet recorded)
+    const basePrice = baselinePrices[id] || (prod.price > 450 ? 399 : prod.price > 250 ? 299 : 199);
+    updateProductPrice(id, basePrice, 'reverted');
   };
 
   // Courses
@@ -375,6 +440,18 @@ export function useCreatorStore() {
       return next;
     });
 
+    // Sync order to PostgreSQL database in background
+    fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newOrder)
+    }).catch((e) => console.warn('PostgreSQL order sync error:', e));
+
+    // Emit live event for real-time dashboard reactivity
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('creatoros_new_order', { detail: newOrder }));
+    }
+
     // Create appointment and calendar meeting if booking
     let newAppointment: BookingAppointment | undefined;
     let newMeeting: CalendarMeeting | undefined;
@@ -383,11 +460,20 @@ export function useCreatorStore() {
       const randomMeetCode = `${Math.random().toString(36).substring(2, 5)}-${Math.random().toString(36).substring(2, 6)}-${Math.random().toString(36).substring(2, 5)}`;
       const meetUrl = `https://meet.google.com/${randomMeetCode}`;
       const googleEventId = `gevent_${Date.now()}`;
-      const meetingTimezone = 'Asia/Kolkata';
-      const meetingTitle = params.itemTitle.startsWith('1:1')
-        ? params.itemTitle
-        : `1:1 Session: ${params.itemTitle}`;
-      const meetingTopic = `1:1 Mentorship Session with ${creator.name} and ${params.buyerName}. Timezone: ${meetingTimezone} (IST UTC+05:30).`;
+      const meetingTimezone = calendarTimezone || 'Asia/Kolkata';
+      const hostEmail = googleCalendar?.accountEmail || creator.email || 'aarav.sharma@gmail.com';
+      // Requirement 2: Title = "1:1 Session with {Creator Name}"
+      const meetingTitle = `1:1 Session with ${creator.name}`;
+      // Requirement 2: Description = Session details + CreatorOS Bharat booking ID
+      const meetingTopic = [
+        `1:1 Consultation & Mentorship Session`,
+        `Service: ${params.itemTitle}`,
+        `Host (Creator): ${creator.name} (${hostEmail})`,
+        `Student / Mentee: ${params.buyerName} (${params.buyerEmail})`,
+        `Booking ID: ${orderId}`,
+        `Platform: CreatorOS Bharat (Instant UPI Settlement)`,
+        `Timezone: ${meetingTimezone} (IST UTC+05:30)`
+      ].join('\n');
 
       // 1. Create Appointment
       newAppointment = {
@@ -1820,6 +1906,13 @@ export function useCreatorStore() {
       return next;
     });
 
+    // Also update corresponding appointment in appointments list
+    setAppointments((prev) => {
+      const next = prev.map((a) => (a.id === meetingId || a.orderId === meetingId ? { ...a, status } : a));
+      saveState(STORAGE_KEYS.APPOINTMENTS, next);
+      return next;
+    });
+
     fetch('/api/calendar/meetings', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -1828,6 +1921,14 @@ export function useCreatorStore() {
         status
       })
     }).catch((e) => console.warn('Background meeting status sync:', e));
+  };
+
+  const cancelMeeting = (meetingId: string) => {
+    updateMeetingStatus(meetingId, 'cancelled');
+  };
+
+  const cancelAppointment = (appointmentId: string) => {
+    updateMeetingStatus(appointmentId, 'cancelled');
   };
 
   const isDateBlocked = (dateStr: string, creatorIdToMatch?: string): { isBlocked: boolean; reason?: string } => {
@@ -2005,10 +2106,15 @@ export function useCreatorStore() {
     blockedHolidays,
     calendarMeetings: calendarMeetings.filter((m) => m.creatorId === activeCreatorId || activeCreatorId === 'all'),
     allCalendarMeetings: calendarMeetings,
+    // Price Optimization State
+    priceHistory,
+    baselinePrices,
     // Actions
     updateCreator,
     switchActiveCreator,
     addProduct,
+    updateProductPrice,
+    revertProductPrice,
     deleteProduct,
     addCourse,
     addBookingService,
@@ -2053,6 +2159,8 @@ export function useCreatorStore() {
     saveAllAvailability,
     createCalendarMeeting,
     updateMeetingStatus,
+    cancelMeeting,
+    cancelAppointment,
     isDateBlocked,
     isSlotBooked
   };

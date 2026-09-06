@@ -1,15 +1,33 @@
 import { NextResponse } from 'next/server';
 import { CalendarIntegrationModel } from '@/lib/db-models';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const creatorId = searchParams.get('creatorId') || 'creator_aarav';
 
     const integration = await CalendarIntegrationModel.getByCreator(creatorId);
+    
+    // Sanitize sensitive tokens before sending to client
+    const sanitizedData = {
+      id: integration.id,
+      creatorId: integration.creatorId,
+      provider: integration.provider,
+      accountEmail: integration.accountEmail,
+      isConnected: integration.isConnected,
+      syncStatus: integration.syncStatus,
+      lastSyncedAt: integration.lastSyncedAt,
+      googleCalendarId: integration.googleCalendarId,
+      autoGenerateMeet: integration.autoGenerateMeet,
+      createdAt: integration.createdAt,
+      updatedAt: integration.updatedAt
+    };
+
     return NextResponse.json({
       success: true,
-      data: integration
+      data: sanitizedData
     });
   } catch (error: any) {
     console.error('Error fetching calendar integration:', error);
@@ -39,10 +57,24 @@ export async function POST(req: Request) {
       syncStatus: syncStatus || (isConnected ? 'synced' : 'disconnected')
     });
 
+    const sanitizedData = {
+      id: updated.id,
+      creatorId: updated.creatorId,
+      provider: updated.provider,
+      accountEmail: updated.accountEmail,
+      isConnected: updated.isConnected,
+      syncStatus: updated.syncStatus,
+      lastSyncedAt: updated.lastSyncedAt,
+      googleCalendarId: updated.googleCalendarId,
+      autoGenerateMeet: updated.autoGenerateMeet,
+      createdAt: updated.createdAt,
+      updatedAt: updated.updatedAt
+    };
+
     return NextResponse.json({
       success: true,
       message: isConnected ? 'Google Calendar connected successfully.' : 'Google Calendar disconnected.',
-      data: updated
+      data: sanitizedData
     });
   } catch (error: any) {
     console.error('Error updating calendar integration:', error);

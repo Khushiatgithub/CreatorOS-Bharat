@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { CalendarIntegrationModel, CalendarMeetingModel } from '@/lib/db-models';
 import { listGoogleCalendarEvents } from '@/lib/google-calendar';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}));
@@ -38,11 +40,25 @@ export async function POST(req: Request) {
 
     const meetings = await CalendarMeetingModel.getByCreator(creatorId);
 
+    const sanitizedIntegration = {
+      id: updated.id,
+      creatorId: updated.creatorId,
+      provider: updated.provider,
+      accountEmail: updated.accountEmail,
+      isConnected: updated.isConnected,
+      syncStatus: updated.syncStatus,
+      lastSyncedAt: updated.lastSyncedAt,
+      googleCalendarId: updated.googleCalendarId,
+      autoGenerateMeet: updated.autoGenerateMeet,
+      createdAt: updated.createdAt,
+      updatedAt: updated.updatedAt
+    };
+
     return NextResponse.json({
       success: true,
       message: 'Google Calendar synced successfully.',
       data: {
-        integration: updated,
+        integration: sanitizedIntegration,
         eventsCount: googleEvents.length,
         meetingsCount: meetings.length,
         lastSyncedAt: updated.lastSyncedAt

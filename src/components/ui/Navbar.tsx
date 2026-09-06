@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
+import { SignedIn, SignedOut, UserButton } from '@/components/auth/SafeAuth';
 import { useCreatorStore } from '@/lib/store';
 import { useTheme } from '@/components/ui/ThemeProvider';
 import { 

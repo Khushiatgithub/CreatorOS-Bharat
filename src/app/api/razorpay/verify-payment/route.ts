@@ -101,25 +101,57 @@ export async function POST(req: NextRequest) {
     if (item?.type === 'booking' && bookingDate && bookingTimeSlot) {
       try {
         const { parseBookingDateTimeToISO, createGoogleCalendarEvent } = await import('@/lib/google-calendar');
-        const { CalendarIntegrationModel, CalendarMeetingModel, AppointmentModel } = await import('@/lib/db-models');
+        const { CalendarIntegrationModel, CalendarMeetingModel, AppointmentModel, CalendarAvailabilityModel } = await import('@/lib/db-models');
+
+        const creatorId = 'creator_aarav';
+        const creatorName = 'Aarav Sharma';
+
+        // Retrieve creator's connected Google account & timezone
+        let creatorEmail = 'aarav.sharma@gmail.com';
+        let creatorTimezone = 'Asia/Kolkata';
+
+        try {
+          const gcal = await CalendarIntegrationModel.getByCreator(creatorId);
+          if (gcal?.accountEmail) {
+            creatorEmail = gcal.accountEmail;
+          }
+          const avail = await CalendarAvailabilityModel.getByCreator(creatorId);
+          if (avail?.timezone) {
+            creatorTimezone = avail.timezone;
+          }
+        } catch (e) {
+          // fallback to defaults
+        }
 
         const { startISO, endISO } = parseBookingDateTimeToISO(bookingDate, bookingTimeSlot, 45);
-        const { accessToken } = await CalendarIntegrationModel.getEncryptedTokens('creator_aarav');
+        const { accessToken } = await CalendarIntegrationModel.getEncryptedTokens(creatorId);
         const tokenToUse = accessToken || 'ya29.mock_token';
 
-        const meetingTitle = `1:1 Session: ${item.title || 'Creator Consultation'}`;
-        const meetingTopic = `1:1 Mentorship Session with Aarav Sharma and ${buyer?.name || 'Student'}. Timezone: Asia/Kolkata (IST UTC+05:30).`;
+        const bookingId = orderRecord.id;
+        // Requirement 2: Title = "1:1 Session with {Creator Name}"
+        const meetingTitle = `1:1 Session with ${creatorName}`;
+        // Requirement 2: Description = Session details + CreatorOS Bharat booking ID
+        const meetingDescription = [
+          `1:1 Consultation & Mentorship Session`,
+          `Service: ${item.title || '1:1 Creator Consultation'}`,
+          `Host (Creator): ${creatorName} (${creatorEmail})`,
+          `Student / Mentee: ${buyer?.name || 'Student'} (${buyer?.email || 'student@creatoros.in'})`,
+          `Booking ID: ${bookingId}`,
+          `Payment: ₹${gstDetails.totalAmount} via Razorpay UPI (${upiRefId})`,
+          `Platform: CreatorOS Bharat (Instant UPI Settlement)`,
+          `Timezone: ${creatorTimezone} (IST UTC+05:30)`
+        ].join('\n');
 
         const calEvent = await createGoogleCalendarEvent(tokenToUse, {
           summary: meetingTitle,
-          description: meetingTopic,
+          description: meetingDescription,
           startDateTime: startISO,
           endDateTime: endISO,
           attendeeEmail: buyer?.email || 'student@creatoros.in',
           attendeeName: buyer?.name || 'Student',
-          creatorEmail: 'aarav.sharma@gmail.com',
-          creatorName: 'Aarav Sharma',
-          timeZone: 'Asia/Kolkata',
+          creatorEmail: creatorEmail,
+          creatorName: creatorName,
+          timeZone: creatorTimezone,
           createMeetConference: true
         });
 
@@ -127,7 +159,7 @@ export async function POST(req: NextRequest) {
         const googleEventId = calEvent.eventId || `gevent_${Date.now()}`;
 
         createdMeeting = await CalendarMeetingModel.create({
-          creatorId: 'creator_aarav',
+          creatorId,
           studentName: buyer?.name || 'Student',
           studentEmail: buyer?.email || 'student@creatoros.in',
           studentPhone: buyer?.phone || '+91 98234 56789',
@@ -138,14 +170,14 @@ export async function POST(req: NextRequest) {
           meetingStatus: 'confirmed',
           meetingUrl: meetUrl,
           googleEventId,
-          topic: meetingTopic,
-          timezone: 'Asia/Kolkata'
+          topic: meetingDescription,
+          timezone: creatorTimezone
         });
 
         await AppointmentModel.createAppointment({
           id: `apt_${Date.now()}`,
           serviceId: item.id || 'book_1',
-          creatorId: 'creator_aarav',
+          creatorId,
           serviceTitle: meetingTitle,
           buyerName: buyer?.name || 'Student',
           buyerEmail: buyer?.email || 'student@creatoros.in',
@@ -154,11 +186,11 @@ export async function POST(req: NextRequest) {
           timeSlot: bookingTimeSlot,
           meetUrl,
           status: 'confirmed',
-          notes: meetingTopic,
+          notes: meetingDescription,
           amountPaid: gstDetails.totalAmount,
-          orderId: orderRecord.id,
+          orderId: bookingId,
           googleEventId,
-          timeZone: 'Asia/Kolkata',
+          timeZone: creatorTimezone,
           createdAt: new Date().toISOString()
         });
       } catch (meetErr) {

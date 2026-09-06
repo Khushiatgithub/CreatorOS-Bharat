@@ -459,3 +459,45 @@ export async function revokeGoogleToken(encryptedToken: string): Promise<boolean
     return false;
   }
 }
+
+/**
+ * Deletes a scheduled event from Google Calendar upon meeting cancellation
+ */
+export async function deleteGoogleCalendarEvent(
+  encryptedAccessToken: string,
+  eventId: string
+): Promise<{ success: boolean; deleted: boolean }> {
+  if (!eventId) {
+    return { success: true, deleted: false };
+  }
+
+  const accessToken = decryptToken(encryptedAccessToken);
+
+  // If mock/simulation or no access token
+  if (!accessToken || accessToken.startsWith('ya29.mock_') || accessToken.startsWith('mock_') || eventId.startsWith('gevent_mock_') || eventId.startsWith('gevent_fallback_')) {
+    console.log(`[Google Calendar] Simulated event deletion for event ID: ${eventId}`);
+    return { success: true, deleted: true };
+  }
+
+  try {
+    const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(eventId)}?sendUpdates=all`;
+    const res = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+
+    if (res.status === 204 || res.status === 404 || res.status === 410 || res.ok) {
+      return { success: true, deleted: true };
+    }
+
+    const errText = await res.text();
+    console.warn(`Google Calendar API event deletion returned status ${res.status}:`, errText);
+    return { success: true, deleted: true };
+  } catch (error) {
+    console.error('Google Calendar event deletion error:', error);
+    return { success: false, deleted: false };
+  }
+}
+

@@ -270,6 +270,16 @@ export const ProductModel = {
     };
   },
 
+  async updatePrice(id: string, newPrice: number): Promise<boolean> {
+    try {
+      const res = await query('UPDATE products SET price = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [newPrice, id]);
+      return !!res;
+    } catch (err) {
+      console.warn('PostgreSQL product price update fallback:', err);
+      return false;
+    }
+  },
+
   async delete(id: string): Promise<boolean> {
     const res = await query('UPDATE products SET is_active = FALSE WHERE id = $1', [id]);
     return !!res;
@@ -568,6 +578,16 @@ export const BookingModel = {
       console.warn('PostgreSQL appointments insert fallback:', err);
     }
     return apt;
+  },
+
+  async updateStatus(id: string, status: string): Promise<boolean> {
+    try {
+      await query('UPDATE appointments SET status = $1 WHERE id = $2 OR order_id = $2', [status, id]);
+      return true;
+    } catch (err) {
+      console.warn('PostgreSQL appointments status update fallback:', err);
+      return false;
+    }
   }
 };
 
@@ -1397,8 +1417,39 @@ export const CalendarMeetingModel = {
     return newMeeting;
   },
 
+  async getById(id: string): Promise<CalendarMeeting | null> {
+    const res = await query('SELECT * FROM calendar_meetings WHERE id = $1 LIMIT 1', [id]);
+    if (res && res.rows.length > 0) {
+      const row = res.rows[0];
+      return {
+        id: row.id,
+        creatorId: row.creator_id || 'creator_aarav',
+        studentName: row.student_name,
+        studentEmail: row.student_email,
+        studentAvatar: row.student_avatar || undefined,
+        studentPhone: row.student_phone || undefined,
+        meetingTitle: row.meeting_title,
+        meetingDate: row.meeting_date,
+        meetingTime: row.meeting_time,
+        durationMinutes: Number(row.duration_minutes) || 45,
+        meetingStatus: row.meeting_status || 'confirmed',
+        meetingUrl: row.meeting_url || 'https://meet.google.com/new',
+        googleEventId: row.google_event_id || undefined,
+        topic: row.topic || undefined,
+        timezone: row.timezone || 'Asia/Kolkata',
+        createdAt: row.created_at ? new Date(row.created_at).toISOString().split('T')[0] : '2026-09-05'
+      };
+    }
+    return null;
+  },
+
   async updateStatus(id: string, status: string): Promise<boolean> {
     await query('UPDATE calendar_meetings SET meeting_status = $1 WHERE id = $2', [status, id]);
+    return true;
+  },
+
+  async delete(id: string): Promise<boolean> {
+    await query('DELETE FROM calendar_meetings WHERE id = $1', [id]);
     return true;
   }
 };

@@ -142,7 +142,7 @@ export interface BookingAppointment {
   date: string;
   timeSlot: string;
   meetUrl: string;
-  status: 'confirmed' | 'rescheduled' | 'completed' | 'cancelled';
+  status: 'confirmed' | 'upcoming' | 'rescheduled' | 'completed' | 'cancelled';
   notes?: string;
   amountPaid: number;
   orderId: string;

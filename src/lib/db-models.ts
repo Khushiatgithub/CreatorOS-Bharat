@@ -157,12 +157,53 @@ export const UserModel = {
     if (data.bankAccount !== undefined) { fields.push(`bank_account = $${idx++}`); values.push(JSON.stringify(data.bankAccount)); }
     if (data.socials !== undefined) { fields.push(`social_links = $${idx++}`); values.push(JSON.stringify(data.socials)); }
 
-    if (fields.length === 0) return true;
-
     values.push(id);
     const sql = `UPDATE users SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = $${idx}`;
     const res = await query(sql, values);
     return !!res;
+  },
+
+  async create(data: Partial<Creator>): Promise<Creator> {
+    const id = data.id || `user_${Date.now()}`;
+    const username = data.username || `creator_${Date.now().toString().slice(-4)}`;
+    const name = data.name || 'New Creator';
+    const email = (data as any).email || `${username}@creatoros.in`;
+    const bio = data.bio || data.tagline || '';
+    const state = data.state || 'Karnataka';
+    const avatarUrl = data.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80';
+
+    try {
+      await query(
+        `INSERT INTO users (id, username, email, name, bio, state, avatar_url)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         ON CONFLICT (id) DO NOTHING`,
+        [id, username, email, name, bio, state, avatarUrl]
+      );
+    } catch (e) {
+      console.warn('DB User insert fallback:', e);
+    }
+
+    return {
+      id,
+      username,
+      name,
+      tagline: bio,
+      bio,
+      avatarUrl,
+      verified: false,
+      category: data.category || 'Tech & Software',
+      location: `${state}, India`,
+      socials: data.socials || {},
+      themeId: data.themeId || 'theme-bharat-royal',
+      state,
+      upiId: data.upiId || 'creator@okaxis',
+      upiName: data.upiName || name,
+      bankAccount: data.bankAccount || {
+        accountNumberMasked: '•••• •••• 7890',
+        ifsc: 'HDFC0001234',
+        bankName: 'HDFC Bank'
+      }
+    };
   }
 };
 

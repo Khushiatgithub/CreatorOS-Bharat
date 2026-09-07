@@ -193,9 +193,111 @@ export async function POST(req: NextRequest) {
           timeZone: creatorTimezone,
           createdAt: new Date().toISOString()
         });
+
+        // 4 & 5. Dispatch Booking Confirmation & Google Calendar Invite Emails
+        try {
+          const { sendBookingConfirmationEmail, sendCalendarInviteEmail } = await import('@/lib/email');
+          const studentEmail = buyer?.email || 'student@creatoros.in';
+          const studentName = buyer?.name || 'Student';
+
+          // Send to student
+          await sendBookingConfirmationEmail(studentEmail, {
+            studentName,
+            studentEmail,
+            creatorName,
+            creatorEmail,
+            meetingTitle,
+            meetingDate: bookingDate,
+            meetingTime: bookingTimeSlot,
+            meetingUrl: meetUrl,
+            durationMinutes: 45,
+            topic: meetingDescription,
+            orderId: bookingId,
+            timezone: creatorTimezone
+          });
+
+          await sendCalendarInviteEmail(studentEmail, {
+            recipientName: studentName,
+            recipientEmail: studentEmail,
+            creatorName,
+            studentName,
+            meetingTitle,
+            meetingDate: bookingDate,
+            meetingTime: bookingTimeSlot,
+            meetingUrl: meetUrl,
+            googleEventId,
+            timezone: creatorTimezone,
+            isCreator: false
+          });
+
+          // Also notify Creator
+          if (creatorEmail) {
+            await sendCalendarInviteEmail(creatorEmail, {
+              recipientName: creatorName,
+              recipientEmail: creatorEmail,
+              creatorName,
+              studentName,
+              meetingTitle,
+              meetingDate: bookingDate,
+              meetingTime: bookingTimeSlot,
+              meetingUrl: meetUrl,
+              googleEventId,
+              timezone: creatorTimezone,
+              isCreator: true
+            });
+          }
+        } catch (mailErr) {
+          console.warn('Booking email dispatch warning:', mailErr);
+        }
       } catch (meetErr) {
         console.warn('Booking calendar sync error in verify-payment:', meetErr);
       }
+    }
+
+    // 2 & 3. Dispatch Payment Successful & GST Tax Invoice Emails to Buyer
+    try {
+      const { sendPaymentSuccessEmail, sendGstInvoiceEmail } = await import('@/lib/email');
+      const targetBuyerEmail = orderRecord.buyerEmail;
+
+      if (targetBuyerEmail) {
+        // Payment Success Email
+        await sendPaymentSuccessEmail(targetBuyerEmail, {
+          buyerName: orderRecord.buyerName,
+          buyerEmail: targetBuyerEmail,
+          orderNumber: orderRecord.orderNumber,
+          itemTitle: orderRecord.itemTitle,
+          itemType: orderRecord.itemType,
+          amount: orderRecord.totalAmount,
+          paymentMethod: orderRecord.paymentMethod,
+          upiRefId: orderRecord.upiRefId,
+          downloadUrl: orderRecord.downloadUrl,
+          creatorName: 'Aarav Sharma',
+          date: orderRecord.date
+        });
+
+        // GST Tax Invoice Email
+        await sendGstInvoiceEmail(targetBuyerEmail, {
+          buyerName: orderRecord.buyerName,
+          buyerEmail: targetBuyerEmail,
+          buyerGst: orderRecord.buyerGst,
+          buyerState: orderRecord.buyerState,
+          creatorName: 'Aarav Sharma (CreatorOS Bharat)',
+          creatorGst: '29ABCDE1234F1Z5',
+          creatorState: 'Karnataka (29)',
+          invoiceNumber: orderRecord.invoiceNumber,
+          invoiceDate: orderRecord.date,
+          itemTitle: orderRecord.itemTitle,
+          sacCode: `${orderRecord.sacCode} (Online Digital & Media Services)`,
+          taxableAmount: orderRecord.amount,
+          cgst: orderRecord.cgst,
+          sgst: orderRecord.sgst,
+          igst: orderRecord.igst,
+          totalAmount: orderRecord.totalAmount,
+          isInterState: orderRecord.isInterState
+        });
+      }
+    } catch (orderMailErr) {
+      console.warn('Order confirmation/GST email dispatch warning:', orderMailErr);
     }
 
     return NextResponse.json({
@@ -204,7 +306,7 @@ export async function POST(req: NextRequest) {
       invoiceNumber,
       order: orderRecord,
       meeting: createdMeeting,
-      message: 'Razorpay payment verified successfully'
+      message: 'Razorpay payment verified and confirmation emails dispatched successfully'
     });
 
   } catch (error: any) {

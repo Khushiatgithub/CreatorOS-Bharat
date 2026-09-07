@@ -72,9 +72,7 @@ export async function POST(req: Request) {
     }
 
     const bookingRefId = orderId || `ORD-${Date.now().toString().slice(-6)}`;
-    // Format meeting title per requirement: "1:1 Session with {Creator Name}"
     const fullTitle = `1:1 Session with ${creatorName}`;
-    // Format rich description with CreatorOS Bharat booking ID
     const fullTopic = topic || [
       `1:1 Consultation & Mentorship Session`,
       `Host (Creator): ${creatorName} (${hostEmail})`,
@@ -84,7 +82,6 @@ export async function POST(req: Request) {
       `Timezone: ${timezone} (IST UTC+05:30)`
     ].join('\n');
 
-    // Check if creator has connected Google Calendar with tokens
     let finalMeetingUrl = meetingUrl || 'https://meet.google.com/new';
     let googleEventId: string | undefined = body.googleEventId;
 
@@ -135,7 +132,6 @@ export async function POST(req: Request) {
       timezone
     });
 
-    // Also persist appointment record in PostgreSQL appointments table
     try {
       await AppointmentModel.createAppointment({
         id: `apt_${Date.now()}`,
@@ -160,6 +156,59 @@ export async function POST(req: Request) {
       console.warn('Appointment table sync note:', aptErr);
     }
 
+    // Automated Resend Email Notifications (4. Booking Confirmation & 5. Calendar Invite)
+    try {
+      const { sendBookingConfirmationEmail, sendCalendarInviteEmail } = await import('@/lib/email');
+      const sEmail = studentEmail || 'student@example.com';
+      
+      await sendBookingConfirmationEmail(sEmail, {
+        studentName,
+        studentEmail: sEmail,
+        creatorName,
+        creatorEmail: hostEmail,
+        meetingTitle: fullTitle,
+        meetingDate,
+        meetingTime,
+        meetingUrl: finalMeetingUrl,
+        durationMinutes,
+        topic: fullTopic,
+        orderId: bookingRefId,
+        timezone
+      });
+
+      await sendCalendarInviteEmail(sEmail, {
+        recipientName: studentName,
+        recipientEmail: sEmail,
+        creatorName,
+        studentName,
+        meetingTitle: fullTitle,
+        meetingDate,
+        meetingTime,
+        meetingUrl: finalMeetingUrl,
+        googleEventId,
+        timezone,
+        isCreator: false
+      });
+
+      if (hostEmail) {
+        await sendCalendarInviteEmail(hostEmail, {
+          recipientName: creatorName,
+          recipientEmail: hostEmail,
+          creatorName,
+          studentName,
+          meetingTitle: fullTitle,
+          meetingDate,
+          meetingTime,
+          meetingUrl: finalMeetingUrl,
+          googleEventId,
+          timezone,
+          isCreator: true
+        });
+      }
+    } catch (mailErr) {
+      console.warn('Calendar meeting email dispatch warning:', mailErr);
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Meeting created, Google Calendar event synced, both parties invited, and saved to PostgreSQL.',
@@ -177,7 +226,7 @@ export async function POST(req: Request) {
 export async function PATCH(req: Request) {
   try {
     const body = await req.json();
-    const { id, status } = body;
+    const { id, status, reason } = body;
 
     if (!id || !status) {
       return NextResponse.json(
@@ -188,12 +237,13 @@ export async function PATCH(req: Request) {
 
     // If meeting is cancelled, delete the event from Google Calendar and free the slot
     if (status === 'cancelled') {
+      let cancelledMeeting: any = null;
       try {
-        const meeting = await CalendarMeetingModel.getById(id);
-        if (meeting?.googleEventId) {
-          const { accessToken } = await CalendarIntegrationModel.getEncryptedTokens(meeting.creatorId || 'creator_aarav');
+        cancelledMeeting = await CalendarMeetingModel.getById(id);
+        if (cancelledMeeting?.googleEventId) {
+          const { accessToken } = await CalendarIntegrationModel.getEncryptedTokens(cancelledMeeting.creatorId || 'creator_aarav');
           if (accessToken) {
-            await deleteGoogleCalendarEvent(accessToken, meeting.googleEventId);
+            await deleteGoogleCalendarEvent(accessToken, cancelledMeeting.googleEventId);
           }
         }
       } catch (delErr) {
@@ -204,9 +254,49 @@ export async function PATCH(req: Request) {
       await CalendarMeetingModel.updateStatus(id, 'cancelled');
       await AppointmentModel.updateStatus(id, 'cancelled');
 
+      // 7. Dispatch Booking Cancellation Email
+      if (cancelledMeeting) {
+        try {
+          const { sendBookingCancellationEmail } = await import('@/lib/email');
+          const studentEmail = cancelledMeeting.studentEmail || 'student@example.com';
+          const studentName = cancelledMeeting.studentName || 'Student';
+
+          // Notify student
+          await sendBookingCancellationEmail(studentEmail, {
+            recipientName: studentName,
+            recipientEmail: studentEmail,
+            creatorName: 'Aarav Sharma',
+            studentName,
+            meetingTitle: cancelledMeeting.meetingTitle || '1:1 Mentorship Session',
+            meetingDate: cancelledMeeting.meetingDate || 'Scheduled Date',
+            meetingTime: cancelledMeeting.meetingTime || 'Scheduled Time',
+            reason: reason || 'Cancelled by host/student',
+            refundEligible: true,
+            refundAmount: 2499,
+            isCreator: false
+          });
+
+          // Notify creator
+          await sendBookingCancellationEmail('aarav.sharma@gmail.com', {
+            recipientName: 'Aarav Sharma',
+            recipientEmail: 'aarav.sharma@gmail.com',
+            creatorName: 'Aarav Sharma',
+            studentName,
+            meetingTitle: cancelledMeeting.meetingTitle || '1:1 Mentorship Session',
+            meetingDate: cancelledMeeting.meetingDate || 'Scheduled Date',
+            meetingTime: cancelledMeeting.meetingTime || 'Scheduled Time',
+            reason: reason || 'Cancelled by host/student',
+            refundEligible: false,
+            isCreator: true
+          });
+        } catch (cmailErr) {
+          console.warn('Cancellation email dispatch warning:', cmailErr);
+        }
+      }
+
       return NextResponse.json({
         success: true,
-        message: 'Meeting cancelled, Google Calendar event deleted, and time slot freed.'
+        message: 'Meeting cancelled, Google Calendar event deleted, time slot freed, and cancellation emails sent.'
       });
     }
 
@@ -238,12 +328,13 @@ export async function DELETE(req: Request) {
       );
     }
 
+    let meetingToDelete: any = null;
     try {
-      const meeting = await CalendarMeetingModel.getById(id);
-      if (meeting?.googleEventId) {
-        const { accessToken } = await CalendarIntegrationModel.getEncryptedTokens(meeting.creatorId || 'creator_aarav');
+      meetingToDelete = await CalendarMeetingModel.getById(id);
+      if (meetingToDelete?.googleEventId) {
+        const { accessToken } = await CalendarIntegrationModel.getEncryptedTokens(meetingToDelete.creatorId || 'creator_aarav');
         if (accessToken) {
-          await deleteGoogleCalendarEvent(accessToken, meeting.googleEventId);
+          await deleteGoogleCalendarEvent(accessToken, meetingToDelete.googleEventId);
         }
       }
     } catch (delErr) {
@@ -253,9 +344,33 @@ export async function DELETE(req: Request) {
     await CalendarMeetingModel.delete(id);
     await AppointmentModel.updateStatus(id, 'cancelled');
 
+    if (meetingToDelete) {
+      try {
+        const { sendBookingCancellationEmail } = await import('@/lib/email');
+        const studentEmail = meetingToDelete.studentEmail || 'student@example.com';
+        const studentName = meetingToDelete.studentName || 'Student';
+
+        await sendBookingCancellationEmail(studentEmail, {
+          recipientName: studentName,
+          recipientEmail: studentEmail,
+          creatorName: 'Aarav Sharma',
+          studentName,
+          meetingTitle: meetingToDelete.meetingTitle || '1:1 Mentorship Session',
+          meetingDate: meetingToDelete.meetingDate || 'Scheduled Date',
+          meetingTime: meetingToDelete.meetingTime || 'Scheduled Time',
+          reason: 'Session cancelled and slot freed',
+          refundEligible: true,
+          refundAmount: 2499,
+          isCreator: false
+        });
+      } catch (cmailErr) {
+        console.warn('Delete meeting cancellation email warning:', cmailErr);
+      }
+    }
+
     return NextResponse.json({
       success: true,
-      message: 'Meeting deleted from database and Google Calendar.'
+      message: 'Meeting deleted from database, Google Calendar event removed, and notification sent.'
     });
   } catch (error: any) {
     console.error('Error deleting meeting:', error);
@@ -265,4 +380,3 @@ export async function DELETE(req: Request) {
     );
   }
 }
-

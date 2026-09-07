@@ -89,6 +89,49 @@ export async function POST(request: NextRequest) {
       createdAt: new Date().toLocaleString('en-IN')
     });
 
+    // Dispatch Confirmation and GST Tax Invoice Emails
+    try {
+      const { sendPaymentSuccessEmail, sendGstInvoiceEmail } = await import('@/lib/email');
+      const { calculateGST } = await import('@/lib/gst');
+
+      const gst = calculateGST(amount, 'Karnataka', 'Maharashtra');
+
+      if (userEmail) {
+        await sendPaymentSuccessEmail(userEmail, {
+          buyerName: userName,
+          buyerEmail: userEmail,
+          orderNumber: invoiceNumber,
+          itemTitle: `${planName} (${billingCycle} membership)`,
+          itemType: 'membership',
+          amount,
+          paymentMethod: 'UPI Autopay (Razorpay)',
+          upiRefId: razorpay_payment_id,
+          creatorName: 'Aarav Sharma',
+          date: currentStart
+        });
+
+        await sendGstInvoiceEmail(userEmail, {
+          buyerName: userName,
+          buyerEmail: userEmail,
+          creatorName: 'Aarav Sharma (CreatorOS Bharat)',
+          creatorGst: '29ABCDE1234F1Z5',
+          creatorState: 'Karnataka (29)',
+          invoiceNumber,
+          invoiceDate: currentStart,
+          itemTitle: `${planName} (${billingCycle} subscription)`,
+          sacCode: '998439 (Online Community & Database Access)',
+          taxableAmount: gst.taxableAmount,
+          cgst: gst.cgst,
+          sgst: gst.sgst,
+          igst: gst.igst,
+          totalAmount: gst.totalAmount,
+          isInterState: gst.isInterState
+        });
+      }
+    } catch (mailErr) {
+      console.warn('Subscription verify email dispatch error:', mailErr);
+    }
+
     return NextResponse.json({
       success: true,
       subscription,

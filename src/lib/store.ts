@@ -280,6 +280,21 @@ export function useCreatorStore() {
     });
   };
 
+  const updateProduct = (id: string, updatedFields: Partial<DigitalProduct>) => {
+    setProducts((prev) => {
+      const next = prev.map((p) => (p.id === id ? { ...p, ...updatedFields } : p));
+      saveState(STORAGE_KEYS.PRODUCTS, next);
+      return next;
+    });
+
+    // Also persist updates to PostgreSQL API
+    fetch(`/api/products/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedFields)
+    }).catch((e) => console.warn('Postgres product update error:', e));
+  };
+
   const updateProductPrice = (id: string, newPrice: number, changeType: string = 'ai_optimized') => {
     const currentProd = products.find((p) => p.id === id);
     if (!currentProd) return;
@@ -2113,6 +2128,7 @@ export function useCreatorStore() {
     updateCreator,
     switchActiveCreator,
     addProduct,
+    updateProduct,
     updateProductPrice,
     revertProductPrice,
     deleteProduct,

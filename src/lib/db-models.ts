@@ -321,6 +321,35 @@ export const ProductModel = {
     }
   },
 
+  async update(id: string, data: Partial<DigitalProduct>): Promise<boolean> {
+    try {
+      const fields: string[] = [];
+      const values: any[] = [];
+      let idx = 1;
+
+      if (data.title !== undefined) { fields.push(`title = $${idx++}`); values.push(data.title); }
+      if (data.subtitle !== undefined) { fields.push(`subtitle = $${idx++}`); values.push(data.subtitle); }
+      if (data.description !== undefined) { fields.push(`description = $${idx++}`); values.push(data.description); }
+      if (data.price !== undefined) { fields.push(`price = $${idx++}`); values.push(data.price); }
+      if (data.originalPrice !== undefined) { fields.push(`original_price = $${idx++}`); values.push(data.originalPrice); }
+      if (data.category !== undefined) { fields.push(`category = $${idx++}`); values.push(data.category); }
+      if (data.fileType !== undefined) { fields.push(`file_type = $${idx++}`); values.push(data.fileType); }
+      if (data.coverImage !== undefined) { fields.push(`cover_image = $${idx++}`); values.push(data.coverImage); }
+      if (data.downloadUrl !== undefined) { fields.push(`download_url = $${idx++}`); values.push(data.downloadUrl); }
+      if (data.features !== undefined) { fields.push(`features = $${idx++}`); values.push(JSON.stringify(data.features)); }
+
+      if (fields.length === 0) return true;
+
+      values.push(id);
+      const sql = `UPDATE products SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = $${idx}`;
+      const res = await query(sql, values);
+      return !!res;
+    } catch (err) {
+      console.warn('PostgreSQL product update fallback:', err);
+      return false;
+    }
+  },
+
   async delete(id: string): Promise<boolean> {
     const res = await query('UPDATE products SET is_active = FALSE WHERE id = $1', [id]);
     return !!res;

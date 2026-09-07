@@ -22,9 +22,7 @@ export async function PATCH(
 ) {
   try {
     const body = await req.json();
-    if (body.price !== undefined) {
-      await ProductModel.updatePrice(params.id, Number(body.price));
-    }
+    await ProductModel.update(params.id, body);
     const updated = await ProductModel.getById(params.id);
     return NextResponse.json({ success: true, product: updated });
   } catch (err: any) {

@@ -7,6 +7,7 @@ import {
   FileText, 
   Star, 
   Trash2, 
+  Pencil,
   Download, 
   Zap, 
   Sparkles, 
@@ -31,8 +32,10 @@ import { PageTransition, RippleButton, HoverCard, AnimatedCounter } from '@/comp
 import UPICheckoutModal from '@/components/checkout/UPICheckoutModal';
 
 export default function ProductsManagerPage() {
-  const { products, addProduct, deleteProduct, activeCreator } = useCreatorStore();
+  const { products, addProduct, updateProduct, deleteProduct, activeCreator } = useCreatorStore();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<DigitalProduct | null>(null);
   const [checkoutProduct, setCheckoutProduct] = useState<DigitalProduct | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
@@ -90,6 +93,43 @@ export default function ProductsManagerPage() {
     });
 
     setShowAddModal(false);
+    setTitle('');
+    setSubtitle('');
+    setDescription('');
+  };
+
+  const handleOpenEditModal = (prod: DigitalProduct) => {
+    setEditingProduct(prod);
+    setTitle(prod.title || '');
+    setSubtitle(prod.subtitle || '');
+    setDescription(prod.description || '');
+    setPrice(String(prod.price || ''));
+    setOriginalPrice(String(prod.originalPrice || ''));
+    setCategory(prod.category || 'Notes & Sheets');
+    setFileType((prod.fileType as any) || 'PDF');
+    setCoverImage(prod.coverImage || '');
+    setDownloadUrl(prod.downloadUrl || '');
+    setShowEditModal(true);
+  };
+
+  const handleUpdateProduct = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProduct || !title.trim()) return;
+
+    updateProduct(editingProduct.id, {
+      title,
+      subtitle,
+      description: description || subtitle,
+      price: Number(price),
+      originalPrice: Number(originalPrice),
+      category,
+      fileType,
+      coverImage,
+      downloadUrl
+    });
+
+    setShowEditModal(false);
+    setEditingProduct(null);
     setTitle('');
     setSubtitle('');
     setDescription('');
@@ -272,6 +312,13 @@ export default function ProductsManagerPage() {
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
+                      <button
+                        onClick={() => handleOpenEditModal(prod)}
+                        title="Edit product"
+                        className="p-2 rounded-xl text-slate-400 hover:text-royal-400 hover:bg-royal-500/10 transition btn-press"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
                       <a
                         href={`/${activeCreator?.username || 'aarav.tech'}`}
                         target="_blank"
@@ -416,6 +463,142 @@ export default function ProductsManagerPage() {
                 >
                   Publish & Enable Razorpay Checkout
                 </RippleButton>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* EDIT PRODUCT MODAL */}
+        {showEditModal && editingProduct && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xl overflow-y-auto">
+            <div className="relative w-full max-w-lg rounded-[24px] border border-white/[0.12] bg-[#0A0D17] p-6 shadow-2xl text-slate-100 animate-scale-in my-8">
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditingProduct(null);
+                }}
+                className="absolute top-5 right-5 rounded-full p-2 text-slate-400 hover:bg-white/[0.08] hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </button>
+
+              <h3 className="font-display text-lg font-bold text-white mb-0.5">Edit Digital Product</h3>
+              <p className="text-xs text-slate-400 mb-5">Update details, pricing, cover image, and delivery URLs. Changes sync to PostgreSQL.</p>
+
+              <form onSubmit={handleUpdateProduct} className="space-y-3.5">
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">Product Title</label>
+                  <input
+                    type="text"
+                    required
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="SDE Coding Cheat Sheet & Interview Roadmap"
+                    className="w-full rounded-[14px] border border-white/[0.1] bg-black/40 px-3.5 py-2 text-xs text-white focus:border-royal-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">Subtitle / Summary</label>
+                  <input
+                    type="text"
+                    value={subtitle}
+                    onChange={(e) => setSubtitle(e.target.value)}
+                    placeholder="500+ handpicked solutions with diagrams"
+                    className="w-full rounded-[14px] border border-white/[0.1] bg-black/40 px-3.5 py-2 text-xs text-white focus:border-royal-500 focus:outline-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1">Selling Price (₹)</label>
+                    <input
+                      type="number"
+                      required
+                      value={price}
+                      onChange={(e) => setPrice(e.target.value)}
+                      className="w-full rounded-[14px] border border-white/[0.1] bg-black/40 px-3.5 py-2 text-xs text-white font-mono focus:border-royal-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1">Original Price (₹)</label>
+                    <input
+                      type="number"
+                      value={originalPrice}
+                      onChange={(e) => setOriginalPrice(e.target.value)}
+                      className="w-full rounded-[14px] border border-white/[0.1] bg-black/40 px-3.5 py-2 text-xs text-white font-mono focus:border-royal-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1">Category</label>
+                    <select
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      className="w-full rounded-[14px] border border-white/[0.1] bg-black/40 px-3.5 py-2 text-xs text-white focus:border-royal-500 focus:outline-none"
+                    >
+                      <option value="Interview Prep">Interview Prep</option>
+                      <option value="System Design">System Design</option>
+                      <option value="Career Templates">Career Templates</option>
+                      <option value="Productivity & Notion">Productivity & Notion</option>
+                      <option value="Notes & Sheets">Notes & Sheets</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1">Format Type</label>
+                    <select
+                      value={fileType}
+                      onChange={(e) => setFileType(e.target.value as any)}
+                      className="w-full rounded-[14px] border border-white/[0.1] bg-black/40 px-3.5 py-2 text-xs text-white focus:border-royal-500 focus:outline-none"
+                    >
+                      <option value="PDF">PDF Document</option>
+                      <option value="ZIP">ZIP Code Bundle</option>
+                      <option value="NOTION">Notion Workspace</option>
+                      <option value="TEMPLATE">Template / Doc</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">Cover Image URL</label>
+                  <input
+                    type="url"
+                    value={coverImage}
+                    onChange={(e) => setCoverImage(e.target.value)}
+                    className="w-full rounded-[14px] border border-white/[0.1] bg-black/40 px-3.5 py-2 text-xs text-white focus:border-royal-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">Download Asset URL</label>
+                  <input
+                    type="url"
+                    value={downloadUrl}
+                    onChange={(e) => setDownloadUrl(e.target.value)}
+                    className="w-full rounded-[14px] border border-white/[0.1] bg-black/40 px-3.5 py-2 text-xs text-white focus:border-royal-500 focus:outline-none"
+                  />
+                </div>
+
+                <div className="flex items-center gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEditModal(false);
+                      setEditingProduct(null);
+                    }}
+                    className="w-1/3 rounded-[14px] border border-white/[0.1] bg-white/[0.04] hover:bg-white/[0.08] py-3 text-xs font-bold text-slate-300 transition"
+                  >
+                    Cancel
+                  </button>
+                  <RippleButton
+                    type="submit"
+                    className="w-2/3 rounded-[14px] bg-royal-600 hover:bg-royal-500 py-3 text-xs font-bold text-white shadow-royal"
+                  >
+                    Save Changes
+                  </RippleButton>
+                </div>
               </form>
             </div>
           </div>

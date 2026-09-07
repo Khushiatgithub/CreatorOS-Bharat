@@ -365,7 +365,7 @@ export default function UPICheckoutModal({
               <div className="flex items-center gap-3">
                 <div className="h-12 w-12 rounded-[16px] bg-gradient-to-b from-royal-500 to-royal-700 p-0.5 shadow-royal flex items-center justify-center shrink-0">
                   <img
-                    src={activeCreator?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'}
+                    src={activeCreator?.avatarUrl || '/avatars/user-avatar.png'}
                     alt={payeeName}
                     className="h-full w-full rounded-[14px] object-cover bg-black"
                   />

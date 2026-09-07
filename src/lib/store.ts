@@ -116,7 +116,17 @@ export function useCreatorStore() {
   useEffect(() => {
     try {
       const savedCreators = localStorage.getItem(STORAGE_KEYS.CREATORS);
-      if (savedCreators) setCreators(JSON.parse(savedCreators));
+      if (savedCreators) {
+        const parsed = JSON.parse(savedCreators);
+        const upgraded = Array.isArray(parsed)
+          ? parsed.map((c: any) =>
+              c.avatarUrl && c.avatarUrl.includes('photo-1534528741775')
+                ? { ...c, avatarUrl: '/avatars/user-avatar.png' }
+                : c
+            )
+          : parsed;
+        setCreators(upgraded);
+      }
 
       const savedActiveId = localStorage.getItem(STORAGE_KEYS.ACTIVE_CREATOR_ID);
       if (savedActiveId) setActiveCreatorId(savedActiveId);

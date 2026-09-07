@@ -123,7 +123,7 @@ export default function CreatorOnboardingWizard() {
   const [username, setUsername] = useState(activeCreator?.username || 'aarav.tech');
   const [tagline, setTagline] = useState('Senior Software Engineer & Tech Educator');
   const [bio, setBio] = useState('Helping 200k+ engineers crack top product companies with clean architectures.');
-  const [avatarUrl, setAvatarUrl] = useState(activeCreator?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80');
+  const [avatarUrl, setAvatarUrl] = useState(activeCreator?.avatarUrl || '/avatars/user-avatar.png');
   
   // Social Handles & Connection States
   const [igHandle, setIgHandle] = useState('aarav.tech');

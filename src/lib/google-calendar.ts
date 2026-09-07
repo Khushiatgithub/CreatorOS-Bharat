@@ -106,7 +106,7 @@ export async function exchangeCodeForTokens(
         id: 'google_user_aarav',
         email: mockEmail,
         name: 'Aarav Sharma',
-        picture: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+        picture: '/avatars/user-avatar.png',
         verifiedEmail: true
       }
     };

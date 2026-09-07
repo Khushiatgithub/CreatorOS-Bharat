@@ -331,7 +331,7 @@ export default function InteractiveAIMediaKitPage() {
             <div className="flex items-center gap-4">
               <div className="relative">
                 <img
-                  src={activeCreator?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'}
+                  src={activeCreator?.avatarUrl || '/avatars/user-avatar.png'}
                   alt={activeCreator?.name || 'Creator'}
                   className="h-16 w-16 rounded-[20px] object-cover ring-2 ring-royal-500/50 p-0.5 bg-black"
                 />

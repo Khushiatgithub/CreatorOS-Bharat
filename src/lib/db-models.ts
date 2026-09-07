@@ -51,7 +51,7 @@ export const UserModel = {
           name: row.name,
           tagline: row.tagline || row.bio || 'Indian Creator & Mentor',
           bio: row.bio || '',
-          avatarUrl: row.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+          avatarUrl: row.avatar_url || '/avatars/user-avatar.png',
           bannerUrl: row.banner_url || undefined,
           verified: row.verified !== undefined ? Boolean(row.verified) : true,
           category: row.category || 'Tech & Software',
@@ -86,7 +86,7 @@ export const UserModel = {
         name: row.name,
         tagline: row.tagline || row.bio || 'Indian Creator & Mentor',
         bio: row.bio || '',
-        avatarUrl: row.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+        avatarUrl: row.avatar_url || '/avatars/user-avatar.png',
         bannerUrl: row.banner_url || undefined,
         verified: row.verified !== undefined ? Boolean(row.verified) : true,
         category: row.category || 'Tech & Software',
@@ -120,7 +120,7 @@ export const UserModel = {
         name: row.name,
         tagline: row.tagline || row.bio || 'Indian Creator & Mentor',
         bio: row.bio || '',
-        avatarUrl: row.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+        avatarUrl: row.avatar_url || '/avatars/user-avatar.png',
         bannerUrl: row.banner_url || undefined,
         verified: row.verified !== undefined ? Boolean(row.verified) : true,
         category: row.category || 'Tech & Software',
@@ -170,7 +170,7 @@ export const UserModel = {
     const email = (data as any).email || `${username}@creatoros.in`;
     const bio = data.bio || data.tagline || '';
     const state = data.state || 'Karnataka';
-    const avatarUrl = data.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80';
+    const avatarUrl = data.avatarUrl || '/avatars/user-avatar.png';
 
     try {
       await query(

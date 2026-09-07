@@ -252,7 +252,7 @@ export default function CommunityPage() {
       description: newCommDescription.trim() || newCommTagline.trim(),
       category: newCommCategory,
       coverUrl: newCommCoverUrl,
-      avatarUrl: activeCreator?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
+      avatarUrl: activeCreator?.avatarUrl || '/avatars/user-avatar.png',
       channels: channelList.length > 0 ? channelList : [
         { id: 'c1', name: 'announcements', slug: 'announcements', isPrivate: false, icon: '📢' },
         { id: 'c2', name: 'general', slug: 'general', isPrivate: false, icon: '💬' }

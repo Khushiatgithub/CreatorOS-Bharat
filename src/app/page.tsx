@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/ui/Navbar';
+import Footer from '@/components/ui/Footer';
 import { 
   Zap, 
   Sparkles, 
@@ -548,25 +549,7 @@ export default function SaaSGrandLandingPage() {
         </section>
 
         {/* FOOTER */}
-        <footer className="border-t border-white/[0.08] bg-[#05070B] py-10 text-xs text-slate-500 font-mono">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <span className="font-display text-sm font-bold text-white">Creator<span className="text-royal-400">OS</span></span>
-              <span className="rounded bg-royal-600/15 px-1.5 py-0.5 text-[8px] text-royal-400 font-bold border border-royal-500/30">INDIA</span>
-              <span>• Built for Bharat Creators 🇮🇳</span>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-5 text-[11px]">
-              <Link href="/dashboard/storefront-builder" className="hover:text-white transition">Bio Builder</Link>
-              <Link href="/dashboard/gst-invoices" className="hover:text-white transition">GST Invoicing</Link>
-              <Link href="/dashboard/whatsapp" className="hover:text-white transition">WhatsApp API</Link>
-              <Link href="/dashboard/media-kit" className="hover:text-white transition">AI Media Kit</Link>
-              <Link href="/privacy" className="hover:text-white transition">Privacy Policy</Link>
-              <Link href="/terms" className="hover:text-white transition">Terms of Service</Link>
-              <Link href="/refund-policy" className="hover:text-white transition">Refund Policy</Link>
-            </div>
-          </div>
-        </footer>
+        <Footer />
 
         {/* DEMO UPI CHECKOUT MODAL */}
         {demoCheckoutOpen && (

@@ -561,7 +561,9 @@ export default function SaaSGrandLandingPage() {
               <Link href="/dashboard/gst-invoices" className="hover:text-white transition">GST Invoicing</Link>
               <Link href="/dashboard/whatsapp" className="hover:text-white transition">WhatsApp API</Link>
               <Link href="/dashboard/media-kit" className="hover:text-white transition">AI Media Kit</Link>
-              <Link href="/privacy" className="text-royal-400 hover:text-royal-300 transition font-semibold">Privacy Policy</Link>
+              <Link href="/privacy" className="hover:text-white transition">Privacy Policy</Link>
+              <Link href="/terms" className="hover:text-white transition">Terms of Service</Link>
+              <Link href="/refund-policy" className="hover:text-white transition">Refund Policy</Link>
             </div>
           </div>
         </footer>

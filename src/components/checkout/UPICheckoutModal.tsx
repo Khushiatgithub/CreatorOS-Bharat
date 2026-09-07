@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import confetti from 'canvas-confetti';
 import { 
   X, 
@@ -934,14 +935,32 @@ export default function UPICheckoutModal({
 
               </div>
 
-              {/* Bottom Security Trust Badges */}
-              <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between text-[10px] text-slate-400 font-mono">
-                <span className="flex items-center gap-1">
-                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-                  <span>Razorpay 256-bit SSL</span>
-                </span>
-                <span>NPCI / RBI Tokenized</span>
-                <span>100% Buyer Protection</span>
+              {/* Policy & Guarantee Badge */}
+              <div className="pt-2 border-t border-white/[0.06] space-y-2">
+                <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                  <span className="flex items-center gap-1 text-emerald-400 font-medium">
+                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+                    <span>Razorpay 256-Bit SSL</span>
+                  </span>
+                  <span>NPCI / RBI Tokenized</span>
+                  <span className="text-royal-400">100% Buyer Protection</span>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-center gap-2 text-[10px] text-slate-400 font-sans text-center">
+                  <span>By paying, you agree to our</span>
+                  <Link href="/terms" target="_blank" className="text-slate-300 hover:text-white underline underline-offset-2">
+                    Terms
+                  </Link>
+                  <span>•</span>
+                  <Link href="/privacy" target="_blank" className="text-slate-300 hover:text-white underline underline-offset-2">
+                    Privacy
+                  </Link>
+                  <span>•</span>
+                  <Link href="/refund-policy" target="_blank" className="text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-2 flex items-center gap-0.5">
+                    <RotateCcw className="h-2.5 w-2.5" />
+                    <span>Refund Policy</span>
+                  </Link>
+                </div>
               </div>
 
             </div>

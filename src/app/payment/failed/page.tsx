@@ -117,6 +117,13 @@ function PaymentFailedContent() {
             <ArrowLeft className="h-3.5 w-3.5" />
             <span>Cancel and Return to Home</span>
           </Link>
+
+          <div className="flex items-center justify-center gap-2 text-[11px] text-slate-500 pt-2 border-t border-white/[0.06]">
+            <span>Money debited?</span>
+            <Link href="/refund-policy" className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2">
+              Read Refund & Duplicate Debit Policy
+            </Link>
+          </div>
         </div>
 
       </motion.div>

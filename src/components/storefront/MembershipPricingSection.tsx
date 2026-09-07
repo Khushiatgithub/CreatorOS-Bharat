@@ -16,7 +16,8 @@ import {
   PhoneCall,
   Flame,
   HelpCircle,
-  Clock
+  Clock,
+  Tag
 } from 'lucide-react';
 import { Creator, StoreTheme, SubscriptionPlan, SubscriptionBillingCycle } from '@/types';
 import UPICheckoutModal from '@/components/checkout/UPICheckoutModal';
@@ -47,6 +48,35 @@ export default function MembershipPricingSection({
 
   // Plans for this creator
   const plans = subscriptionPlans.filter((p) => p.creatorId === creator.id && p.isActive !== false);
+
+  // Helper to compute prices with guaranteed 20% yearly discount
+  const getPlanPricing = (plan: SubscriptionPlan) => {
+    const isFree = plan.type === 'free';
+    const isInviteOnly = plan.type === 'invite_only';
+    const monthlyPrice = isFree ? 0 : (plan.monthlyPrice || 0);
+    const fullYearlyPrice = monthlyPrice * 12;
+    // Apply 20% discount automatically
+    const calculatedYearly = Math.round(fullYearlyPrice * 0.8);
+    const yearlyPrice = isFree
+      ? 0
+      : plan.yearlyPrice && plan.yearlyPrice > 0
+      ? plan.yearlyPrice
+      : calculatedYearly;
+    const activePrice = isFree ? 0 : billingCycle === 'yearly' ? yearlyPrice : monthlyPrice;
+    const annualSavings = Math.max(0, fullYearlyPrice - yearlyPrice);
+    const monthlyEquivalent = yearlyPrice > 0 ? Math.round(yearlyPrice / 12) : 0;
+
+    return {
+      isFree,
+      isInviteOnly,
+      monthlyPrice,
+      yearlyPrice,
+      fullYearlyPrice,
+      activePrice,
+      annualSavings,
+      monthlyEquivalent
+    };
+  };
 
   // Handle Subscribe Click
   const handleSubscribeClick = async (plan: SubscriptionPlan) => {
@@ -108,28 +138,44 @@ export default function MembershipPricingSection({
         </p>
 
         {/* Monthly vs Yearly Toggle Switch */}
-        <div className="inline-flex items-center p-1 rounded-2xl bg-[#0E1322] border border-white/[0.1] shadow-inner mt-2">
+        <div className="inline-flex items-center p-1 rounded-2xl bg-[#0E1322] border border-white/[0.1] shadow-inner mt-2 relative">
           <button
+            type="button"
             onClick={() => setBillingCycle('monthly')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
+            className={`relative z-10 px-4 py-2 rounded-xl text-xs font-bold transition-colors duration-200 ${
               billingCycle === 'monthly'
-                ? 'bg-royal-600 text-white shadow-royal'
+                ? 'text-white'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
+            {billingCycle === 'monthly' && (
+              <motion.div
+                layoutId="billingTogglePill"
+                className="absolute inset-0 rounded-xl bg-royal-600 shadow-royal -z-10"
+                transition={{ type: 'spring', stiffness: 450, damping: 35 }}
+              />
+            )}
             Monthly Billing
           </button>
 
           <button
+            type="button"
             onClick={() => setBillingCycle('yearly')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-1.5 ${
+            className={`relative z-10 px-4 py-2 rounded-xl text-xs font-bold transition-colors duration-200 flex items-center gap-1.5 ${
               billingCycle === 'yearly'
-                ? 'bg-royal-600 text-white shadow-royal'
+                ? 'text-white'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
+            {billingCycle === 'yearly' && (
+              <motion.div
+                layoutId="billingTogglePill"
+                className="absolute inset-0 rounded-xl bg-royal-600 shadow-royal -z-10"
+                transition={{ type: 'spring', stiffness: 450, damping: 35 }}
+              />
+            )}
             <span>Yearly Billing</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[9px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+            <span className="px-1.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
               Save 20%
             </span>
           </button>
@@ -139,9 +185,16 @@ export default function MembershipPricingSection({
       {/* PRICING CARDS GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto items-stretch">
         {plans.map((plan) => {
-          const isFree = plan.type === 'free';
-          const isInviteOnly = plan.type === 'invite_only';
-          const price = isFree ? 0 : billingCycle === 'yearly' ? plan.yearlyPrice : plan.monthlyPrice;
+          const {
+            isFree,
+            isInviteOnly,
+            monthlyPrice,
+            yearlyPrice,
+            fullYearlyPrice,
+            activePrice,
+            annualSavings,
+            monthlyEquivalent
+          } = getPlanPricing(plan);
 
           return (
             <div
@@ -176,23 +229,60 @@ export default function MembershipPricingSection({
 
                 <p className="text-xs text-slate-300 min-h-[36px]">{plan.tagline || plan.description}</p>
 
-                {/* Price Display */}
-                <div className="mt-5 pb-5 border-b border-white/[0.08]">
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-3xl sm:text-4xl font-extrabold text-white font-mono tracking-tight">
-                      {isFree ? 'Free' : formatINR(price)}
-                    </span>
-                    {!isFree && (
-                      <span className="text-xs text-slate-400 font-mono">
-                        /{billingCycle === 'yearly' ? 'year' : 'month'}
-                      </span>
-                    )}
-                  </div>
-                  {!isFree && billingCycle === 'yearly' && plan.monthlyPrice > 0 && (
-                    <p className="text-[11px] text-emerald-400 font-mono mt-1">
-                      Equivalent to {formatINR(Math.round(plan.yearlyPrice / 12))}/month
-                    </p>
-                  )}
+                {/* Animated Price Display */}
+                <div className="mt-5 pb-5 border-b border-white/[0.08] min-h-[88px] flex flex-col justify-end">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={`${plan.id}-${billingCycle}`}
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 6 }}
+                      transition={{ duration: 0.2 }}
+                      className="space-y-1.5"
+                    >
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl sm:text-4xl font-extrabold text-white font-mono tracking-tight">
+                          {isFree ? 'Free' : formatINR(activePrice)}
+                        </span>
+                        {!isFree && (
+                          <span className="text-xs text-slate-400 font-mono">
+                            /{billingCycle === 'yearly' ? 'year' : 'month'}
+                          </span>
+                        )}
+                        {!isFree && billingCycle === 'yearly' && fullYearlyPrice > yearlyPrice && (
+                          <span className="text-xs text-slate-500 font-mono line-through ml-1">
+                            {formatINR(fullYearlyPrice)}
+                          </span>
+                        )}
+                      </div>
+
+                      {!isFree && billingCycle === 'yearly' && monthlyPrice > 0 && (
+                        <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                          <span className="text-[11px] text-emerald-400 font-mono">
+                            Equivalent to {formatINR(monthlyEquivalent)}/month
+                          </span>
+                          {annualSavings > 0 && (
+                            <span className="px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 inline-flex items-center gap-1">
+                              <Tag className="h-2.5 w-2.5" />
+                              Save 20% (₹{annualSavings.toLocaleString('en-IN')}/yr saved)
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {!isFree && billingCycle === 'monthly' && monthlyPrice > 0 && (
+                        <p className="text-[11px] text-slate-400 font-mono">
+                          Billed monthly • Cancel anytime
+                        </p>
+                      )}
+
+                      {isFree && (
+                        <p className="text-[11px] text-slate-400 font-mono">
+                          Free forever • No card required
+                        </p>
+                      )}
+                    </motion.div>
+                  </AnimatePresence>
                 </div>
 
                 {/* Benefits List */}
@@ -209,9 +299,10 @@ export default function MembershipPricingSection({
                 </div>
               </div>
 
-              {/* Action Button */}
+              {/* Animated Action Button */}
               <div className="mt-8 pt-4 border-t border-white/[0.08]">
                 <button
+                  type="button"
                   onClick={() => handleSubscribeClick(plan)}
                   className={`w-full py-3.5 rounded-2xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-2 shadow-lg btn-press ${
                     plan.isPopular
@@ -221,19 +312,34 @@ export default function MembershipPricingSection({
                       : 'bg-white/[0.08] hover:bg-white/[0.14] text-white border border-white/[0.12]'
                   }`}
                 >
-                  {isFree ? (
-                    <span>Join Free Community</span>
-                  ) : isInviteOnly ? (
-                    <>
-                      <Lock className="h-3.5 w-3.5" />
-                      <span>Enter Invite Code</span>
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="h-4 w-4 fill-white" />
-                      <span>Subscribe with UPI / Razorpay</span>
-                    </>
-                  )}
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={`${plan.id}-${billingCycle}`}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.15 }}
+                      className="flex items-center justify-center gap-2"
+                    >
+                      {isFree ? (
+                        <span>Join Free Community</span>
+                      ) : isInviteOnly ? (
+                        <>
+                          <Lock className="h-3.5 w-3.5" />
+                          <span>
+                            Enter Invite Code • {formatINR(activePrice)}/{billingCycle === 'yearly' ? 'yr' : 'mo'}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="h-4 w-4 fill-white" />
+                          <span>
+                            Subscribe with UPI • {formatINR(activePrice)}/{billingCycle === 'yearly' ? 'yr' : 'mo'}
+                          </span>
+                        </>
+                      )}
+                    </motion.div>
+                  </AnimatePresence>
                 </button>
               </div>
 
@@ -312,6 +418,7 @@ export default function MembershipPricingSection({
               className="relative w-full max-w-md rounded-2xl border border-amber-500/40 bg-[#0A0D17] p-6 shadow-2xl space-y-4"
             >
               <button
+                type="button"
                 onClick={() => setShowInviteModal(null)}
                 className="absolute top-4 right-4 p-1 text-slate-400 hover:text-white"
               >
@@ -374,29 +481,32 @@ export default function MembershipPricingSection({
       </AnimatePresence>
 
       {/* CHECKOUT MODAL: RAZORPAY / UPI SUBSCRIPTION CHECKOUT */}
-      {selectedPlanForCheckout && (
-        <UPICheckoutModal
-          isOpen={isCheckoutOpen}
-          onClose={() => {
-            setIsCheckoutOpen(false);
-            // Subscribe subscriber locally and save payment
-            subscribeToPlan({
-              planId: selectedPlanForCheckout.id,
-              billingCycle,
-              subscriberName: 'Rohit Sharma',
-              subscriberEmail: 'rohit.sharma@gmail.com',
-              subscriberPhone: '+91 98111 22334',
-              paymentMethod: 'Razorpay Autopay'
-            });
-          }}
-          item={{
-            id: selectedPlanForCheckout.id,
-            title: `${creator.name} - ${selectedPlanForCheckout.name} (${billingCycle})`,
-            price: billingCycle === 'yearly' ? selectedPlanForCheckout.yearlyPrice : selectedPlanForCheckout.monthlyPrice,
-            type: 'course'
-          }}
-        />
-      )}
+      {selectedPlanForCheckout && (() => {
+        const checkoutPricing = getPlanPricing(selectedPlanForCheckout);
+        return (
+          <UPICheckoutModal
+            isOpen={isCheckoutOpen}
+            onClose={() => {
+              setIsCheckoutOpen(false);
+              // Subscribe subscriber locally and save payment
+              subscribeToPlan({
+                planId: selectedPlanForCheckout.id,
+                billingCycle,
+                subscriberName: 'Rohit Sharma',
+                subscriberEmail: 'rohit.sharma@gmail.com',
+                subscriberPhone: '+91 98111 22334',
+                paymentMethod: 'Razorpay Autopay'
+              });
+            }}
+            item={{
+              id: selectedPlanForCheckout.id,
+              title: `${creator.name} - ${selectedPlanForCheckout.name} (${billingCycle === 'yearly' ? 'Yearly' : 'Monthly'})`,
+              price: checkoutPricing.activePrice,
+              type: 'course'
+            }}
+          />
+        );
+      })()}
 
     </section>
   );

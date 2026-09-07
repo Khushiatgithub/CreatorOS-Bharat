@@ -771,8 +771,12 @@ export const SubscriptionPlanModel = {
         const benefits = typeof row.benefits === 'string' ? JSON.parse(row.benefits) : row.benefits || [];
         const price = Number(row.price) || 0;
         const cycle = (row.billing_cycle || 'monthly') as 'monthly' | 'yearly';
-        const monthlyPrice = cycle === 'monthly' ? price : Math.round(price / 10);
-        const yearlyPrice = cycle === 'yearly' ? price : Math.round(price * 10);
+        const monthlyPrice = (row.monthly_price !== null && row.monthly_price !== undefined)
+          ? Number(row.monthly_price)
+          : (cycle === 'monthly' ? price : Math.round(price / (12 * 0.8)));
+        const yearlyPrice = (row.yearly_price !== null && row.yearly_price !== undefined)
+          ? Number(row.yearly_price)
+          : (cycle === 'yearly' ? price : Math.round(monthlyPrice * 12 * 0.8));
 
         return {
           id: String(row.id),
@@ -782,7 +786,7 @@ export const SubscriptionPlanModel = {
           tagline: row.tagline || (benefits[0] || 'Community • Courses • Live Q&A'),
           description: row.description || '',
           coverUrl: row.cover_image || row.cover_url || undefined,
-          type: price === 0 ? 'free' : row.type || 'paid',
+          type: price === 0 && monthlyPrice === 0 ? 'free' : row.type || 'paid',
           monthlyPrice,
           yearlyPrice,
           benefits,
@@ -809,8 +813,12 @@ export const SubscriptionPlanModel = {
       const benefits = typeof row.benefits === 'string' ? JSON.parse(row.benefits) : row.benefits || [];
       const price = Number(row.price) || 0;
       const cycle = (row.billing_cycle || 'monthly') as 'monthly' | 'yearly';
-      const monthlyPrice = cycle === 'monthly' ? price : Math.round(price / 10);
-      const yearlyPrice = cycle === 'yearly' ? price : Math.round(price * 10);
+      const monthlyPrice = (row.monthly_price !== null && row.monthly_price !== undefined)
+        ? Number(row.monthly_price)
+        : (cycle === 'monthly' ? price : Math.round(price / (12 * 0.8)));
+      const yearlyPrice = (row.yearly_price !== null && row.yearly_price !== undefined)
+        ? Number(row.yearly_price)
+        : (cycle === 'yearly' ? price : Math.round(monthlyPrice * 12 * 0.8));
 
       return {
         id: String(row.id),
@@ -820,7 +828,7 @@ export const SubscriptionPlanModel = {
         tagline: row.tagline || (benefits[0] || 'Community • Courses • Live Q&A'),
         description: row.description || '',
         coverUrl: row.cover_image || row.cover_url || undefined,
-        type: price === 0 ? 'free' : row.type || 'paid',
+        type: price === 0 && monthlyPrice === 0 ? 'free' : row.type || 'paid',
         monthlyPrice,
         yearlyPrice,
         benefits,
@@ -846,12 +854,19 @@ export const SubscriptionPlanModel = {
     const coverImage = plan.coverImage || plan.coverUrl || 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80';
     const benefits = plan.benefits || [];
 
+    const monthlyPrice = plan.monthlyPrice !== undefined
+      ? plan.monthlyPrice
+      : (billingCycle === 'monthly' ? price : Math.round(price / (12 * 0.8)));
+    const yearlyPrice = plan.yearlyPrice !== undefined && plan.yearlyPrice > 0
+      ? plan.yearlyPrice
+      : (billingCycle === 'yearly' ? price : Math.round(monthlyPrice * 12 * 0.8));
+
     const newPlan: SubscriptionPlan = {
       ...plan,
       id,
       coverUrl: coverImage,
-      monthlyPrice: billingCycle === 'monthly' ? price : Math.round(price / 10),
-      yearlyPrice: billingCycle === 'yearly' ? price : (plan.yearlyPrice || price * 10),
+      monthlyPrice,
+      yearlyPrice,
       memberCount: 0,
       createdAt: now.split('T')[0],
       updatedAt: now.split('T')[0]
@@ -859,15 +874,17 @@ export const SubscriptionPlanModel = {
 
     await query(
       `INSERT INTO subscription_plans (
-        id, creator_id, name, description, price, billing_cycle,
+        id, creator_id, name, description, price, monthly_price, yearly_price, billing_cycle,
         cover_image, benefits, is_popular, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
       [
         id,
         plan.creatorId || 'creator_aarav',
         plan.name,
         plan.description || '',
         price,
+        monthlyPrice,
+        yearlyPrice,
         billingCycle,
         coverImage,
         JSON.stringify(benefits),
@@ -883,21 +900,27 @@ export const SubscriptionPlanModel = {
     const price = updates.price !== undefined ? updates.price : updates.monthlyPrice;
     const coverImage = updates.coverImage || updates.coverUrl;
     const benefits = updates.benefits ? JSON.stringify(updates.benefits) : undefined;
+    const monthlyPrice = updates.monthlyPrice !== undefined ? updates.monthlyPrice : (updates.billingCycle === 'monthly' ? updates.price : undefined);
+    const yearlyPrice = updates.yearlyPrice !== undefined ? updates.yearlyPrice : (updates.billingCycle === 'yearly' ? updates.price : (monthlyPrice ? Math.round(monthlyPrice * 12 * 0.8) : undefined));
 
     const res = await query(
       `UPDATE subscription_plans SET
         name = COALESCE($1, name),
         description = COALESCE($2, description),
         price = COALESCE($3, price),
-        billing_cycle = COALESCE($4, billing_cycle),
-        cover_image = COALESCE($5, cover_image),
-        benefits = COALESCE($6, benefits),
-        is_popular = COALESCE($7, is_popular)
-      WHERE id = $8`,
+        monthly_price = COALESCE($4, monthly_price),
+        yearly_price = COALESCE($5, yearly_price),
+        billing_cycle = COALESCE($6, billing_cycle),
+        cover_image = COALESCE($7, cover_image),
+        benefits = COALESCE($8, benefits),
+        is_popular = COALESCE($9, is_popular)
+      WHERE id = $10`,
       [
         updates.name,
         updates.description,
         price,
+        monthlyPrice,
+        yearlyPrice,
         updates.billingCycle,
         coverImage,
         benefits,

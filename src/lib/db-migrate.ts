@@ -16,6 +16,8 @@ export async function runDatabaseMigrations(): Promise<{ success: boolean; messa
       name TEXT NOT NULL,
       description TEXT,
       price NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+      monthly_price NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+      yearly_price NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
       billing_cycle VARCHAR(20) NOT NULL DEFAULT 'monthly' CHECK (billing_cycle IN ('monthly', 'yearly')),
       cover_image TEXT,
       benefits JSONB NOT NULL DEFAULT '[]'::jsonb,
@@ -114,7 +116,11 @@ export async function runDatabaseMigrations(): Promise<{ success: boolean; messa
 
     // 12. Migration 007: Calendar Availability Timezone & Blocked Holidays
     `ALTER TABLE calendar_availability ADD COLUMN IF NOT EXISTS timezone VARCHAR(64) DEFAULT 'Asia/Kolkata';`,
-    `ALTER TABLE calendar_availability ADD COLUMN IF NOT EXISTS blocked_holidays JSONB DEFAULT '[]'::jsonb;`
+    `ALTER TABLE calendar_availability ADD COLUMN IF NOT EXISTS blocked_holidays JSONB DEFAULT '[]'::jsonb;`,
+
+    // 13. Migration 008: Membership Storefront Monthly/Yearly Pricing Columns
+    `ALTER TABLE subscription_plans ADD COLUMN IF NOT EXISTS monthly_price NUMERIC(10, 2) DEFAULT 0.00;`,
+    `ALTER TABLE subscription_plans ADD COLUMN IF NOT EXISTS yearly_price NUMERIC(10, 2) DEFAULT 0.00;`
   ];
 
   try {

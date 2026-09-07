@@ -28,3 +28,10 @@ export async function PUT(
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  return PUT(req, { params });
+}

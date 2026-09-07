@@ -257,6 +257,13 @@ export function useCreatorStore() {
       saveState(STORAGE_KEYS.CREATORS, next);
       return next;
     });
+
+    // Also persist updates to PostgreSQL API
+    fetch(`/api/users/${activeCreatorId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updated)
+    }).catch((e) => console.warn('Postgres creator update error:', e));
   };
 
   const switchActiveCreator = (id: string) => {
@@ -1267,6 +1274,10 @@ export function useCreatorStore() {
           ...newPlan,
           creatorId: activeCreatorId,
           price: newPlan.monthlyPrice || newPlan.yearlyPrice || 0,
+          monthlyPrice: newPlan.monthlyPrice,
+          yearlyPrice: newPlan.yearlyPrice,
+          monthly_price: newPlan.monthlyPrice,
+          yearly_price: newPlan.yearlyPrice,
           billing_cycle: newPlan.monthlyPrice ? 'monthly' : 'yearly',
           cover_image: newPlan.coverUrl,
           benefits: newPlan.benefits,
@@ -1302,6 +1313,10 @@ export function useCreatorStore() {
         body: JSON.stringify({
           ...updates,
           price: updates.monthlyPrice !== undefined ? updates.monthlyPrice : updates.yearlyPrice,
+          monthlyPrice: updates.monthlyPrice,
+          yearlyPrice: updates.yearlyPrice,
+          monthly_price: updates.monthlyPrice,
+          yearly_price: updates.yearlyPrice,
           cover_image: updates.coverUrl,
           is_popular: updates.isPopular
         })

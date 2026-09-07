@@ -2355,7 +2355,7 @@ export const INITIAL_SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     coverUrl: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80',
     type: 'paid',
     monthlyPrice: 799,
-    yearlyPrice: 7999, // Save ~17% (2 months free)
+    yearlyPrice: 7670, // Save 20% (799 * 12 * 0.8)
     benefits: [
       'Community • Courses • Live Q&A',
       'Private VIP Discord & WhatsApp Channels',
@@ -2369,7 +2369,7 @@ export const INITIAL_SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     isActive: true,
     memberCount: 128,
     razorpayPlanIdMonthly: 'plan_rzp_monthly_799',
-    razorpayPlanIdYearly: 'plan_rzp_yearly_7999',
+    razorpayPlanIdYearly: 'plan_rzp_yearly_7670',
     badgeText: 'Popular',
     badgeColor: '#10B981',
     createdAt: '2025-01-10',
@@ -2385,7 +2385,7 @@ export const INITIAL_SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     coverUrl: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=800&q=80',
     type: 'invite_only',
     monthlyPrice: 2499,
-    yearlyPrice: 24999,
+    yearlyPrice: 23990, // Save 20% (2499 * 12 * 0.8)
     benefits: [
       'Direct WhatsApp DM access with Aarav Sharma',
       'Monthly 1-on-1 45-Min Private Strategy & Architecture Call',

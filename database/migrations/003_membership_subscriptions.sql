@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS subscription_plans (
     name TEXT NOT NULL,
     description TEXT,
     price NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+    monthly_price NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+    yearly_price NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
     billing_cycle VARCHAR(20) NOT NULL DEFAULT 'monthly' CHECK (billing_cycle IN ('monthly', 'yearly')),
     cover_image TEXT,
     benefits JSONB NOT NULL DEFAULT '[]'::jsonb,

@@ -52,16 +52,6 @@ export default function Footer() {
             </h3>
             <ul className="space-y-2.5 text-xs text-slate-400">
               <li>
-                <Link href="/sign-up" className="text-royal-400 hover:text-royal-300 font-semibold transition flex items-center gap-1">
-                  <span>Create Free Account</span>
-                </Link>
-              </li>
-              <li>
-                <Link href="/sign-in" className="hover:text-white transition flex items-center gap-1">
-                  <span>Sign In to Studio</span>
-                </Link>
-              </li>
-              <li>
                 <Link href="/dashboard/storefront-builder" className="hover:text-white transition flex items-center gap-1">
                   Bio Storefront Builder
                 </Link>
@@ -79,6 +69,11 @@ export default function Footer() {
               <li>
                 <Link href="/dashboard/ai-coach" className="hover:text-white transition flex items-center gap-1">
                   AI Business Coach
+                </Link>
+              </li>
+              <li>
+                <Link href="/dashboard/calendar" className="hover:text-white transition flex items-center gap-1">
+                  Google Calendar 1:1 Sync
                 </Link>
               </li>
             </ul>

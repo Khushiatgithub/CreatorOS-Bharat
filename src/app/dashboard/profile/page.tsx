@@ -452,7 +452,7 @@ function ResilientProfileSettings() {
 }
 
 export default function ProfilePage() {
-  const isClerk = isRealClerkKey(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+  const isClerk = isRealClerkKey(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || 'pk_test_Y3JlYXRvcm9zLWJoYXJhdC5jbGVyay5hY2NvdW50cy5kZXYk');
 
   return (
     <PageTransition>

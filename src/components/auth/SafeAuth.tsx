@@ -28,12 +28,12 @@ export function isRealClerkKey(key?: string): boolean {
   const trimmed = key.trim();
   if (
     trimmed === '' ||
-    trimmed === 'pk_test_Y3JlYXRvcm9zLWJoYXJhdC5jbGVyay5hY2NvdW50cy5kZXYk' ||
     trimmed.includes('your_clerk_') ||
     trimmed.includes('test_fallback') ||
     trimmed.includes('placeholder') ||
     trimmed.includes('example') ||
-    trimmed.includes('demo')
+    trimmed.includes('demo') ||
+    trimmed === 'pk_test_...'
   ) {
     return false;
   }
@@ -81,12 +81,13 @@ interface SafeClerkProviderProps {
  */
 function ClerkAuthBridge({ children }: { children: ReactNode }) {
   const { user: clerkUser, isLoaded, isSignedIn } = useClerkUser();
-  const { creators, updateCreator, switchActiveCreator } = useCreatorStore();
+  const { creators, updateCreator, switchActiveCreator, setDemoMode } = useCreatorStore();
   const router = useRouter();
 
   // Synchronize Clerk user authentication with CreatorOS Account
   useEffect(() => {
     if (isLoaded && isSignedIn && clerkUser) {
+      setDemoMode(false);
       const email = clerkUser.primaryEmailAddress?.emailAddress || '';
       const fullName = clerkUser.fullName || `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || 'Creator';
       const cleanUsername = clerkUser.username || (email ? email.split('@')[0] : `creator_${clerkUser.id.slice(-6)}`);
@@ -96,12 +97,12 @@ function ClerkAuthBridge({ children }: { children: ReactNode }) {
 
       // Find if this creator already exists
       const existingCreator = creators.find(
-        (c) => c.id === creatorId || (email && c.email === email)
+        (c) => c.id === creatorId || (email && c.email?.toLowerCase() === email.toLowerCase())
       );
 
       if (existingCreator) {
         // Existing user: sign into their existing account
-        if (existingCreator.id !== creatorId && email && existingCreator.email === email) {
+        if (existingCreator.id !== creatorId && email && existingCreator.email?.toLowerCase() === email.toLowerCase()) {
           updateCreator({ ...existingCreator, id: creatorId, avatarUrl: existingCreator.avatarUrl || avatarUrl });
         }
         switchActiveCreator(existingCreator.id);
@@ -193,7 +194,7 @@ function ClerkAuthBridge({ children }: { children: ReactNode }) {
  * and high-fidelity CreatorOS Resilient Demo Auth mode.
  */
 export function SafeClerkProvider({ children }: SafeClerkProviderProps) {
-  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || '';
+  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || 'pk_test_Y3JlYXRvcm9zLWJoYXJhdC5jbGVyay5hY2NvdW50cy5kZXYk';
   const clerkEnabled = isRealClerkKey(publishableKey);
   const { activeCreator } = useCreatorStore();
   const router = useRouter();

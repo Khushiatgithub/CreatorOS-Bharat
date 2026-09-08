@@ -10,12 +10,12 @@ function isRealClerkConfigured(pubKey: string, secKey: string): boolean {
   const trimmed = pubKey.trim();
   if (
     trimmed === '' ||
-    trimmed === 'pk_test_Y3JlYXRvcm9zLWJoYXJhdC5jbGVyay5hY2NvdW50cy5kZXYk' ||
     trimmed.includes('your_clerk_') ||
     trimmed.includes('test_fallback') ||
     trimmed.includes('placeholder') ||
     trimmed.includes('example') ||
-    trimmed.includes('demo')
+    trimmed.includes('demo') ||
+    trimmed === 'pk_test_...'
   ) {
     return false;
   }

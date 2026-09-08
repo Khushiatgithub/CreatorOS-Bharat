@@ -107,112 +107,110 @@ export default function Navbar() {
             )}
           </button>
 
-          {/* Creator Account Menu */}
-          <div className="relative">
-            <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-2 rounded-full border border-white/[0.1] bg-white/[0.04] px-3 py-1.5 text-xs text-slate-200 hover:border-royal-500/40 hover:bg-white/[0.08] transition btn-press shrink-0"
-            >
-              <img 
-                src={activeCreator?.avatarUrl} 
-                alt={activeCreator?.name} 
-                className="h-6 w-6 rounded-full object-cover shrink-0 ring-1 ring-royal-500"
-              />
-              <span className="font-medium hidden sm:inline text-white whitespace-nowrap">{activeCreator?.name}</span>
-              <span className="text-slate-400 font-mono text-[11px] whitespace-nowrap hidden lg:inline">@{activeCreator?.username}</span>
-              <ChevronDown className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-            </button>
-
-            {dropdownOpen && (
-              <>
-                {/* Backdrop overlay to close on outside click */}
-                <div 
-                  className="fixed inset-0 z-40" 
-                  onClick={() => setDropdownOpen(false)} 
-                />
-
-                <div 
-                  className="absolute right-0 top-full mt-2 w-72 rounded-[20px] glass-dropdown p-2.5 shadow-2xl z-50 border border-white/[0.12] animate-scale-in"
-                  onClick={() => setDropdownOpen(false)}
-                >
-                  {/* Creator Profile Summary Header */}
-                  <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center gap-3">
-                    <img 
-                      src={activeCreator?.avatarUrl} 
-                      alt={activeCreator?.name} 
-                      className="h-10 w-10 rounded-full object-cover shrink-0 ring-2 ring-royal-500/50" 
-                    />
-                    <div className="flex-1 overflow-hidden">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-bold text-xs truncate text-white">{activeCreator?.name}</span>
-                        {activeCreator?.verified && <ShieldCheck className="h-3.5 w-3.5 text-royal-400 shrink-0" />}
-                      </div>
-                      <p className="text-[11px] text-royal-400 font-mono truncate">@{activeCreator?.username}</p>
-                      <p className="text-[10px] text-slate-400 truncate mt-0.5">{activeCreator?.category}</p>
-                    </div>
-                  </div>
-
-                  <div className="mt-2 space-y-1">
-                    <Link
-                      href={`/${activeCreator?.username}`}
-                      target="_blank"
-                      className="w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-white/[0.06] hover:text-white transition"
-                    >
-                      <span className="flex items-center gap-2">
-                        <ArrowUpRight className="h-3.5 w-3.5 text-royal-400" />
-                        <span>View Live Storefront</span>
-                      </span>
-                      <span className="text-[10px] font-mono text-slate-400 bg-white/[0.06] px-1.5 py-0.5 rounded">Live</span>
-                    </Link>
-
-                    <Link
-                      href="/dashboard/storefront-builder"
-                      className="w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-white/[0.06] hover:text-white transition"
-                    >
-                      <span className="flex items-center gap-2">
-                        <Layers className="h-3.5 w-3.5 text-royal-400" />
-                        <span>Storefront Builder</span>
-                      </span>
-                    </Link>
-
-                    <Link
-                      href="/onboarding"
-                      className="w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-royal-400 hover:bg-royal-600/10 transition"
-                    >
-                      <span className="flex items-center gap-2">
-                        <Sparkles className="h-3.5 w-3.5" />
-                        <span>Launch Onboarding Wizard</span>
-                      </span>
-                      <span className="text-[10px] font-mono bg-royal-600/20 px-1.5 py-0.5 rounded">3 Steps</span>
-                    </Link>
-
-                    <Link
-                      href="/dashboard/profile"
-                      className="w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/[0.06] hover:text-white transition"
-                    >
-                      <span className="flex items-center gap-2">
-                        <User className="h-3.5 w-3.5 text-slate-400" />
-                        <span>Account & Security</span>
-                      </span>
-                    </Link>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* View Live Bio-link storefront button */}
-          <Link
-            href={`/${activeCreator?.username}`}
-            target="_blank"
-            className="flex items-center gap-1.5 rounded-[14px] border border-white/[0.1] bg-white/[0.04] px-3.5 py-2 text-xs font-medium text-slate-200 hover:bg-white/[0.08] hover:border-white/[0.2] transition btn-press shadow-sm whitespace-nowrap shrink-0"
-          >
-            <span className="hidden sm:inline">Storefront</span>
-            <ArrowUpRight className="h-3.5 w-3.5 text-royal-400" />
-          </Link>
-
           {/* CLERK AUTHENTICATION ACTIONS */}
           <SignedIn>
+            {/* Creator Account Menu */}
+            <div className="relative">
+              <button
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className="flex items-center gap-2 rounded-full border border-white/[0.1] bg-white/[0.04] px-3 py-1.5 text-xs text-slate-200 hover:border-royal-500/40 hover:bg-white/[0.08] transition btn-press shrink-0"
+              >
+                <img 
+                  src={activeCreator?.avatarUrl} 
+                  alt={activeCreator?.name} 
+                  className="h-6 w-6 rounded-full object-cover shrink-0 ring-1 ring-royal-500"
+                />
+                <span className="font-medium hidden sm:inline text-white whitespace-nowrap">{activeCreator?.name}</span>
+                <span className="text-slate-400 font-mono text-[11px] whitespace-nowrap hidden lg:inline">@{activeCreator?.username}</span>
+                <ChevronDown className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+              </button>
+
+              {dropdownOpen && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setDropdownOpen(false)} 
+                  />
+
+                  <div 
+                    className="absolute right-0 top-full mt-2 w-72 rounded-[20px] glass-dropdown p-2.5 shadow-2xl z-50 border border-white/[0.12] animate-scale-in"
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center gap-3">
+                      <img 
+                        src={activeCreator?.avatarUrl} 
+                        alt={activeCreator?.name} 
+                        className="h-10 w-10 rounded-full object-cover shrink-0 ring-2 ring-royal-500/50" 
+                      />
+                      <div className="flex-1 overflow-hidden">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-xs truncate text-white">{activeCreator?.name}</span>
+                          {activeCreator?.verified && <ShieldCheck className="h-3.5 w-3.5 text-royal-400 shrink-0" />}
+                        </div>
+                        <p className="text-[11px] text-royal-400 font-mono truncate">@{activeCreator?.username}</p>
+                        <p className="text-[10px] text-slate-400 truncate mt-0.5">{activeCreator?.category}</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-2 space-y-1">
+                      <Link
+                        href={`/${activeCreator?.username}`}
+                        target="_blank"
+                        className="w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-white/[0.06] hover:text-white transition"
+                      >
+                        <span className="flex items-center gap-2">
+                          <ArrowUpRight className="h-3.5 w-3.5 text-royal-400" />
+                          <span>View Live Storefront</span>
+                        </span>
+                        <span className="text-[10px] font-mono text-slate-400 bg-white/[0.06] px-1.5 py-0.5 rounded">Live</span>
+                      </Link>
+
+                      <Link
+                        href="/dashboard/storefront-builder"
+                        className="w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-white/[0.06] hover:text-white transition"
+                      >
+                        <span className="flex items-center gap-2">
+                          <Layers className="h-3.5 w-3.5 text-royal-400" />
+                          <span>Storefront Builder</span>
+                        </span>
+                      </Link>
+
+                      <Link
+                        href="/onboarding"
+                        className="w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-royal-400 hover:bg-royal-600/10 transition"
+                      >
+                        <span className="flex items-center gap-2">
+                          <Sparkles className="h-3.5 w-3.5" />
+                          <span>Launch Onboarding Wizard</span>
+                        </span>
+                        <span className="text-[10px] font-mono bg-royal-600/20 px-1.5 py-0.5 rounded">3 Steps</span>
+                      </Link>
+
+                      <Link
+                        href="/dashboard/profile"
+                        className="w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/[0.06] hover:text-white transition"
+                      >
+                        <span className="flex items-center gap-2">
+                          <User className="h-3.5 w-3.5 text-slate-400" />
+                          <span>Account & Security</span>
+                        </span>
+                      </Link>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* View Live Bio-link storefront button */}
+            <Link
+              href={`/${activeCreator?.username}`}
+              target="_blank"
+              className="flex items-center gap-1.5 rounded-[14px] border border-white/[0.1] bg-white/[0.04] px-3.5 py-2 text-xs font-medium text-slate-200 hover:bg-white/[0.08] hover:border-white/[0.2] transition btn-press shadow-sm whitespace-nowrap shrink-0"
+            >
+              <span className="hidden sm:inline">Storefront</span>
+              <ArrowUpRight className="h-3.5 w-3.5 text-royal-400" />
+            </Link>
+
             <div className="flex items-center gap-2">
               <Link
                 href="/dashboard"
@@ -238,10 +236,10 @@ export default function Navbar() {
           </SignedIn>
 
           <SignedOut>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2 sm:gap-2.5">
               <Link
                 href="/sign-in"
-                className="flex items-center gap-1.5 rounded-[14px] border border-white/[0.1] bg-white/[0.04] hover:bg-white/[0.08] px-3.5 py-2 text-xs font-medium text-slate-200 hover:text-white transition btn-press whitespace-nowrap shrink-0"
+                className="flex items-center gap-1.5 rounded-[14px] border border-white/[0.12] bg-white/[0.04] hover:bg-white/[0.08] hover:border-royal-500/40 px-3.5 py-2 text-xs font-medium text-slate-200 hover:text-white transition btn-press whitespace-nowrap shrink-0"
               >
                 <LogIn className="h-3.5 w-3.5 text-royal-400" />
                 <span>Sign In</span>
@@ -249,9 +247,9 @@ export default function Navbar() {
 
               <Link
                 href="/sign-up"
-                className="flex items-center gap-2 rounded-[14px] bg-gradient-to-r from-royal-600 to-royal-700 px-4 py-2 text-xs font-semibold text-white shadow-royal hover:brightness-110 transition btn-press whitespace-nowrap shrink-0"
+                className="flex items-center gap-1.5 rounded-[14px] bg-gradient-to-r from-royal-600 to-royal-700 hover:from-royal-500 hover:to-royal-600 px-4 py-2 text-xs font-bold text-white shadow-royal transition btn-press whitespace-nowrap shrink-0"
               >
-                <span>Get Started</span>
+                <span>Sign Up Free</span>
               </Link>
             </div>
           </SignedOut>

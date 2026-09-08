@@ -199,8 +199,17 @@ export function SafeClerkProvider({ children }: SafeClerkProviderProps) {
   const { activeCreator } = useCreatorStore();
   const router = useRouter();
 
-  // Local state for demo mode
-  const [isDemoSignedIn, setIsDemoSignedIn] = useState(true);
+  // Local state for demo mode (false by default so visitors see Sign In & Sign Up)
+  const [isDemoSignedIn, setIsDemoSignedIn] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const demoActive = localStorage.getItem('creatoros_demo_mode') === 'true';
+      if (demoActive) {
+        setIsDemoSignedIn(true);
+      }
+    }
+  }, []);
 
   const demoUser = isDemoSignedIn && activeCreator ? {
     id: activeCreator.id,
@@ -211,6 +220,9 @@ export function SafeClerkProvider({ children }: SafeClerkProviderProps) {
   } : null;
 
   const handleSignOut = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('creatoros_demo_mode');
+    }
     setIsDemoSignedIn(false);
     router.push('/');
   };

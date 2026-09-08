@@ -17,7 +17,6 @@ import {
   Trash2,
   AlertCircle
 } from 'lucide-react';
-import { INITIAL_BOOKINGS } from '@/lib/mock-data';
 import { formatINR, formatINRDecimal } from '@/lib/gst';
 import { PageTransition, HoverCard, RippleButton } from '@/components/ui/motion';
 import PremiumEmptyState from '@/components/ui/EmptyState';
@@ -32,7 +31,7 @@ export default function BookingsManagerPage() {
     cancelAppointment(aptId);
   };
 
-  const currentBookings = bookingServices && bookingServices.length > 0 ? bookingServices : INITIAL_BOOKINGS;
+  const currentBookings = bookingServices || [];
 
   return (
     <PageTransition>

@@ -79,6 +79,119 @@ interface SafeClerkProviderProps {
  * Safe Auth Provider that automatically switches between genuine Clerk Enterprise Auth
  * and high-fidelity CreatorOS Resilient Demo Auth mode.
  */
+function ClerkAuthBridge({ children }: { children: ReactNode }) {
+  const { user: clerkUser, isLoaded, isSignedIn } = useClerkUser();
+  const { creators, updateCreator, switchActiveCreator } = useCreatorStore();
+  const router = useRouter();
+
+  // Synchronize Clerk user authentication with CreatorOS Account
+  useEffect(() => {
+    if (isLoaded && isSignedIn && clerkUser) {
+      const email = clerkUser.primaryEmailAddress?.emailAddress || '';
+      const fullName = clerkUser.fullName || `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || 'Creator';
+      const cleanUsername = clerkUser.username || (email ? email.split('@')[0] : `creator_${clerkUser.id.slice(-6)}`);
+      const username = cleanUsername.toLowerCase().replace(/[^a-z0-9_.]/g, '');
+      const avatarUrl = clerkUser.imageUrl || '/avatars/user-avatar.png';
+      const creatorId = `user_${clerkUser.id}`;
+
+      // Find if this creator already exists
+      const existingCreator = creators.find(
+        (c) => c.id === creatorId || (email && c.email === email)
+      );
+
+      if (existingCreator) {
+        // Existing user: sign into their existing account
+        if (existingCreator.id !== creatorId && email && existingCreator.email === email) {
+          updateCreator({ ...existingCreator, id: creatorId, avatarUrl: existingCreator.avatarUrl || avatarUrl });
+        }
+        switchActiveCreator(existingCreator.id);
+      } else {
+        // New user: create their own dedicated CreatorOS account
+        const newCreator = {
+          id: creatorId,
+          username: username,
+          name: fullName,
+          tagline: 'Digital Creator & Educator',
+          bio: 'Welcome to my official CreatorOS storefront. Check out my digital products, cohorts and 1:1 mentorship sessions.',
+          avatarUrl: avatarUrl,
+          bannerUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80',
+          verified: false,
+          category: 'Digital Creator',
+          location: 'India',
+          state: 'Maharashtra',
+          themeId: 'linear-royal',
+          upiId: `${username}@okaxis`,
+          upiName: fullName,
+          email: email,
+          bankAccount: {
+            accountNumberMasked: '•••• •••• •••• 0000',
+            ifsc: 'HDFC0000001',
+            bankName: 'HDFC Bank'
+          },
+          socials: {
+            whatsapp: clerkUser.primaryPhoneNumber?.phoneNumber || ''
+          },
+          customLinks: []
+        };
+
+        if (typeof window !== 'undefined') {
+          try {
+            const saved = localStorage.getItem('creatoros_creators');
+            const list = saved ? JSON.parse(saved) : [];
+            if (!list.find((c: any) => c.id === creatorId)) {
+              localStorage.setItem('creatoros_creators', JSON.stringify([...list, newCreator]));
+            }
+          } catch (e) {}
+        }
+        updateCreator(newCreator);
+        switchActiveCreator(creatorId);
+
+        // Async persist to PostgreSQL
+        fetch('/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: fullName,
+            email,
+            username: newCreator.username,
+            bio: newCreator.bio
+          })
+        }).catch((e) => console.warn('User DB sync error:', e));
+      }
+    }
+  }, [isLoaded, isSignedIn, clerkUser]);
+
+  const user = isSignedIn && clerkUser ? {
+    id: clerkUser.id,
+    fullName: clerkUser.fullName || `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || 'Creator',
+    email: clerkUser.primaryEmailAddress?.emailAddress || '',
+    imageUrl: clerkUser.imageUrl || '/avatars/user-avatar.png',
+    username: clerkUser.username || (clerkUser.primaryEmailAddress?.emailAddress ? clerkUser.primaryEmailAddress.emailAddress.split('@')[0] : 'creator'),
+  } : null;
+
+  const contextValue: SafeAuthContextType = {
+    isClerkEnabled: true,
+    isSignedIn: !!isSignedIn,
+    user,
+    signOut: () => {
+      // Clerk handles sign-out
+    },
+    signIn: () => {
+      router.push('/sign-in');
+    },
+  };
+
+  return (
+    <SafeAuthContext.Provider value={contextValue}>
+      {children}
+    </SafeAuthContext.Provider>
+  );
+}
+
+/**
+ * Safe Auth Provider that automatically switches between genuine Clerk Enterprise Auth
+ * and high-fidelity CreatorOS Resilient Demo Auth mode.
+ */
 export function SafeClerkProvider({ children }: SafeClerkProviderProps) {
   const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || '';
   const clerkEnabled = isRealClerkKey(publishableKey);
@@ -107,7 +220,7 @@ export function SafeClerkProvider({ children }: SafeClerkProviderProps) {
   };
 
   const contextValue: SafeAuthContextType = {
-    isClerkEnabled: clerkEnabled,
+    isClerkEnabled: false,
     isSignedIn: isDemoSignedIn,
     user: demoUser,
     signOut: handleSignOut,
@@ -129,9 +242,9 @@ export function SafeClerkProvider({ children }: SafeClerkProviderProps) {
           },
         }}
       >
-        <SafeAuthContext.Provider value={contextValue}>
+        <ClerkAuthBridge>
           {children}
-        </SafeAuthContext.Provider>
+        </ClerkAuthBridge>
       </ClerkProvider>
     );
   }

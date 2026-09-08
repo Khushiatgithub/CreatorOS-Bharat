@@ -110,29 +110,48 @@ export function useCreatorStore() {
   const [calendarMeetings, setCalendarMeetings] = useState<CalendarMeeting[]>(INITIAL_CALENDAR_MEETINGS);
   const [priceHistory, setPriceHistory] = useState<Record<string, { date: string; price: number; changeType?: string; label?: string }[]>>({});
   const [baselinePrices, setBaselinePrices] = useState<Record<string, number>>({});
+  const [isDemoMode, setIsDemoMode] = useState<boolean>(true);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Load from localStorage on client mount
   useEffect(() => {
     try {
+      const savedDemo = localStorage.getItem('creatoros_demo_mode');
+      if (savedDemo !== null) setIsDemoMode(savedDemo === 'true');
+
       const savedCreators = localStorage.getItem(STORAGE_KEYS.CREATORS);
       if (savedCreators) {
         const parsed = JSON.parse(savedCreators);
         const upgraded = Array.isArray(parsed)
-          ? parsed.map((c: any) =>
-              c.avatarUrl && c.avatarUrl.includes('photo-1534528741775')
-                ? { ...c, avatarUrl: '/avatars/user-avatar.png' }
-                : c
-            )
+          ? parsed
+              .filter((c: any) => c.id !== 'creator_priya')
+              .map((c: any) =>
+                c.avatarUrl && c.avatarUrl.includes('photo-1534528741775')
+                  ? { ...c, avatarUrl: '/avatars/user-avatar.png' }
+                  : c
+              )
           : parsed;
-        setCreators(upgraded);
+        setCreators(upgraded.length > 0 ? upgraded : INITIAL_CREATORS);
       }
 
       const savedActiveId = localStorage.getItem(STORAGE_KEYS.ACTIVE_CREATOR_ID);
-      if (savedActiveId) setActiveCreatorId(savedActiveId);
+      if (savedActiveId && savedActiveId !== 'creator_priya') {
+        setActiveCreatorId(savedActiveId);
+      } else {
+        setActiveCreatorId('creator_aarav');
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(STORAGE_KEYS.ACTIVE_CREATOR_ID, 'creator_aarav');
+        }
+      }
 
       const savedProducts = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
-      if (savedProducts) setProducts(JSON.parse(savedProducts));
+      if (savedProducts) {
+        const prods = JSON.parse(savedProducts);
+        const sanitized = Array.isArray(prods)
+          ? prods.map((p: any) => (p.creatorId === 'creator_priya' ? { ...p, creatorId: 'creator_aarav' } : p))
+          : prods;
+        setProducts(sanitized);
+      }
 
       const savedCourses = localStorage.getItem(STORAGE_KEYS.COURSES);
       if (savedCourses) setCourses(JSON.parse(savedCourses));
@@ -271,6 +290,13 @@ export function useCreatorStore() {
     saveState(STORAGE_KEYS.ACTIVE_CREATOR_ID, id);
   };
 
+  const setDemoMode = (enabled: boolean) => {
+    setIsDemoMode(enabled);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('creatoros_demo_mode', enabled ? 'true' : 'false');
+    }
+  };
+
   // Products
   const addProduct = (newProd: Omit<DigitalProduct, 'id' | 'creatorId' | 'salesCount' | 'rating' | 'reviewsCount'>) => {
     const product: DigitalProduct = {
@@ -290,6 +316,12 @@ export function useCreatorStore() {
   };
 
   const deleteProduct = (id: string) => {
+    if (isDemoMode && activeCreatorId === 'creator_aarav') {
+      if (typeof window !== 'undefined') {
+        alert('Action disabled in Demo Mode: Sample products cannot be deleted to preserve the demo studio experience.');
+      }
+      return;
+    }
     setProducts((prev) => {
       const next = prev.filter((p) => p.id !== id);
       saveState(STORAGE_KEYS.PRODUCTS, next);
@@ -738,6 +770,12 @@ export function useCreatorStore() {
   };
 
   const deleteInvoice = (orderId: string) => {
+    if (isDemoMode && activeCreatorId === 'creator_aarav') {
+      if (typeof window !== 'undefined') {
+        alert('Action disabled in Demo Mode: Sample GST invoices cannot be deleted to preserve the demo studio experience.');
+      }
+      return;
+    }
     setOrders((prev) => {
       const next = prev.filter((o) => o.id !== orderId);
       saveState(STORAGE_KEYS.ORDERS, next);
@@ -2149,6 +2187,8 @@ export function useCreatorStore() {
     // Price Optimization State
     priceHistory,
     baselinePrices,
+    isDemoMode,
+    setDemoMode,
     // Actions
     updateCreator,
     switchActiveCreator,

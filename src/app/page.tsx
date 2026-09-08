@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Navbar from '@/components/ui/Navbar';
 import Footer from '@/components/ui/Footer';
 import { 
@@ -88,13 +89,24 @@ const CREATOR_TESTIMONIALS = [
 ];
 
 export default function SaaSGrandLandingPage() {
-  const { activeCreator, products } = useCreatorStore();
+  const router = useRouter();
+  const { activeCreator, products, switchActiveCreator, setDemoMode } = useCreatorStore();
   const [demoCheckoutOpen, setDemoCheckoutOpen] = useState(false);
 
   const sampleProduct = products[0] || {
     id: 'prod_demo',
     title: 'Ultimate FAANG SDE & DSA Master Sheet 2025',
     price: 399,
+  };
+
+  const handleLaunchDemoStudio = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('creatoros_active_creator_id', 'creator_aarav');
+      localStorage.setItem('creatoros_demo_mode', 'true');
+    }
+    if (setDemoMode) setDemoMode(true);
+    switchActiveCreator('creator_aarav');
+    router.push('/dashboard');
   };
 
   return (
@@ -137,13 +149,25 @@ export default function SaaSGrandLandingPage() {
 
             {/* CTAs with Ripple Micro-interactions */}
             <FadeIn delay={0.3}>
-              <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3.5">
+              <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3.5 flex-wrap">
                 <Link href="/dashboard">
                   <RippleButton className="w-full sm:w-auto rounded-[16px] bg-royal-600 hover:bg-royal-500 px-7 py-3.5 text-xs font-bold text-white shadow-royal hover:brightness-110">
                     <span>Launch Creator Studio</span>
                     <ArrowRight className="h-4 w-4" />
                   </RippleButton>
                 </Link>
+
+                {/* Secondary Button: Try Demo Studio */}
+                <button
+                  onClick={handleLaunchDemoStudio}
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-[16px] border border-royal-500/40 bg-royal-600/15 hover:bg-royal-600/25 px-6 py-3.5 text-xs font-bold text-royal-200 hover:text-white transition shadow-royal-sm btn-press group"
+                >
+                  <Sparkles className="h-4 w-4 text-royal-400 group-hover:rotate-12 transition-transform" />
+                  <span>Try Demo Studio</span>
+                  <span className="rounded-full bg-royal-500/25 border border-royal-500/40 px-2 py-0.5 text-[10px] font-mono text-royal-300">
+                    Demo Mode
+                  </span>
+                </button>
 
                 <RippleButton
                   onClick={() => setDemoCheckoutOpen(true)}

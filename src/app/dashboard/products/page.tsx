@@ -51,17 +51,8 @@ export default function ProductsManagerPage() {
   const [coverImage, setCoverImage] = useState('https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=600&q=80');
   const [downloadUrl, setDownloadUrl] = useState('https://example.com/sample-notes.pdf');
 
-  // Effective products list (with fallback to INITIAL_PRODUCTS if empty)
-  const currentProducts = products && products.length > 0 ? products : INITIAL_PRODUCTS;
-
-  // Filter products by creator or global, plus search & category
-  const creatorProducts = currentProducts.filter((p) => {
-    // Match creator or show all if creator match
-    const creatorMatch = !p.creatorId || p.creatorId === activeCreator?.id || currentProducts.length <= 3;
-    return creatorMatch;
-  });
-
-  const displayList = (creatorProducts.length > 0 ? creatorProducts : currentProducts).filter((p) => {
+  // Effective products list
+  const displayList = (products || []).filter((p) => {
     const matchesSearch = 
       p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (p.subtitle && p.subtitle.toLowerCase().includes(searchQuery.toLowerCase())) ||

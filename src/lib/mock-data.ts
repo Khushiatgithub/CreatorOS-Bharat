@@ -131,50 +131,6 @@ export const INITIAL_CREATORS: Creator[] = [
         icon: 'Linkedin'
       }
     ]
-  },
-  {
-    id: 'creator_priya',
-    username: 'priya.design',
-    name: 'Priya Kapoor',
-    tagline: 'Principal Product Designer & AI Workflow Coach • 120k on IG',
-    bio: 'Designed products used by 15M+ users across India. Selling Notion agency OS templates, Figma design systems & hosting 1:1 portfolio roasts.',
-    avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80',
-    bannerUrl: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80',
-    verified: true,
-    category: 'UI/UX & Product Design',
-    location: 'Mumbai, Maharashtra',
-    state: 'Maharashtra',
-    themeId: 'stripe-midnight',
-    upiId: 'priyadesign@okhdfcbank',
-    upiName: 'Priya Kapoor Design Studio',
-    gstNumber: '27AABCP9876L1Z4',
-    bankAccount: {
-      accountNumberMasked: '•••• •••• •••• 4412',
-      ifsc: 'ICIC0000987',
-      bankName: 'ICICI Bank, Bandra West'
-    },
-    socials: {
-      instagram: 'https://instagram.com/priya.design',
-      youtube: 'https://youtube.com/@priyadesign',
-      linkedin: 'https://linkedin.com/in/priyakapoor',
-      twitter: 'https://x.com/priyadesign',
-      whatsapp: '919811223344'
-    },
-    customLinks: [
-      {
-        id: 'link_p1',
-        title: '✨ Download Free UI/UX Figma Checklist (2025 Edition)',
-        url: '#',
-        icon: 'Sparkles',
-        highlight: true
-      },
-      {
-        id: 'link_p2',
-        title: '🎙️ Listen to The Indian Design Podcast',
-        url: '#',
-        icon: 'Mic'
-      }
-    ]
   }
 ];
 
@@ -252,7 +208,7 @@ export const INITIAL_PRODUCTS: DigitalProduct[] = [
   },
   {
     id: 'prod_freelancer_os',
-    creatorId: 'creator_priya',
+    creatorId: 'creator_aarav',
     title: 'Freelance Designer & Creator Notion OS',
     subtitle: 'Complete Client CRM, Invoice Tracker, Project Proposals & Contracts',
     description: 'Everything you need to run a 6-figure freelance design business in India. Includes GST invoice trackers, client feedback portals, and contract templates.',
@@ -2021,9 +1977,9 @@ export const INITIAL_COMMUNITIES: Community[] = [
   },
   {
     id: 'comm_design_guild',
-    creatorId: 'creator_priya',
-    creatorName: 'Priya Nair',
-    creatorUsername: 'priyaui',
+    creatorId: 'creator_aarav',
+    creatorName: 'Aarav Sharma',
+    creatorUsername: 'aarav.tech',
     name: 'Bharat Product & UI/UX Guild',
     slug: 'product-ui-guild',
     tagline: 'Crafting world-class design systems and high-converting micro-interactions.',

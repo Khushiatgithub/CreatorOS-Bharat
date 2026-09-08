@@ -12,18 +12,16 @@ import {
   PlayCircle, 
   CheckCircle, 
   Sparkles, 
-  ExternalLink,
   ArrowUpRight 
 } from 'lucide-react';
 import Link from 'next/link';
-import { INITIAL_COURSES } from '@/lib/mock-data';
 import { formatINR } from '@/lib/gst';
 import { PageTransition, HoverCard, RippleButton } from '@/components/ui/motion';
 
 export default function CoursesManagerPage() {
   const { courses, activeCreator } = useCreatorStore();
 
-  const currentCourses = courses && courses.length > 0 ? courses : INITIAL_COURSES;
+  const currentCourses = courses || [];
 
   return (
     <PageTransition>

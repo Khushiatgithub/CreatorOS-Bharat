@@ -14,7 +14,6 @@ import {
   ShoppingBag, 
   Zap, 
   ShieldCheck, 
-  UserCheck,
   Layers,
   ArrowUpRight,
   Sun,
@@ -25,7 +24,7 @@ import {
 
 export default function Navbar() {
   const pathname = usePathname();
-  const { creators, activeCreator, switchActiveCreator } = useCreatorStore();
+  const { activeCreator } = useCreatorStore();
   const { theme, toggleTheme } = useTheme();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -108,7 +107,7 @@ export default function Navbar() {
             )}
           </button>
 
-          {/* Active Creator Switcher Pill */}
+          {/* Creator Account Menu */}
           <div className="relative">
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -133,41 +132,54 @@ export default function Navbar() {
                 />
 
                 <div 
-                  className="absolute right-0 top-full mt-2 w-72 rounded-[20px] glass-dropdown p-2 shadow-2xl z-50 border border-white/[0.12] animate-scale-in"
+                  className="absolute right-0 top-full mt-2 w-72 rounded-[20px] glass-dropdown p-2.5 shadow-2xl z-50 border border-white/[0.12] animate-scale-in"
                   onClick={() => setDropdownOpen(false)}
                 >
-                  <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-                    <span>Switch Creator Persona</span>
-                    <span className="text-royal-400 font-mono">Demo Store</span>
-                  </div>
-                  {creators.map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => switchActiveCreator(c.id)}
-                      className={`w-full flex items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-xs transition ${
-                        c.id === activeCreator?.id 
-                          ? 'bg-royal-600/20 text-white border border-royal-500/30' 
-                          : 'text-slate-300 hover:bg-white/[0.06] hover:text-white'
-                      }`}
-                    >
-                      <img src={c.avatarUrl} alt={c.name} className="h-8 w-8 rounded-full object-cover shrink-0 ring-1 ring-white/10" />
-                      <div className="flex-1 overflow-hidden">
-                        <div className="flex items-center gap-1">
-                          <span className="font-semibold truncate text-white">{c.name}</span>
-                          {c.verified && <ShieldCheck className="h-3.5 w-3.5 text-royal-400 shrink-0" />}
-                        </div>
-                        <p className="text-[11px] text-slate-400 truncate">{c.category}</p>
+                  {/* Creator Profile Summary Header */}
+                  <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center gap-3">
+                    <img 
+                      src={activeCreator?.avatarUrl} 
+                      alt={activeCreator?.name} 
+                      className="h-10 w-10 rounded-full object-cover shrink-0 ring-2 ring-royal-500/50" 
+                    />
+                    <div className="flex-1 overflow-hidden">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-xs truncate text-white">{activeCreator?.name}</span>
+                        {activeCreator?.verified && <ShieldCheck className="h-3.5 w-3.5 text-royal-400 shrink-0" />}
                       </div>
-                      {c.id === activeCreator?.id && <UserCheck className="h-4 w-4 text-royal-400 shrink-0" />}
-                    </button>
-                  ))}
+                      <p className="text-[11px] text-royal-400 font-mono truncate">@{activeCreator?.username}</p>
+                      <p className="text-[10px] text-slate-400 truncate mt-0.5">{activeCreator?.category}</p>
+                    </div>
+                  </div>
 
-                  <div className="mt-2 pt-2 border-t border-white/[0.08] space-y-1">
+                  <div className="mt-2 space-y-1">
+                    <Link
+                      href={`/${activeCreator?.username}`}
+                      target="_blank"
+                      className="w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-white/[0.06] hover:text-white transition"
+                    >
+                      <span className="flex items-center gap-2">
+                        <ArrowUpRight className="h-3.5 w-3.5 text-royal-400" />
+                        <span>View Live Storefront</span>
+                      </span>
+                      <span className="text-[10px] font-mono text-slate-400 bg-white/[0.06] px-1.5 py-0.5 rounded">Live</span>
+                    </Link>
+
+                    <Link
+                      href="/dashboard/storefront-builder"
+                      className="w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-white/[0.06] hover:text-white transition"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Layers className="h-3.5 w-3.5 text-royal-400" />
+                        <span>Storefront Builder</span>
+                      </span>
+                    </Link>
+
                     <Link
                       href="/onboarding"
                       className="w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-royal-400 hover:bg-royal-600/10 transition"
                     >
-                      <span className="flex items-center gap-1.5">
+                      <span className="flex items-center gap-2">
                         <Sparkles className="h-3.5 w-3.5" />
                         <span>Launch Onboarding Wizard</span>
                       </span>
@@ -176,9 +188,9 @@ export default function Navbar() {
 
                     <Link
                       href="/dashboard/profile"
-                      className="w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/[0.06] transition"
+                      className="w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/[0.06] hover:text-white transition"
                     >
-                      <span className="flex items-center gap-1.5">
+                      <span className="flex items-center gap-2">
                         <User className="h-3.5 w-3.5 text-slate-400" />
                         <span>Account & Security</span>
                       </span>

@@ -28,6 +28,7 @@ export function isRealClerkKey(key?: string): boolean {
   const trimmed = key.trim();
   if (
     trimmed === '' ||
+    trimmed === 'pk_test_Y3JlYXRvcm9zLWJoYXJhdC5jbGVyay5hY2NvdW50cy5kZXYk' ||
     trimmed.includes('your_clerk_') ||
     trimmed.includes('test_fallback') ||
     trimmed.includes('placeholder') ||
@@ -194,22 +195,13 @@ function ClerkAuthBridge({ children }: { children: ReactNode }) {
  * and high-fidelity CreatorOS Resilient Demo Auth mode.
  */
 export function SafeClerkProvider({ children }: SafeClerkProviderProps) {
-  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || 'pk_test_Y3JlYXRvcm9zLWJoYXJhdC5jbGVyay5hY2NvdW50cy5kZXYk';
+  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || '';
   const clerkEnabled = isRealClerkKey(publishableKey);
   const { activeCreator } = useCreatorStore();
   const router = useRouter();
 
-  // Local state for demo mode (false by default so visitors see Sign In & Sign Up)
-  const [isDemoSignedIn, setIsDemoSignedIn] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const demoActive = localStorage.getItem('creatoros_demo_mode') === 'true';
-      if (demoActive) {
-        setIsDemoSignedIn(true);
-      }
-    }
-  }, []);
+  // Local state for demo mode
+  const [isDemoSignedIn, setIsDemoSignedIn] = useState(true);
 
   const demoUser = isDemoSignedIn && activeCreator ? {
     id: activeCreator.id,
@@ -220,9 +212,6 @@ export function SafeClerkProvider({ children }: SafeClerkProviderProps) {
   } : null;
 
   const handleSignOut = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('creatoros_demo_mode');
-    }
     setIsDemoSignedIn(false);
     router.push('/');
   };

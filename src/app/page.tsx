@@ -150,21 +150,23 @@ export default function SaaSGrandLandingPage() {
             {/* CTAs with Ripple Micro-interactions */}
             <FadeIn delay={0.3}>
               <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3.5 flex-wrap">
-                <Link href="/dashboard">
+                <Link href="/sign-up">
                   <RippleButton className="w-full sm:w-auto rounded-[16px] bg-royal-600 hover:bg-royal-500 px-7 py-3.5 text-xs font-bold text-white shadow-royal hover:brightness-110">
-                    <span>Launch Creator Studio</span>
+                    <span>Create Creator Account</span>
                     <ArrowRight className="h-4 w-4" />
                   </RippleButton>
                 </Link>
 
-                {/* Secondary Button: Try Demo Studio */}
+                {/* Separate Button: Try Demo Studio (No Google OAuth required, opens Aarav Sharma demo) */}
                 <button
+                  type="button"
                   onClick={handleLaunchDemoStudio}
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-[16px] border border-royal-500/40 bg-royal-600/15 hover:bg-royal-600/25 px-6 py-3.5 text-xs font-bold text-royal-200 hover:text-white transition shadow-royal-sm btn-press group"
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-[16px] border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 px-6 py-3.5 text-xs font-bold text-amber-300 hover:text-white transition shadow-lg btn-press group"
+                  title="Explore the Aarav Sharma demo creator studio directly"
                 >
-                  <Sparkles className="h-4 w-4 text-royal-400 group-hover:rotate-12 transition-transform" />
+                  <Sparkles className="h-4 w-4 text-amber-400 group-hover:rotate-12 transition-transform" />
                   <span>Try Demo Studio</span>
-                  <span className="rounded-full bg-royal-500/25 border border-royal-500/40 px-2 py-0.5 text-[10px] font-mono text-royal-300">
+                  <span className="rounded-full bg-amber-500/25 border border-amber-500/40 px-2 py-0.5 text-[10px] font-mono text-amber-200">
                     Demo Mode
                   </span>
                 </button>

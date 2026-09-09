@@ -16,7 +16,8 @@ import {
   ChevronDown, 
   ExternalLink,
   Sparkles,
-  Zap
+  Zap,
+  Camera
 } from 'lucide-react';
 
 /**
@@ -478,22 +479,35 @@ export function UserButton({
           <div 
             className="absolute right-0 top-full mt-2 w-72 rounded-[20px] glass-dropdown p-2.5 shadow-2xl z-50 border border-white/[0.12] bg-[#0A0D17]/95 backdrop-blur-2xl animate-scale-in"
           >
-            {/* User Info Header */}
-            <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center gap-3">
-              <img 
-                src={avatar} 
-                alt={name} 
-                className="h-10 w-10 rounded-full object-cover shrink-0 ring-2 ring-royal-500/50" 
-              />
+            {/* User Info Header with direct profile navigation */}
+            <Link
+              href={userProfileUrl}
+              onClick={() => setIsOpen(false)}
+              className="group p-2.5 rounded-xl bg-white/[0.03] hover:bg-royal-600/10 border border-white/[0.06] hover:border-royal-500/30 flex items-center gap-3 transition cursor-pointer"
+              title="Click to change profile picture & settings"
+            >
+              <div className="relative shrink-0">
+                <img 
+                  src={avatar} 
+                  alt={name} 
+                  className="h-10 w-10 rounded-full object-cover ring-2 ring-royal-500/50 group-hover:ring-royal-400" 
+                />
+                <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                  <Camera className="h-3.5 w-3.5 text-royal-300" />
+                </div>
+              </div>
               <div className="flex-1 overflow-hidden">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-bold text-xs truncate text-white">{name}</span>
+                  <span className="font-bold text-xs truncate text-white group-hover:text-royal-300 transition">{name}</span>
                   {activeCreator?.verified && <ShieldCheck className="h-3.5 w-3.5 text-royal-400 shrink-0" />}
                 </div>
                 <p className="text-[11px] text-royal-400 font-mono truncate">@{username}</p>
-                <p className="text-[10px] text-slate-400 truncate mt-0.5">{category}</p>
+                <span className="inline-flex items-center gap-1 text-[10px] text-slate-400 group-hover:text-royal-400 mt-0.5">
+                  <span>Change photo & settings</span>
+                  <ExternalLink className="h-2.5 w-2.5 opacity-60" />
+                </span>
               </div>
-            </div>
+            </Link>
 
             {/* Links */}
             <div className="mt-2 space-y-1">

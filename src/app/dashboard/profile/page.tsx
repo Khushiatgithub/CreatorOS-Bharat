@@ -25,7 +25,11 @@ import {
   Sparkles,
   Save,
   Check,
-  AlertCircle
+  AlertCircle,
+  Camera,
+  Upload,
+  Image,
+  X
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -65,10 +69,48 @@ const COUNTRY_CODES = [
   { code: '+33', country: 'France', flag: '🇫🇷', length: 9, placeholder: '6 12 34 56 78' },
 ];
 
+const AVATAR_PRESETS = [
+  {
+    name: 'Aarav (Tech SDE)',
+    url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
+  },
+  {
+    name: 'Ananya (CS Educator)',
+    url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+  },
+  {
+    name: 'Priya (Product Lead)',
+    url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80',
+  },
+  {
+    name: 'Rohan (Tech Mentor)',
+    url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
+  },
+  {
+    name: 'Sneha (Finance Coach)',
+    url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80',
+  },
+  {
+    name: 'Kabir (AI Developer)',
+    url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=300&q=80',
+  },
+  {
+    name: 'Diya (Designer)',
+    url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=80',
+  },
+  {
+    name: 'Vikram (Growth SDE)',
+    url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&q=80',
+  },
+];
+
 function ResilientProfileSettings() {
   const { activeCreator, updateCreator } = useCreatorStore();
   const [name, setName] = useState(activeCreator?.name || 'Aarav Sharma');
   const [email, setEmail] = useState(activeCreator?.email || 'aarav.tech@gmail.com');
+  const [avatarModalOpen, setAvatarModalOpen] = useState(false);
+  const [customAvatarUrl, setCustomAvatarUrl] = useState('');
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   
   // Extract initial phone and country code
   const initialWhatsapp = activeCreator?.socials?.whatsapp || '919876543210';
@@ -88,6 +130,45 @@ function ResilientProfileSettings() {
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [exporting, setExporting] = useState(false);
+
+  // Avatar Handlers
+  const handleAvatarFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Please select an image smaller than 5MB');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      if (base64) {
+        updateCreator({ avatarUrl: base64 });
+        setAvatarModalOpen(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSelectPreset = (url: string) => {
+    updateCreator({ avatarUrl: url });
+    setAvatarModalOpen(false);
+  };
+
+  const handleApplyCustomUrl = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (customAvatarUrl.trim()) {
+      updateCreator({ avatarUrl: customAvatarUrl.trim() });
+      setCustomAvatarUrl('');
+      setAvatarModalOpen(false);
+    }
+  };
+
+  const handleGenerateInitialsAvatar = () => {
+    const initialsUrl = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name || 'Creator')}&backgroundColor=0f172a,1e293b&textColor=38bdf8`;
+    updateCreator({ avatarUrl: initialsUrl });
+    setAvatarModalOpen(false);
+  };
 
   // Phone validation logic
   const validatePhone = (code: string, num: string): string | null => {
@@ -161,19 +242,40 @@ function ResilientProfileSettings() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       
+      {/* Hidden File Input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleAvatarFileUpload}
+        accept="image/png, image/jpeg, image/webp, image/gif"
+        className="hidden"
+      />
+
       {/* Profile Overview Card */}
       <div className="rounded-[24px] border border-white/[0.12] bg-[#0A0D17]/90 p-6 shadow-2xl backdrop-blur-xl">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 pb-6 border-b border-white/[0.08]">
-          <div className="relative">
+          
+          {/* Avatar with Camera Click-to-Change Button */}
+          <div className="relative group shrink-0">
             <img
-              src={activeCreator?.avatarUrl}
-              alt={activeCreator?.name}
+              src={activeCreator?.avatarUrl || '/avatars/user-avatar.png'}
+              alt={activeCreator?.name || 'Creator'}
               className="h-20 w-20 rounded-full object-cover ring-4 ring-royal-500/50 shadow-royal bg-black"
             />
-            <div className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-emerald-500 ring-4 ring-[#0A0D17] flex items-center justify-center">
+            <button
+              type="button"
+              onClick={() => setAvatarModalOpen(true)}
+              className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-opacity duration-200 cursor-pointer shadow-lg"
+              title="Change Profile Picture"
+            >
+              <Camera className="h-5 w-5 text-royal-400" />
+              <span className="text-[9px] font-bold mt-0.5">Change</span>
+            </button>
+            <div className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-emerald-500 ring-4 ring-[#0A0D17] flex items-center justify-center pointer-events-none">
               <Check className="h-3.5 w-3.5 text-black stroke-[3]" />
             </div>
           </div>
+
           <div className="flex-1 space-y-1">
             <div className="flex items-center gap-2">
               <h2 className="font-display text-xl font-bold text-white">{name}</h2>
@@ -188,7 +290,19 @@ function ResilientProfileSettings() {
               creatoros.in/<span className="text-royal-400 font-semibold">{activeCreator?.username}</span>
             </p>
             <p className="text-xs text-slate-300 pt-1">{activeCreator?.bio}</p>
+
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setAvatarModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-royal-600/15 hover:bg-royal-600/25 text-royal-300 border border-royal-500/30 text-xs font-semibold transition btn-press cursor-pointer"
+              >
+                <Camera className="h-3.5 w-3.5 text-royal-400" />
+                <span>Change Profile Picture</span>
+              </button>
+            </div>
           </div>
+
           <Link
             href={`/${activeCreator?.username}`}
             target="_blank"
@@ -446,6 +560,138 @@ function ResilientProfileSettings() {
           </Link>
         </div>
       </div>
+
+      {/* Interactive Avatar Chooser Modal */}
+      {avatarModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+          <div 
+            className="fixed inset-0" 
+            onClick={() => setAvatarModalOpen(false)} 
+            aria-hidden="true" 
+          />
+          <div className="relative w-full max-w-lg rounded-[24px] border border-white/[0.15] bg-[#0A0D17] p-6 shadow-2xl z-10 space-y-5 max-h-[90vh] overflow-y-auto">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+              <div className="flex items-center gap-2.5">
+                <div className="h-9 w-9 rounded-full bg-royal-600/20 border border-royal-500/30 flex items-center justify-center text-royal-400">
+                  <Camera className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="font-display text-base font-bold text-white">Change Profile Picture</h3>
+                  <p className="text-[11px] text-slate-400">Upload a custom image or choose from creator presets</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAvatarModalOpen(false)}
+                className="h-8 w-8 rounded-full bg-white/[0.05] hover:bg-white/[0.1] text-slate-400 hover:text-white flex items-center justify-center transition"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Current Avatar Preview */}
+            <div className="flex items-center gap-4 p-3.5 rounded-[18px] bg-white/[0.03] border border-white/[0.06]">
+              <img
+                src={activeCreator?.avatarUrl || '/avatars/user-avatar.png'}
+                alt="Current Avatar"
+                className="h-16 w-16 rounded-full object-cover ring-2 ring-royal-500/50 shadow-md bg-black"
+              />
+              <div className="flex-1 space-y-1">
+                <p className="text-xs font-semibold text-white">Active Avatar</p>
+                <p className="text-[11px] text-slate-400">Updates across your storefront, invoice templates & studio</p>
+              </div>
+              <button
+                type="button"
+                onClick={handleGenerateInitialsAvatar}
+                className="px-3 py-1.5 rounded-[10px] bg-white/[0.06] hover:bg-white/[0.1] text-slate-300 hover:text-white text-xs font-semibold border border-white/[0.08] transition btn-press"
+              >
+                Initials SVG
+              </button>
+            </div>
+
+            {/* Option 1: Upload from Device */}
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider font-mono">
+                1. Upload From Device
+              </label>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full flex items-center justify-center gap-2.5 py-3.5 px-4 rounded-[16px] border-2 border-dashed border-royal-500/40 bg-royal-600/10 hover:bg-royal-600/20 text-royal-300 font-semibold text-xs transition btn-press cursor-pointer"
+              >
+                <Upload className="h-4 w-4 text-royal-400" />
+                <span>Upload JPG, PNG, WEBP (Max 5MB)</span>
+              </button>
+            </div>
+
+            {/* Option 2: Curated Presets */}
+            <div className="space-y-2 pt-1">
+              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider font-mono">
+                2. Choose Creator Preset
+              </label>
+              <div className="grid grid-cols-4 gap-2.5">
+                {AVATAR_PRESETS.map((preset, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleSelectPreset(preset.url)}
+                    className={`group flex flex-col items-center gap-1.5 p-2 rounded-[14px] border transition cursor-pointer ${
+                      activeCreator?.avatarUrl === preset.url
+                        ? 'border-royal-500 bg-royal-600/20 ring-1 ring-royal-500'
+                        : 'border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.06] hover:border-white/[0.2]'
+                    }`}
+                  >
+                    <img
+                      src={preset.url}
+                      alt={preset.name}
+                      className="h-12 w-12 rounded-full object-cover group-hover:scale-105 transition"
+                    />
+                    <span className="text-[9px] text-slate-300 truncate w-full text-center font-medium">
+                      {preset.name.split(' ')[0]}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Option 3: Custom URL */}
+            <form onSubmit={handleApplyCustomUrl} className="space-y-2 pt-1">
+              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider font-mono">
+                3. Or Paste Image URL
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  placeholder="https://example.com/your-photo.jpg"
+                  value={customAvatarUrl}
+                  onChange={(e) => setCustomAvatarUrl(e.target.value)}
+                  className="flex-1 rounded-[12px] border border-white/[0.12] bg-[#05070B] px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:border-royal-500 focus:outline-none transition"
+                />
+                <button
+                  type="submit"
+                  disabled={!customAvatarUrl.trim()}
+                  className="px-4 py-2 rounded-[12px] bg-royal-600 hover:bg-royal-500 disabled:opacity-50 text-white font-semibold text-xs transition btn-press"
+                >
+                  Apply
+                </button>
+              </div>
+            </form>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setAvatarModalOpen(false)}
+                className="px-4 py-2 rounded-[12px] bg-white/[0.05] hover:bg-white/[0.1] text-xs font-semibold text-slate-300 transition"
+              >
+                Close
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );

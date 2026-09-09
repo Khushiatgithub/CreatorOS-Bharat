@@ -16,11 +16,23 @@ import {
   Globe, 
   Save, 
   ShieldCheck,
-  ArrowUpRight 
+  ArrowUpRight,
+  Camera,
+  Upload,
+  Image as ImageIcon
 } from 'lucide-react';
 import { THEMES } from '@/lib/mock-data';
 import { PageTransition, RippleButton, HoverCard } from '@/components/ui/motion';
 import { motion } from 'framer-motion';
+
+const AVATAR_PRESETS = [
+  { name: 'Aarav', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80' },
+  { name: 'Ananya', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80' },
+  { name: 'Priya', url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80' },
+  { name: 'Rohan', url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80' },
+  { name: 'Sneha', url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80' },
+  { name: 'Diya', url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=80' },
+];
 
 export default function StorefrontBuilderPage() {
   const { 
@@ -40,6 +52,7 @@ export default function StorefrontBuilderPage() {
 
   // Local form state
   const [name, setName] = useState(activeCreator?.name || fallbackCreator.name);
+  const [avatarUrl, setAvatarUrl] = useState(activeCreator?.avatarUrl || fallbackCreator.avatarUrl || '/avatars/user-avatar.png');
   const [tagline, setTagline] = useState(activeCreator?.tagline || fallbackCreator.tagline);
   const [bio, setBio] = useState(activeCreator?.bio || fallbackCreator.bio);
   const [category, setCategory] = useState(activeCreator?.category || fallbackCreator.category);
@@ -48,15 +61,35 @@ export default function StorefrontBuilderPage() {
   const [upiId, setUpiId] = useState(activeCreator?.upiId || fallbackCreator.upiId);
   const [upiName, setUpiName] = useState(activeCreator?.upiName || fallbackCreator.upiName);
   const [gstNumber, setGstNumber] = useState(activeCreator?.gstNumber || fallbackCreator.gstNumber || '');
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Custom links state
   const [links, setLinks] = useState(activeCreator?.customLinks || fallbackCreator.customLinks || []);
   const [newLinkTitle, setNewLinkTitle] = useState('');
   const [newLinkUrl, setNewLinkUrl] = useState('');
 
+  const handleAvatarFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Please select an image smaller than 5MB');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      if (base64) {
+        setAvatarUrl(base64);
+        updateCreator({ avatarUrl: base64 });
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSave = () => {
     updateCreator({
       name,
+      avatarUrl,
       tagline,
       bio,
       category,
@@ -96,6 +129,7 @@ export default function StorefrontBuilderPage() {
   const currentPreviewCreator = {
     ...fallbackCreator,
     name,
+    avatarUrl,
     tagline,
     bio,
     category,
@@ -226,10 +260,98 @@ export default function StorefrontBuilderPage() {
 
             {/* TAB 2: PROFILE & BIO */}
             {activeTab === 'profile' && (
-              <div className="rounded-[20px] border border-white/[0.08] bg-[#0A0E1A]/90 p-6 shadow-glass-card space-y-4">
+              <div className="rounded-[20px] border border-white/[0.08] bg-[#0A0E1A]/90 p-6 shadow-glass-card space-y-5">
                 <div>
                   <h3 className="font-display text-base font-bold text-white">Creator Bio & Identity</h3>
                   <p className="text-xs text-slate-400">Update how your audience sees you on your bio link storefront.</p>
+                </div>
+
+                {/* Hidden File Input */}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleAvatarFileUpload}
+                  accept="image/png, image/jpeg, image/webp, image/gif"
+                  className="hidden"
+                />
+
+                {/* Profile Picture Section */}
+                <div className="p-4 rounded-[18px] bg-white/[0.02] border border-white/[0.08] space-y-3">
+                  <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider font-mono">
+                    Profile Picture / Avatar
+                  </label>
+
+                  <div className="flex flex-col sm:flex-row items-center gap-4">
+                    <div className="relative group shrink-0">
+                      <img
+                        src={avatarUrl}
+                        alt="Avatar Preview"
+                        className="h-16 w-16 rounded-full object-cover ring-2 ring-royal-500/50 shadow-md bg-black"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity duration-200 cursor-pointer"
+                        title="Upload Photo"
+                      >
+                        <Camera className="h-4 w-4 text-royal-400" />
+                      </button>
+                    </div>
+
+                    <div className="flex-1 space-y-2 text-center sm:text-left">
+                      <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-royal-600 hover:bg-royal-500 text-white text-xs font-semibold shadow-royal-sm transition btn-press cursor-pointer"
+                        >
+                          <Upload className="h-3.5 w-3.5" />
+                          <span>Upload Photo</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const initialsUrl = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name || 'Creator')}&backgroundColor=0f172a,1e293b&textColor=38bdf8`;
+                            setAvatarUrl(initialsUrl);
+                            updateCreator({ avatarUrl: initialsUrl });
+                          }}
+                          className="px-3 py-1.5 rounded-[10px] bg-white/[0.06] hover:bg-white/[0.1] text-slate-300 text-xs font-medium border border-white/[0.08] transition"
+                        >
+                          Generate Initials
+                        </button>
+                      </div>
+                      <p className="text-[11px] text-slate-400">JPG, PNG or WEBP up to 5MB</p>
+                    </div>
+                  </div>
+
+                  {/* Preset Quick Chooser */}
+                  <div className="pt-2 border-t border-white/[0.06]">
+                    <span className="text-[10px] text-slate-400 font-mono mb-1.5 block">Or select a quick preset:</span>
+                    <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                      {AVATAR_PRESETS.map((preset, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setAvatarUrl(preset.url);
+                            updateCreator({ avatarUrl: preset.url });
+                          }}
+                          className={`shrink-0 rounded-full p-0.5 border transition cursor-pointer ${
+                            avatarUrl === preset.url
+                              ? 'border-royal-500 ring-2 ring-royal-500/50 scale-105'
+                              : 'border-transparent opacity-70 hover:opacity-100 hover:scale-105'
+                          }`}
+                          title={preset.name}
+                        >
+                          <img
+                            src={preset.url}
+                            alt={preset.name}
+                            className="h-8 w-8 rounded-full object-cover"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-3.5">

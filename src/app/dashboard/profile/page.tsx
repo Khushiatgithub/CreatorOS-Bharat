@@ -104,13 +104,59 @@ const AVATAR_PRESETS = [
   },
 ];
 
+const BANNER_PRESETS = [
+  {
+    name: 'Matrix Cyber Code',
+    category: 'Tech & Code',
+    url: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80',
+  },
+  {
+    name: 'Modern Studio Workspace',
+    category: 'Developer & Creator',
+    url: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=1200&q=80',
+  },
+  {
+    name: 'Deep Royal Neon',
+    category: 'Luxury Minimal',
+    url: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80',
+  },
+  {
+    name: 'Abstract Dark Fluid',
+    category: 'Design & Art',
+    url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80',
+  },
+  {
+    name: 'Bengaluru Skyline Night',
+    category: 'City & Ambient',
+    url: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=1200&q=80',
+  },
+  {
+    name: 'Warm Sunset Horizon',
+    category: 'Lifestyle & Edu',
+    url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80',
+  },
+  {
+    name: 'Cybernetic AI Mesh',
+    category: 'Web3 & AI',
+    url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80',
+  },
+  {
+    name: 'Cosmic Violet Gradient',
+    category: 'Finance & Coaching',
+    url: 'https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&w=1200&q=80',
+  }
+];
+
 function ResilientProfileSettings() {
   const { activeCreator, updateCreator } = useCreatorStore();
   const [name, setName] = useState(activeCreator?.name || 'Aarav Sharma');
   const [email, setEmail] = useState(activeCreator?.email || 'aarav.tech@gmail.com');
   const [avatarModalOpen, setAvatarModalOpen] = useState(false);
+  const [bannerModalOpen, setBannerModalOpen] = useState(false);
   const [customAvatarUrl, setCustomAvatarUrl] = useState('');
+  const [customBannerUrl, setCustomBannerUrl] = useState('');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const bannerFileInputRef = React.useRef<HTMLInputElement>(null);
   
   // Extract initial phone and country code
   const initialWhatsapp = activeCreator?.socials?.whatsapp || '919876543210';
@@ -168,6 +214,39 @@ function ResilientProfileSettings() {
     const initialsUrl = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name || 'Creator')}&backgroundColor=0f172a,1e293b&textColor=38bdf8`;
     updateCreator({ avatarUrl: initialsUrl });
     setAvatarModalOpen(false);
+  };
+
+  // Banner Handlers
+  const handleBannerFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Please select a banner image smaller than 10MB');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      if (base64) {
+        updateCreator({ bannerUrl: base64 });
+        setBannerModalOpen(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSelectBannerPreset = (url: string) => {
+    updateCreator({ bannerUrl: url });
+    setBannerModalOpen(false);
+  };
+
+  const handleApplyCustomBannerUrl = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (customBannerUrl.trim()) {
+      updateCreator({ bannerUrl: customBannerUrl.trim() });
+      setCustomBannerUrl('');
+      setBannerModalOpen(false);
+    }
   };
 
   // Phone validation logic
@@ -242,7 +321,7 @@ function ResilientProfileSettings() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       
-      {/* Hidden File Input */}
+      {/* Hidden File Inputs */}
       <input
         type="file"
         ref={fileInputRef}
@@ -250,67 +329,113 @@ function ResilientProfileSettings() {
         accept="image/png, image/jpeg, image/webp, image/gif"
         className="hidden"
       />
+      <input
+        type="file"
+        ref={bannerFileInputRef}
+        onChange={handleBannerFileUpload}
+        accept="image/png, image/jpeg, image/webp, image/gif"
+        className="hidden"
+      />
 
-      {/* Profile Overview Card */}
-      <div className="rounded-[24px] border border-white/[0.12] bg-[#0A0D17]/90 p-6 shadow-2xl backdrop-blur-xl">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 pb-6 border-b border-white/[0.08]">
-          
-          {/* Avatar with Camera Click-to-Change Button */}
-          <div className="relative group shrink-0">
+      {/* Profile Overview Card with Integrated Panoramic Banner */}
+      <div className="rounded-[24px] border border-white/[0.12] bg-[#0A0D17]/90 shadow-2xl backdrop-blur-xl overflow-hidden">
+        
+        {/* Banner Section with Camera Edit Button */}
+        <div className="relative h-36 sm:h-44 w-full group overflow-hidden bg-slate-950">
+          {activeCreator?.bannerUrl ? (
             <img
-              src={activeCreator?.avatarUrl || '/avatars/user-avatar.png'}
-              alt={activeCreator?.name || 'Creator'}
-              className="h-20 w-20 rounded-full object-cover ring-4 ring-royal-500/50 shadow-royal bg-black"
+              src={activeCreator.bannerUrl}
+              alt="Profile Banner"
+              className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
             />
-            <button
-              type="button"
-              onClick={() => setAvatarModalOpen(true)}
-              className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-opacity duration-200 cursor-pointer shadow-lg"
-              title="Change Profile Picture"
-            >
-              <Camera className="h-5 w-5 text-royal-400" />
-              <span className="text-[9px] font-bold mt-0.5">Change</span>
-            </button>
-            <div className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-emerald-500 ring-4 ring-[#0A0D17] flex items-center justify-center pointer-events-none">
-              <Check className="h-3.5 w-3.5 text-black stroke-[3]" />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-r from-royal-950 via-slate-900 to-royal-950 flex items-center justify-center text-slate-500 text-xs">
+              No Cover Banner Selected
             </div>
-          </div>
+          )}
+          
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0A0D17] via-black/40 to-transparent" />
 
-          <div className="flex-1 space-y-1">
-            <div className="flex items-center gap-2">
-              <h2 className="font-display text-xl font-bold text-white">{name}</h2>
-              {activeCreator?.verified && (
-                <span className="flex items-center gap-1 rounded-full bg-royal-600/20 px-2 py-0.5 text-[11px] font-semibold text-royal-400 border border-royal-500/30">
-                  <ShieldCheck className="h-3.5 w-3.5" />
-                  <span>Verified Creator</span>
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-slate-400 font-mono">
-              creatoros.in/<span className="text-royal-400 font-semibold">{activeCreator?.username}</span>
-            </p>
-            <p className="text-xs text-slate-300 pt-1">{activeCreator?.bio}</p>
+          {/* Change Banner Overlay Button */}
+          <button
+            type="button"
+            onClick={() => setBannerModalOpen(true)}
+            className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-[12px] bg-black/70 hover:bg-black/90 text-white text-xs font-semibold border border-white/20 backdrop-blur-md transition shadow-lg btn-press cursor-pointer"
+          >
+            <Camera className="h-3.5 w-3.5 text-royal-400" />
+            <span>Change Banner</span>
+          </button>
+        </div>
 
-            <div className="pt-2">
+        {/* Profile Details (Overlapping the Banner) */}
+        <div className="p-6 pt-0">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 -mt-10 sm:-mt-12 pb-6 border-b border-white/[0.08]">
+            
+            {/* Avatar with Camera Click-to-Change Button */}
+            <div className="relative group shrink-0">
+              <img
+                src={activeCreator?.avatarUrl || '/avatars/user-avatar.png'}
+                alt={activeCreator?.name || 'Creator'}
+                className="h-20 w-20 rounded-full object-cover ring-4 ring-[#0A0D17] shadow-royal bg-black"
+              />
               <button
                 type="button"
                 onClick={() => setAvatarModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-royal-600/15 hover:bg-royal-600/25 text-royal-300 border border-royal-500/30 text-xs font-semibold transition btn-press cursor-pointer"
+                className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-opacity duration-200 cursor-pointer shadow-lg"
+                title="Change Profile Picture"
               >
-                <Camera className="h-3.5 w-3.5 text-royal-400" />
-                <span>Change Profile Picture</span>
+                <Camera className="h-5 w-5 text-royal-400" />
+                <span className="text-[9px] font-bold mt-0.5">Change</span>
               </button>
+              <div className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-emerald-500 ring-4 ring-[#0A0D17] flex items-center justify-center pointer-events-none">
+                <Check className="h-3.5 w-3.5 text-black stroke-[3]" />
+              </div>
             </div>
-          </div>
 
-          <Link
-            href={`/${activeCreator?.username}`}
-            target="_blank"
-            className="flex items-center gap-1.5 rounded-[12px] bg-white/[0.06] hover:bg-white/[0.1] px-3.5 py-2 text-xs font-semibold text-white border border-white/[0.1] transition btn-press self-start sm:self-center"
-          >
-            <span>Live Store</span>
-            <ExternalLink className="h-3.5 w-3.5 text-royal-400" />
-          </Link>
+            <div className="flex-1 space-y-1">
+              <div className="flex items-center gap-2">
+                <h2 className="font-display text-xl font-bold text-white">{name}</h2>
+                {activeCreator?.verified && (
+                  <span className="flex items-center gap-1 rounded-full bg-royal-600/20 px-2 py-0.5 text-[11px] font-semibold text-royal-400 border border-royal-500/30">
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    <span>Verified Creator</span>
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-400 font-mono">
+                creatoros.in/<span className="text-royal-400 font-semibold">{activeCreator?.username}</span>
+              </p>
+              <p className="text-xs text-slate-300 pt-1">{activeCreator?.bio}</p>
+
+              <div className="pt-2 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAvatarModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-royal-600/15 hover:bg-royal-600/25 text-royal-300 border border-royal-500/30 text-xs font-semibold transition btn-press cursor-pointer"
+                >
+                  <Camera className="h-3.5 w-3.5 text-royal-400" />
+                  <span>Change Avatar</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBannerModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-white/[0.06] hover:bg-white/[0.1] text-slate-300 border border-white/[0.08] text-xs font-semibold transition btn-press cursor-pointer"
+                >
+                  <Upload className="h-3.5 w-3.5 text-royal-400" />
+                  <span>Change Banner</span>
+                </button>
+              </div>
+            </div>
+
+            <Link
+              href={`/${activeCreator?.username}`}
+              target="_blank"
+              className="flex items-center gap-1.5 rounded-[12px] bg-white/[0.06] hover:bg-white/[0.1] px-3.5 py-2 text-xs font-semibold text-white border border-white/[0.1] transition btn-press self-start sm:self-center"
+            >
+              <span>Live Store</span>
+              <ExternalLink className="h-3.5 w-3.5 text-royal-400" />
+            </Link>
+          </div>
         </div>
 
         {/* Edit Details Form */}
@@ -683,6 +808,157 @@ function ResilientProfileSettings() {
               <button
                 type="button"
                 onClick={() => setAvatarModalOpen(false)}
+                className="px-4 py-2 rounded-[12px] bg-white/[0.05] hover:bg-white/[0.1] text-xs font-semibold text-slate-300 transition"
+              >
+                Close
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Interactive Banner Chooser Modal */}
+      {bannerModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+          <div 
+            className="fixed inset-0" 
+            onClick={() => setBannerModalOpen(false)} 
+            aria-hidden="true" 
+          />
+          <div className="relative w-full max-w-xl rounded-[24px] border border-white/[0.15] bg-[#0A0D17] p-6 shadow-2xl z-10 space-y-5 max-h-[90vh] overflow-y-auto">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+              <div className="flex items-center gap-2.5">
+                <div className="h-9 w-9 rounded-full bg-royal-600/20 border border-royal-500/30 flex items-center justify-center text-royal-400">
+                  <Camera className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="font-display text-base font-bold text-white">Change Storefront Cover Banner</h3>
+                  <p className="text-[11px] text-slate-400">Upload a custom banner or select from Indian creator themes</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setBannerModalOpen(false)}
+                className="h-8 w-8 rounded-full bg-white/[0.05] hover:bg-white/[0.1] text-slate-400 hover:text-white flex items-center justify-center transition"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Current Banner Preview */}
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono">Current Banner</span>
+              <div className="relative h-28 w-full rounded-[16px] overflow-hidden border border-white/[0.1] bg-slate-950">
+                {activeCreator?.bannerUrl ? (
+                  <img
+                    src={activeCreator.bannerUrl}
+                    alt="Active Banner"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-slate-500 text-xs">
+                    No Active Banner
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                {activeCreator?.bannerUrl && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      updateCreator({ bannerUrl: undefined });
+                      setBannerModalOpen(false);
+                    }}
+                    className="absolute top-2 right-2 px-2.5 py-1 rounded-[8px] bg-rose-950/80 hover:bg-rose-900 text-rose-300 text-[10px] font-semibold border border-rose-800/40 transition"
+                  >
+                    Remove Banner
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Option 1: Upload from Device */}
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider font-mono">
+                1. Upload From Device
+              </label>
+              <button
+                type="button"
+                onClick={() => bannerFileInputRef.current?.click()}
+                className="w-full flex items-center justify-center gap-2.5 py-3 px-4 rounded-[16px] border-2 border-dashed border-royal-500/40 bg-royal-600/10 hover:bg-royal-600/20 text-royal-300 font-semibold text-xs transition btn-press cursor-pointer"
+              >
+                <Upload className="h-4 w-4 text-royal-400" />
+                <span>Upload Banner JPG, PNG, WEBP (Max 10MB)</span>
+              </button>
+            </div>
+
+            {/* Option 2: Curated Aesthetic Presets */}
+            <div className="space-y-2 pt-1">
+              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider font-mono">
+                2. Choose Aesthetic Creator Preset
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {BANNER_PRESETS.map((preset, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleSelectBannerPreset(preset.url)}
+                    className={`group relative rounded-[12px] overflow-hidden border text-left transition cursor-pointer ${
+                      activeCreator?.bannerUrl === preset.url
+                        ? 'border-royal-500 ring-2 ring-royal-500/50 scale-[1.02]'
+                        : 'border-white/[0.08] hover:border-white/[0.2] opacity-80 hover:opacity-100'
+                    }`}
+                  >
+                    <div className="h-14 w-full overflow-hidden">
+                      <img
+                        src={preset.url}
+                        alt={preset.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition"
+                      />
+                    </div>
+                    <div className="p-1.5 bg-[#05070B] border-t border-white/[0.06]">
+                      <p className="text-[10px] font-semibold text-white truncate">{preset.name}</p>
+                      <p className="text-[8px] text-royal-400 font-mono truncate">{preset.category}</p>
+                    </div>
+                    {activeCreator?.bannerUrl === preset.url && (
+                      <div className="absolute top-1 right-1 h-4 w-4 rounded-full bg-royal-600 text-white flex items-center justify-center">
+                        <Check className="h-2.5 w-2.5 stroke-[3]" />
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Option 3: Custom URL */}
+            <form onSubmit={handleApplyCustomBannerUrl} className="space-y-2 pt-1">
+              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider font-mono">
+                3. Or Paste Banner Image URL
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  placeholder="https://images.unsplash.com/photo-..."
+                  value={customBannerUrl}
+                  onChange={(e) => setCustomBannerUrl(e.target.value)}
+                  className="flex-1 rounded-[12px] border border-white/[0.12] bg-[#05070B] px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:border-royal-500 focus:outline-none transition"
+                />
+                <button
+                  type="submit"
+                  disabled={!customBannerUrl.trim()}
+                  className="px-4 py-2 rounded-[12px] bg-royal-600 hover:bg-royal-500 disabled:opacity-50 text-white font-semibold text-xs transition btn-press cursor-pointer"
+                >
+                  Apply
+                </button>
+              </div>
+            </form>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setBannerModalOpen(false)}
                 className="px-4 py-2 rounded-[12px] bg-white/[0.05] hover:bg-white/[0.1] text-xs font-semibold text-slate-300 transition"
               >
                 Close

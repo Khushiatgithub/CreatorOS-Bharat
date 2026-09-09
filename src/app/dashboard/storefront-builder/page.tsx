@@ -34,6 +34,49 @@ const AVATAR_PRESETS = [
   { name: 'Diya', url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=80' },
 ];
 
+export const BANNER_PRESETS = [
+  {
+    name: 'Matrix Cyber Code',
+    category: 'Tech & Code',
+    url: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80',
+  },
+  {
+    name: 'Modern Studio Workspace',
+    category: 'Developer & Creator',
+    url: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=1200&q=80',
+  },
+  {
+    name: 'Deep Royal Neon',
+    category: 'Luxury Minimal',
+    url: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80',
+  },
+  {
+    name: 'Abstract Dark Fluid',
+    category: 'Design & Art',
+    url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80',
+  },
+  {
+    name: 'Bengaluru Skyline Night',
+    category: 'City & Ambient',
+    url: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=1200&q=80',
+  },
+  {
+    name: 'Warm Sunset Horizon',
+    category: 'Lifestyle & Edu',
+    url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80',
+  },
+  {
+    name: 'Cybernetic AI Mesh',
+    category: 'Web3 & AI',
+    url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80',
+  },
+  {
+    name: 'Cosmic Violet Gradient',
+    category: 'Finance & Coaching',
+    url: 'https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&w=1200&q=80',
+  }
+];
+
 export default function StorefrontBuilderPage() {
   const { 
     activeCreator, 
@@ -53,6 +96,7 @@ export default function StorefrontBuilderPage() {
   // Local form state
   const [name, setName] = useState(activeCreator?.name || fallbackCreator.name);
   const [avatarUrl, setAvatarUrl] = useState(activeCreator?.avatarUrl || fallbackCreator.avatarUrl || '/avatars/user-avatar.png');
+  const [bannerUrl, setBannerUrl] = useState(activeCreator?.bannerUrl || fallbackCreator.bannerUrl || 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80');
   const [tagline, setTagline] = useState(activeCreator?.tagline || fallbackCreator.tagline);
   const [bio, setBio] = useState(activeCreator?.bio || fallbackCreator.bio);
   const [category, setCategory] = useState(activeCreator?.category || fallbackCreator.category);
@@ -61,7 +105,10 @@ export default function StorefrontBuilderPage() {
   const [upiId, setUpiId] = useState(activeCreator?.upiId || fallbackCreator.upiId);
   const [upiName, setUpiName] = useState(activeCreator?.upiName || fallbackCreator.upiName);
   const [gstNumber, setGstNumber] = useState(activeCreator?.gstNumber || fallbackCreator.gstNumber || '');
+  const [customBannerUrlInput, setCustomBannerUrlInput] = useState('');
+  
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const bannerFileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Custom links state
   const [links, setLinks] = useState(activeCreator?.customLinks || fallbackCreator.customLinks || []);
@@ -86,10 +133,29 @@ export default function StorefrontBuilderPage() {
     reader.readAsDataURL(file);
   };
 
+  const handleBannerFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Please select a banner image smaller than 10MB');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      if (base64) {
+        setBannerUrl(base64);
+        updateCreator({ bannerUrl: base64 });
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSave = () => {
     updateCreator({
       name,
       avatarUrl,
+      bannerUrl,
       tagline,
       bio,
       category,
@@ -130,6 +196,7 @@ export default function StorefrontBuilderPage() {
     ...fallbackCreator,
     name,
     avatarUrl,
+    bannerUrl,
     tagline,
     bio,
     category,
@@ -266,7 +333,7 @@ export default function StorefrontBuilderPage() {
                   <p className="text-xs text-slate-400">Update how your audience sees you on your bio link storefront.</p>
                 </div>
 
-                {/* Hidden File Input */}
+                {/* Hidden File Inputs */}
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -274,6 +341,149 @@ export default function StorefrontBuilderPage() {
                   accept="image/png, image/jpeg, image/webp, image/gif"
                   className="hidden"
                 />
+                <input
+                  type="file"
+                  ref={bannerFileInputRef}
+                  onChange={handleBannerFileUpload}
+                  accept="image/png, image/jpeg, image/webp, image/gif"
+                  className="hidden"
+                />
+
+                {/* 1. STOREFRONT COVER BANNER SECTION */}
+                <div className="p-4 rounded-[18px] bg-white/[0.02] border border-white/[0.08] space-y-3.5">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider font-mono">
+                      Storefront Cover Banner
+                    </label>
+                    <span className="text-[10px] text-royal-400 font-mono">
+                      Live sync with store header
+                    </span>
+                  </div>
+
+                  {/* Banner Preview Card with Hover Upload Overlay */}
+                  <div className="relative group w-full h-32 sm:h-36 rounded-[16px] overflow-hidden border border-white/[0.1] bg-[#05070B] shadow-inner">
+                    {bannerUrl ? (
+                      <img
+                        src={bannerUrl}
+                        alt="Storefront Banner"
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-r from-royal-950/40 via-slate-900 to-royal-950/40 text-slate-500 text-xs">
+                        No Banner Selected (Minimal Header)
+                      </div>
+                    )}
+                    
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none" />
+
+                    {/* Camera / Upload Button Overlay */}
+                    <button
+                      type="button"
+                      onClick={() => bannerFileInputRef.current?.click()}
+                      className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-opacity duration-200 cursor-pointer"
+                    >
+                      <Camera className="h-6 w-6 text-royal-400 mb-1" />
+                      <span className="text-xs font-bold text-white">Click to Upload New Banner</span>
+                      <span className="text-[10px] text-slate-300">JPG, PNG or WEBP (Max 10MB)</span>
+                    </button>
+
+                    <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1.5 z-10">
+                      <button
+                        type="button"
+                        onClick={() => bannerFileInputRef.current?.click()}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-[10px] bg-black/70 hover:bg-black/90 text-white text-[11px] font-semibold border border-white/20 backdrop-blur-md transition btn-press cursor-pointer"
+                      >
+                        <Upload className="h-3 w-3 text-royal-400" />
+                        <span>Upload</span>
+                      </button>
+                      {bannerUrl && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setBannerUrl('');
+                            updateCreator({ bannerUrl: undefined });
+                          }}
+                          className="px-2 py-1 rounded-[10px] bg-black/70 hover:bg-rose-950 text-rose-300 text-[11px] font-medium border border-white/10 backdrop-blur-md transition cursor-pointer"
+                          title="Remove Banner"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Curated Aesthetic Banner Presets Grid */}
+                  <div className="space-y-2 pt-1 border-t border-white/[0.06]">
+                    <span className="text-[10px] text-slate-400 font-mono block">
+                      Choose from Curated Indian Creator Themes:
+                    </span>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {BANNER_PRESETS.map((bp, idx) => {
+                        const isSelected = bannerUrl === bp.url;
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => {
+                              setBannerUrl(bp.url);
+                              updateCreator({ bannerUrl: bp.url });
+                            }}
+                            className={`group relative rounded-[12px] overflow-hidden border text-left transition cursor-pointer ${
+                              isSelected
+                                ? 'border-royal-500 ring-2 ring-royal-500/50 scale-[1.02]'
+                                : 'border-white/[0.08] hover:border-white/[0.2] opacity-80 hover:opacity-100'
+                            }`}
+                          >
+                            <div className="h-14 w-full overflow-hidden">
+                              <img
+                                src={bp.url}
+                                alt={bp.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition"
+                              />
+                            </div>
+                            <div className="p-1.5 bg-[#0A0D17]/90 border-t border-white/[0.06]">
+                              <p className="text-[10px] font-semibold text-white truncate">{bp.name}</p>
+                              <p className="text-[8px] text-royal-400 font-mono truncate">{bp.category}</p>
+                            </div>
+                            {isSelected && (
+                              <div className="absolute top-1 right-1 h-4 w-4 rounded-full bg-royal-600 text-white flex items-center justify-center">
+                                <Check className="h-2.5 w-2.5 stroke-[3]" />
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Custom Banner URL input */}
+                  <div className="pt-2 border-t border-white/[0.06]">
+                    <div className="flex gap-2">
+                      <input
+                        type="url"
+                        placeholder="Or paste custom banner image URL..."
+                        value={customBannerUrlInput}
+                        onChange={(e) => setCustomBannerUrlInput(e.target.value)}
+                        className="flex-1 rounded-[12px] border border-white/[0.1] bg-black/40 px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:border-royal-500 focus:outline-none transition"
+                      />
+                      <button
+                        type="button"
+                        disabled={!customBannerUrlInput.trim()}
+                        onClick={() => {
+                          if (customBannerUrlInput.trim()) {
+                            setBannerUrl(customBannerUrlInput.trim());
+                            updateCreator({ bannerUrl: customBannerUrlInput.trim() });
+                            setCustomBannerUrlInput('');
+                          }
+                        }}
+                        className="px-3 py-1.5 rounded-[12px] bg-royal-600 hover:bg-royal-500 disabled:opacity-40 text-white text-xs font-semibold transition btn-press cursor-pointer"
+                      >
+                        Apply
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
 
                 {/* Profile Picture Section */}
                 <div className="p-4 rounded-[18px] bg-white/[0.02] border border-white/[0.08] space-y-3">

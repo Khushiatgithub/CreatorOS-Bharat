@@ -200,6 +200,10 @@ export default function CreatorOnboardingWizard() {
   const handleCompleteOnboarding = () => {
     setIsFinishing(true);
 
+    const savedPlan = (typeof window !== 'undefined' ? localStorage.getItem('creatoros_plan') : null) || activeCreator?.plan || 'starter';
+    const savedTrialStart = (typeof window !== 'undefined' ? localStorage.getItem('creatoros_trial_start') : null) || activeCreator?.trial_start_date;
+    const savedTrialEnd = (typeof window !== 'undefined' ? localStorage.getItem('creatoros_trial_end') : null) || activeCreator?.trial_end_date;
+
     // Save updated creator details
     updateCreator({
       name: name.trim() || 'Aarav Sharma',
@@ -211,6 +215,9 @@ export default function CreatorOnboardingWizard() {
       upiId: upiId.trim() || 'creator@okaxis',
       upiName: name,
       avatarUrl,
+      plan: savedPlan,
+      trial_start_date: savedTrialStart,
+      trial_end_date: savedTrialEnd,
       socials: {
         youtube: ytConnected ? `https://youtube.com/${ytHandle}` : '',
         instagram: igConnected ? `https://instagram.com/${igHandle}` : '',

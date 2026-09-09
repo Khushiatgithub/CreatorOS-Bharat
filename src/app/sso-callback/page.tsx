@@ -78,7 +78,18 @@ export default function SSOCallbackPage() {
             (c) => c.email?.toLowerCase() === cleanEmail || c.username?.toLowerCase() === username
           );
 
+          const pendingPlan = (typeof window !== 'undefined' ? localStorage.getItem('creatoros_pending_plan') : null) || 'starter';
+          const pendingTrialStart = (typeof window !== 'undefined' ? localStorage.getItem('creatoros_trial_start') : null) || (pendingPlan === 'pro_trial' ? new Date().toISOString() : undefined);
+          const pendingTrialEnd = (typeof window !== 'undefined' ? localStorage.getItem('creatoros_trial_end') : null) || (pendingPlan === 'pro_trial' ? new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString() : undefined);
+
           if (existing) {
+            const updatedExisting = {
+              ...existing,
+              plan: pendingPlan,
+              trial_start_date: pendingTrialStart,
+              trial_end_date: pendingTrialEnd,
+            };
+            updateCreator(updatedExisting);
             switchActiveCreator(existing.id);
             router.push('/dashboard');
           } else {
@@ -99,6 +110,9 @@ export default function SSOCallbackPage() {
               upiId: `${username}@okaxis`,
               upiName: fullName,
               email: cleanEmail,
+              plan: pendingPlan,
+              trial_start_date: pendingTrialStart,
+              trial_end_date: pendingTrialEnd,
               bankAccount: {
                 accountNumberMasked: '•••• •••• •••• 0000',
                 ifsc: 'HDFC0000001',

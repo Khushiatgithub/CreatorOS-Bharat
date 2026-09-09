@@ -58,14 +58,34 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <SafeClerkProvider>
-      <html lang="en" className="dark scroll-smooth">
-        <body className={`${inter.variable} ${outfit.variable} ${jetbrainsMono.variable} min-h-screen bg-[#05070B] text-slate-100 antialiased font-sans selection:bg-royal-600 selection:text-white transition-colors duration-300`}>
+    <html lang="en" className="dark scroll-smooth" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                const storedTheme = localStorage.getItem('creatoros_theme');
+                if (storedTheme === 'light') {
+                  document.documentElement.classList.remove('dark');
+                  document.documentElement.classList.add('light');
+                  document.documentElement.setAttribute('data-theme', 'light');
+                } else {
+                  document.documentElement.classList.remove('light');
+                  document.documentElement.classList.add('dark');
+                  document.documentElement.setAttribute('data-theme', 'dark');
+                }
+              } catch (e) {}
+            `,
+          }}
+        />
+      </head>
+      <body className={`${inter.variable} ${outfit.variable} ${jetbrainsMono.variable} min-h-screen antialiased font-sans selection:bg-royal-600 selection:text-white transition-colors duration-300`}>
+        <SafeClerkProvider>
           <ThemeProvider>
             {children}
           </ThemeProvider>
-        </body>
-      </html>
-    </SafeClerkProvider>
+        </SafeClerkProvider>
+      </body>
+    </html>
   );
 }

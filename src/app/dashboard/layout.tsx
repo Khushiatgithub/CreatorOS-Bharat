@@ -1,11 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Navbar from '@/components/ui/Navbar';
 import Sidebar from '@/components/dashboard/Sidebar';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useCreatorStore } from '@/lib/store';
+import { useSafeAuth } from '@/components/auth/SafeAuth';
 import { LayoutDashboard, Palette, FileText, Sparkles, Receipt, AlertCircle, ArrowRight } from 'lucide-react';
 
 export default function DashboardLayout({
@@ -14,7 +15,21 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { isDemoMode, activeCreator } = useCreatorStore();
+  const { isSignedIn, isLoaded } = useSafeAuth();
+
+  useEffect(() => {
+    if (isLoaded && !isSignedIn && !isDemoMode) {
+      router.replace('/');
+    }
+  }, [isLoaded, isSignedIn, isDemoMode, router]);
+
+  if (isLoaded && !isSignedIn && !isDemoMode) {
+    return null;
+  }
+
+  const isAaravDemo = isDemoMode || activeCreator?.id === 'creator_aarav';
 
   return (
     <div className="min-h-screen bg-[#05070B] flex flex-col font-sans">
@@ -26,25 +41,25 @@ export default function DashboardLayout({
         <main className="flex-1 overflow-y-auto pb-24 lg:pb-12 p-4 sm:p-6 lg:p-8 bg-[#05070B] bg-grid-subtle">
           <div className="max-w-7xl mx-auto">
             {/* Demo Mode Notice Banner */}
-            {isDemoMode && activeCreator?.id === 'creator_aarav' && (
-              <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-[16px] border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-200 backdrop-blur-md animate-fade-in">
+            {isAaravDemo && (
+              <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-[16px] border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-900 dark:text-amber-200 backdrop-blur-md animate-fade-in">
                 <div className="flex items-center gap-2.5">
-                  <span className="flex h-5 px-2 items-center justify-center rounded-full bg-amber-500/20 text-amber-300 font-mono text-[10px] font-bold border border-amber-500/40 shrink-0">
-                    Demo Mode
+                  <span className="flex h-5 px-2 items-center justify-center rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300 font-mono text-[10px] font-bold border border-amber-500/40 shrink-0">
+                    Demo Studio
                   </span>
-                  <span className="font-semibold text-white">
-                    You are viewing the demo creator account.
+                  <span className="font-semibold text-slate-900 dark:text-white">
+                    Exploring Aarav Sharma (Demo Account)
                   </span>
-                  <span className="hidden md:inline text-amber-200/70 text-[11px]">
-                    (Destructive actions are protected to preserve sample data)
+                  <span className="hidden md:inline text-amber-800/80 dark:text-amber-200/70 text-[11px]">
+                    — Full access to products, live GST invoicing, and UPI simulation.
                   </span>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <Link
                     href="/sign-up"
-                    className="flex items-center gap-1 rounded-[10px] bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 px-3 py-1.5 text-[11px] font-semibold text-amber-100 hover:text-white transition whitespace-nowrap btn-press"
+                    className="flex items-center gap-1 rounded-[10px] bg-amber-600 dark:bg-amber-500/20 hover:bg-amber-700 dark:hover:bg-amber-500/30 border border-amber-600 dark:border-amber-500/40 px-3 py-1.5 text-[11px] font-semibold text-white dark:text-amber-100 transition whitespace-nowrap btn-press shadow-sm"
                   >
-                    <span>Create Your Real Studio</span>
+                    <span>Create Your Own Studio</span>
                     <ArrowRight className="h-3 w-3" />
                   </Link>
                 </div>

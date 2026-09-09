@@ -85,7 +85,7 @@ const STORAGE_KEYS = {
 // Initial state loader with safe hydration
 export function useCreatorStore() {
   const [creators, setCreators] = useState<Creator[]>(INITIAL_CREATORS);
-  const [activeCreatorId, setActiveCreatorId] = useState<string>('creator_aarav');
+  const [activeCreatorId, setActiveCreatorId] = useState<string>('');
   const [products, setProducts] = useState<DigitalProduct[]>(INITIAL_PRODUCTS);
   const [courses, setCourses] = useState<Course[]>(INITIAL_COURSES);
   const [bookingServices, setBookingServices] = useState<BookingService[]>(INITIAL_BOOKINGS);
@@ -110,121 +110,139 @@ export function useCreatorStore() {
   const [calendarMeetings, setCalendarMeetings] = useState<CalendarMeeting[]>(INITIAL_CALENDAR_MEETINGS);
   const [priceHistory, setPriceHistory] = useState<Record<string, { date: string; price: number; changeType?: string; label?: string }[]>>({});
   const [baselinePrices, setBaselinePrices] = useState<Record<string, number>>({});
-  const [isDemoMode, setIsDemoMode] = useState<boolean>(true);
+  const [isDemoMode, setIsDemoMode] = useState<boolean>(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load from localStorage on client mount
+  // Load from localStorage and listen to cross-component sync events
   useEffect(() => {
-    try {
-      const savedDemo = localStorage.getItem('creatoros_demo_mode');
-      if (savedDemo !== null) setIsDemoMode(savedDemo === 'true');
+    const syncFromStorage = () => {
+      try {
+        const isDemo = typeof window !== 'undefined' && (
+          sessionStorage.getItem('creatoros_demo_mode') === 'true' ||
+          localStorage.getItem('creatoros_demo_mode') === 'true'
+        );
+        setIsDemoMode(isDemo);
 
-      const savedCreators = localStorage.getItem(STORAGE_KEYS.CREATORS);
-      if (savedCreators) {
-        const parsed = JSON.parse(savedCreators);
-        const upgraded = Array.isArray(parsed)
-          ? parsed
-              .filter((c: any) => c.id !== 'creator_priya')
-              .map((c: any) =>
-                c.avatarUrl && c.avatarUrl.includes('photo-1534528741775')
-                  ? { ...c, avatarUrl: '/avatars/user-avatar.png' }
-                  : c
-              )
-          : parsed;
-        setCreators(upgraded.length > 0 ? upgraded : INITIAL_CREATORS);
-      }
-
-      const savedActiveId = localStorage.getItem(STORAGE_KEYS.ACTIVE_CREATOR_ID);
-      if (savedActiveId && savedActiveId !== 'creator_priya') {
-        setActiveCreatorId(savedActiveId);
-      } else {
-        setActiveCreatorId('creator_aarav');
-        if (typeof window !== 'undefined') {
-          localStorage.setItem(STORAGE_KEYS.ACTIVE_CREATOR_ID, 'creator_aarav');
+        const savedCreators = localStorage.getItem(STORAGE_KEYS.CREATORS);
+        if (savedCreators) {
+          const parsed = JSON.parse(savedCreators);
+          const upgraded = Array.isArray(parsed)
+            ? parsed
+                .filter((c: any) => c.id !== 'creator_priya')
+                .map((c: any) =>
+                  c.avatarUrl && c.avatarUrl.includes('photo-1534528741775')
+                    ? { ...c, avatarUrl: '/avatars/user-avatar.png' }
+                    : c
+                )
+            : parsed;
+          setCreators(upgraded.length > 0 ? upgraded : INITIAL_CREATORS);
         }
+
+        const savedActiveId =
+          (typeof window !== 'undefined' && sessionStorage.getItem(STORAGE_KEYS.ACTIVE_CREATOR_ID)) ||
+          localStorage.getItem(STORAGE_KEYS.ACTIVE_CREATOR_ID);
+
+        if (savedActiveId && savedActiveId !== 'creator_priya') {
+          if (savedActiveId === 'creator_aarav' && !isDemo) {
+            setActiveCreatorId('');
+          } else {
+            setActiveCreatorId(savedActiveId);
+          }
+        } else if (isDemo) {
+          setActiveCreatorId('creator_aarav');
+        } else {
+          setActiveCreatorId('');
+        }
+
+        const savedProducts = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
+        if (savedProducts) {
+          const prods = JSON.parse(savedProducts);
+          const sanitized = Array.isArray(prods)
+            ? prods.map((p: any) => (p.creatorId === 'creator_priya' ? { ...p, creatorId: 'creator_aarav' } : p))
+            : prods;
+          setProducts(sanitized);
+        }
+
+        const savedCourses = localStorage.getItem(STORAGE_KEYS.COURSES);
+        if (savedCourses) setCourses(JSON.parse(savedCourses));
+
+        const savedBookings = localStorage.getItem(STORAGE_KEYS.BOOKINGS);
+        if (savedBookings) setBookingServices(JSON.parse(savedBookings));
+
+        const savedAppointments = localStorage.getItem(STORAGE_KEYS.APPOINTMENTS);
+        if (savedAppointments) setAppointments(JSON.parse(savedAppointments));
+
+        const savedOrders = localStorage.getItem(STORAGE_KEYS.ORDERS);
+        if (savedOrders) setOrders(JSON.parse(savedOrders));
+
+        const savedWhatsapp = localStorage.getItem(STORAGE_KEYS.WHATSAPP_LOGS);
+        if (savedWhatsapp) setWhatsappLogs(JSON.parse(savedWhatsapp));
+
+        const savedBriefs = localStorage.getItem(STORAGE_KEYS.BRAND_BRIEFS);
+        if (savedBriefs) setBrandBriefs(JSON.parse(savedBriefs));
+
+        const savedProposals = localStorage.getItem(STORAGE_KEYS.BRAND_PROPOSALS);
+        if (savedProposals) setBrandProposals(JSON.parse(savedProposals));
+
+        const savedMediaKit = localStorage.getItem(STORAGE_KEYS.MEDIA_KIT);
+        if (savedMediaKit) setMediaKit(JSON.parse(savedMediaKit));
+
+        const savedCommunities = localStorage.getItem(STORAGE_KEYS.COMMUNITIES);
+        if (savedCommunities) setCommunities(JSON.parse(savedCommunities));
+
+        const savedActiveCommunityId = localStorage.getItem(STORAGE_KEYS.ACTIVE_COMMUNITY_ID);
+        if (savedActiveCommunityId) setActiveCommunityId(savedActiveCommunityId);
+
+        const savedPosts = localStorage.getItem(STORAGE_KEYS.COMMUNITY_POSTS);
+        if (savedPosts) setCommunityPosts(JSON.parse(savedPosts));
+
+        const savedMembers = localStorage.getItem(STORAGE_KEYS.COMMUNITY_MEMBERS);
+        if (savedMembers) setCommunityMembers(JSON.parse(savedMembers));
+
+        const savedSubPlans = localStorage.getItem(STORAGE_KEYS.SUBSCRIPTION_PLANS);
+        if (savedSubPlans) setSubscriptionPlans(JSON.parse(savedSubPlans));
+
+        const savedSubs = localStorage.getItem(STORAGE_KEYS.SUBSCRIPTIONS);
+        if (savedSubs) setSubscriptions(JSON.parse(savedSubs));
+
+        const savedSubPayments = localStorage.getItem(STORAGE_KEYS.SUBSCRIPTION_PAYMENTS);
+        if (savedSubPayments) setSubscriptionPayments(JSON.parse(savedSubPayments));
+
+        const savedGcal = localStorage.getItem(STORAGE_KEYS.GOOGLE_CALENDAR);
+        if (savedGcal) setGoogleCalendar(JSON.parse(savedGcal));
+
+        const savedAvail = localStorage.getItem(STORAGE_KEYS.WEEKLY_AVAILABILITY);
+        if (savedAvail) setWeeklyAvailability(JSON.parse(savedAvail));
+
+        const savedBuffer = localStorage.getItem(STORAGE_KEYS.BUFFER_MINUTES);
+        if (savedBuffer) setBufferMinutes(JSON.parse(savedBuffer));
+
+        const savedTz = localStorage.getItem(STORAGE_KEYS.CALENDAR_TIMEZONE);
+        if (savedTz) setCalendarTimezone(JSON.parse(savedTz));
+
+        const savedHolidays = localStorage.getItem(STORAGE_KEYS.BLOCKED_HOLIDAYS);
+        if (savedHolidays) setBlockedHolidays(JSON.parse(savedHolidays));
+
+        const savedMeetings = localStorage.getItem(STORAGE_KEYS.CALENDAR_MEETINGS);
+        if (savedMeetings) setCalendarMeetings(JSON.parse(savedMeetings));
+
+        const savedPriceHistory = localStorage.getItem(STORAGE_KEYS.PRICE_HISTORY);
+        if (savedPriceHistory) setPriceHistory(JSON.parse(savedPriceHistory));
+
+        const savedBaseline = localStorage.getItem(STORAGE_KEYS.BASELINE_PRICES);
+        if (savedBaseline) setBaselinePrices(JSON.parse(savedBaseline));
+      } catch (e) {
+        console.warn('LocalStorage error or not available', e);
+      } finally {
+        setIsLoaded(true);
       }
+    };
 
-      const savedProducts = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
-      if (savedProducts) {
-        const prods = JSON.parse(savedProducts);
-        const sanitized = Array.isArray(prods)
-          ? prods.map((p: any) => (p.creatorId === 'creator_priya' ? { ...p, creatorId: 'creator_aarav' } : p))
-          : prods;
-        setProducts(sanitized);
-      }
+    syncFromStorage();
 
-      const savedCourses = localStorage.getItem(STORAGE_KEYS.COURSES);
-      if (savedCourses) setCourses(JSON.parse(savedCourses));
-
-      const savedBookings = localStorage.getItem(STORAGE_KEYS.BOOKINGS);
-      if (savedBookings) setBookingServices(JSON.parse(savedBookings));
-
-      const savedAppointments = localStorage.getItem(STORAGE_KEYS.APPOINTMENTS);
-      if (savedAppointments) setAppointments(JSON.parse(savedAppointments));
-
-      const savedOrders = localStorage.getItem(STORAGE_KEYS.ORDERS);
-      if (savedOrders) setOrders(JSON.parse(savedOrders));
-
-      const savedWhatsapp = localStorage.getItem(STORAGE_KEYS.WHATSAPP_LOGS);
-      if (savedWhatsapp) setWhatsappLogs(JSON.parse(savedWhatsapp));
-
-      const savedBriefs = localStorage.getItem(STORAGE_KEYS.BRAND_BRIEFS);
-      if (savedBriefs) setBrandBriefs(JSON.parse(savedBriefs));
-
-      const savedProposals = localStorage.getItem(STORAGE_KEYS.BRAND_PROPOSALS);
-      if (savedProposals) setBrandProposals(JSON.parse(savedProposals));
-
-      const savedMediaKit = localStorage.getItem(STORAGE_KEYS.MEDIA_KIT);
-      if (savedMediaKit) setMediaKit(JSON.parse(savedMediaKit));
-
-      const savedCommunities = localStorage.getItem(STORAGE_KEYS.COMMUNITIES);
-      if (savedCommunities) setCommunities(JSON.parse(savedCommunities));
-
-      const savedActiveCommunityId = localStorage.getItem(STORAGE_KEYS.ACTIVE_COMMUNITY_ID);
-      if (savedActiveCommunityId) setActiveCommunityId(savedActiveCommunityId);
-
-      const savedPosts = localStorage.getItem(STORAGE_KEYS.COMMUNITY_POSTS);
-      if (savedPosts) setCommunityPosts(JSON.parse(savedPosts));
-
-      const savedMembers = localStorage.getItem(STORAGE_KEYS.COMMUNITY_MEMBERS);
-      if (savedMembers) setCommunityMembers(JSON.parse(savedMembers));
-
-      const savedSubPlans = localStorage.getItem(STORAGE_KEYS.SUBSCRIPTION_PLANS);
-      if (savedSubPlans) setSubscriptionPlans(JSON.parse(savedSubPlans));
-
-      const savedSubs = localStorage.getItem(STORAGE_KEYS.SUBSCRIPTIONS);
-      if (savedSubs) setSubscriptions(JSON.parse(savedSubs));
-
-      const savedSubPayments = localStorage.getItem(STORAGE_KEYS.SUBSCRIPTION_PAYMENTS);
-      if (savedSubPayments) setSubscriptionPayments(JSON.parse(savedSubPayments));
-
-      const savedGcal = localStorage.getItem(STORAGE_KEYS.GOOGLE_CALENDAR);
-      if (savedGcal) setGoogleCalendar(JSON.parse(savedGcal));
-
-      const savedAvail = localStorage.getItem(STORAGE_KEYS.WEEKLY_AVAILABILITY);
-      if (savedAvail) setWeeklyAvailability(JSON.parse(savedAvail));
-
-      const savedBuffer = localStorage.getItem(STORAGE_KEYS.BUFFER_MINUTES);
-      if (savedBuffer) setBufferMinutes(JSON.parse(savedBuffer));
-
-      const savedTz = localStorage.getItem(STORAGE_KEYS.CALENDAR_TIMEZONE);
-      if (savedTz) setCalendarTimezone(JSON.parse(savedTz));
-
-      const savedHolidays = localStorage.getItem(STORAGE_KEYS.BLOCKED_HOLIDAYS);
-      if (savedHolidays) setBlockedHolidays(JSON.parse(savedHolidays));
-
-      const savedMeetings = localStorage.getItem(STORAGE_KEYS.CALENDAR_MEETINGS);
-      if (savedMeetings) setCalendarMeetings(JSON.parse(savedMeetings));
-
-      const savedPriceHistory = localStorage.getItem(STORAGE_KEYS.PRICE_HISTORY);
-      if (savedPriceHistory) setPriceHistory(JSON.parse(savedPriceHistory));
-
-      const savedBaseline = localStorage.getItem(STORAGE_KEYS.BASELINE_PRICES);
-      if (savedBaseline) setBaselinePrices(JSON.parse(savedBaseline));
-    } catch (e) {
-      console.warn('LocalStorage error or not available', e);
-    } finally {
-      setIsLoaded(true);
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', syncFromStorage);
+      window.addEventListener('creatoros_store_updated', syncFromStorage);
     }
 
     // Async sync from PostgreSQL API endpoints
@@ -253,47 +271,92 @@ export function useCreatorStore() {
         if (d.success && d.data) setCalendarMeetings(d.data);
       })
       .catch((e) => console.warn('Meetings sync error:', e));
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('storage', syncFromStorage);
+        window.removeEventListener('creatoros_store_updated', syncFromStorage);
+      }
+    };
   }, []);
 
-  // Save changes
+  // Save changes and broadcast update event
   const saveState = (key: string, data: any) => {
     try {
       if (typeof window !== 'undefined') {
-        localStorage.setItem(key, JSON.stringify(data));
+        localStorage.setItem(key, typeof data === 'string' ? data : JSON.stringify(data));
+        window.dispatchEvent(new Event('creatoros_store_updated'));
       }
     } catch (e) {
       console.error(e);
     }
   };
 
-  const activeCreator = creators.find((c) => c.id === activeCreatorId) || creators[0];
-  const activeTheme = THEMES.find((t) => t.id === activeCreator?.themeId) || THEMES[0];
+  const effectiveCreatorId = activeCreatorId || (isDemoMode ? 'creator_aarav' : '');
+  const activeCreator =
+    creators.find((c) => c.id === effectiveCreatorId) ||
+    (isDemoMode ? (creators.find((c) => c.id === 'creator_aarav') || creators[0]) : null);
+  const currentSafeCreator = activeCreator || creators[0];
+  const activeTheme = THEMES.find((t) => t.id === currentSafeCreator?.themeId) || THEMES[0];
 
   // Creator management
   const updateCreator = (updated: Partial<Creator>) => {
+    const targetId = activeCreatorId || effectiveCreatorId || 'creator_aarav';
     setCreators((prev) => {
-      const next = prev.map((c) => (c.id === activeCreatorId ? { ...c, ...updated } : c));
+      const next = prev.map((c) => (c.id === targetId ? { ...c, ...updated } : c));
       saveState(STORAGE_KEYS.CREATORS, next);
       return next;
     });
 
     // Also persist updates to PostgreSQL API
-    fetch(`/api/users/${activeCreatorId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updated)
-    }).catch((e) => console.warn('Postgres creator update error:', e));
+    if (targetId) {
+      fetch(`/api/users/${targetId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated)
+      }).catch((e) => console.warn('Postgres creator update error:', e));
+    }
   };
 
   const switchActiveCreator = (id: string) => {
     setActiveCreatorId(id);
-    saveState(STORAGE_KEYS.ACTIVE_CREATOR_ID, id);
+    if (id) {
+      saveState(STORAGE_KEYS.ACTIVE_CREATOR_ID, id);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(STORAGE_KEYS.ACTIVE_CREATOR_ID, id);
+      }
+    } else if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem(STORAGE_KEYS.ACTIVE_CREATOR_ID);
+        sessionStorage.removeItem(STORAGE_KEYS.ACTIVE_CREATOR_ID);
+      } catch (e) {}
+    }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('creatoros_store_updated'));
+      window.dispatchEvent(new Event('creatoros_auth_updated'));
+    }
   };
 
   const setDemoMode = (enabled: boolean) => {
     setIsDemoMode(enabled);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('creatoros_demo_mode', enabled ? 'true' : 'false');
+      if (enabled) {
+        sessionStorage.setItem('creatoros_demo_mode', 'true');
+        sessionStorage.setItem(STORAGE_KEYS.ACTIVE_CREATOR_ID, 'creator_aarav');
+        localStorage.setItem('creatoros_demo_mode', 'true');
+        localStorage.setItem(STORAGE_KEYS.ACTIVE_CREATOR_ID, 'creator_aarav');
+        setActiveCreatorId('creator_aarav');
+      } else {
+        sessionStorage.removeItem('creatoros_demo_mode');
+        sessionStorage.removeItem(STORAGE_KEYS.ACTIVE_CREATOR_ID);
+        localStorage.removeItem('creatoros_demo_mode');
+        if (activeCreatorId === 'creator_aarav') {
+          localStorage.removeItem(STORAGE_KEYS.ACTIVE_CREATOR_ID);
+          setActiveCreatorId('');
+        }
+      }
+      window.dispatchEvent(new Event('creatoros_store_updated'));
+      window.dispatchEvent(new Event('creatoros_auth_updated'));
     }
   };
 
@@ -450,7 +513,7 @@ export function useCreatorStore() {
     bookingDate?: string;
     bookingTimeSlot?: string;
   }): { order: Order; appointment?: BookingAppointment } => {
-    const creator = activeCreator;
+    const creator = activeCreator || creators[0];
     const gstCalc = calculateGST(params.amount, creator.state, params.buyerState);
     const orderNum = `ORD-${Math.floor(10000 + Math.random() * 90000)}`;
     const orderId = `ord_${Date.now()}`;
@@ -689,7 +752,7 @@ export function useCreatorStore() {
     notes?: string;
     paymentMethod?: 'UPI' | 'Card' | 'Netbanking' | 'CRED';
   }) => {
-    const creator = activeCreator;
+    const creator = activeCreator || creators[0];
     const gstRate = params.gstRate || 18;
     const gstCalc = calculateGST(params.amount, creator.state, params.buyerState, gstRate);
     const orderNum = `ORD-${Math.floor(10000 + Math.random() * 90000)}`;
@@ -1007,20 +1070,21 @@ export function useCreatorStore() {
     });
 
     // Add creator as founder member
+    const founder = activeCreator || creators[0];
     const newMember: CommunityMember = {
       id: `member_${Date.now()}`,
       communityId: id,
-      name: activeCreator.name,
-      avatarUrl: activeCreator.avatarUrl,
-      username: activeCreator.username,
-      handle: `@${activeCreator.username}`,
+      name: founder.name,
+      avatarUrl: founder.avatarUrl,
+      username: founder.username,
+      handle: `@${founder.username}`,
       role: 'creator',
       roleBadge: 'Founder / Host',
       tierName: 'Creator Admin',
       joinedAt: 'Just now',
       reputationPoints: 1000,
       isOnline: true,
-      bio: activeCreator.bio
+      bio: founder.bio
     };
 
     setCommunityMembers((prev) => {
@@ -1036,6 +1100,7 @@ export function useCreatorStore() {
   };
 
   const joinCommunity = (communityId: string, tierId?: string) => {
+    const memberCreator = activeCreator || creators[0];
     setCommunities((prev) => {
       const next = prev.map((c) => {
         const tiers = c.membershipTiers || c.tiers || [];
@@ -1054,23 +1119,23 @@ export function useCreatorStore() {
 
     // Add member record if not exists
     setCommunityMembers((prev) => {
-      const exists = prev.some((m) => m.communityId === communityId && m.name === activeCreator.name);
+      const exists = prev.some((m) => m.communityId === communityId && m.name === memberCreator.name);
       if (exists) return prev;
 
       const newMember: CommunityMember = {
         id: `member_${Date.now()}`,
         communityId,
-        name: activeCreator.name,
-        avatarUrl: activeCreator.avatarUrl,
-        username: activeCreator.username,
-        handle: `@${activeCreator.username}`,
+        name: memberCreator.name,
+        avatarUrl: memberCreator.avatarUrl,
+        username: memberCreator.username,
+        handle: `@${memberCreator.username}`,
         role: tierId && tierId.includes('paid') ? 'vip' : 'member',
         roleBadge: tierId && tierId.includes('paid') ? 'VIP Pro Member' : 'Community Member',
         tierName: tierId && tierId.includes('paid') ? 'VIP Inner Circle' : 'Free Community Access',
         joinedAt: 'Just now',
         reputationPoints: 50,
         isOnline: true,
-        bio: activeCreator.bio
+        bio: memberCreator.bio
       };
       const next = [newMember, ...prev];
       saveState(STORAGE_KEYS.COMMUNITY_MEMBERS, next);
@@ -1079,6 +1144,7 @@ export function useCreatorStore() {
   };
 
   const leaveCommunity = (communityId: string) => {
+    const memberCreator = activeCreator || creators[0];
     setCommunities((prev) => {
       const next = prev.map((c) => {
         if (c.id !== communityId) return c;
@@ -1094,7 +1160,7 @@ export function useCreatorStore() {
     });
 
     setCommunityMembers((prev) => {
-      const next = prev.filter((m) => !(m.communityId === communityId && m.name === activeCreator.name));
+      const next = prev.filter((m) => !(m.communityId === communityId && m.name === memberCreator.name));
       saveState(STORAGE_KEYS.COMMUNITY_MEMBERS, next);
       return next;
     });
@@ -1109,14 +1175,15 @@ export function useCreatorStore() {
     isAnnouncement?: boolean;
   }) => {
     const isFounder = activeCommunity?.creatorId === activeCreatorId;
+    const authorCreator = activeCreator || creators[0];
     const newPost: CommunityPost = {
       id: `post_${Date.now()}`,
       communityId: activeCommunityId,
       channelId: data.channelId,
       title: data.title,
       content: data.content,
-      author: activeCreator.name,
-      authorAvatar: activeCreator.avatarUrl,
+      author: authorCreator.name,
+      authorAvatar: authorCreator.avatarUrl,
       authorRole: isFounder ? 'creator' : 'member',
       authorBadge: isFounder ? 'Host / Creator' : 'Member',
       createdAt: 'Just now',
@@ -1170,10 +1237,11 @@ export function useCreatorStore() {
 
   const addComment = (postId: string, content: string) => {
     const isFounder = activeCommunity?.creatorId === activeCreatorId;
+    const authorCreator = activeCreator || creators[0];
     const newComment: CommunityComment = {
       id: `comment_${Date.now()}`,
-      author: activeCreator.name,
-      authorAvatar: activeCreator.avatarUrl,
+      author: authorCreator.name,
+      authorAvatar: authorCreator.avatarUrl,
       authorRole: isFounder ? 'creator' : 'member',
       content,
       createdAt: 'Just now',
@@ -2144,16 +2212,16 @@ export function useCreatorStore() {
     isLoaded,
     creators,
     activeCreator,
-    activeCreatorId,
+    activeCreatorId: effectiveCreatorId,
     activeTheme,
-    products: products.filter((p) => p.creatorId === activeCreatorId),
+    products: products.filter((p) => p.creatorId === effectiveCreatorId),
     allProducts: products,
-    courses: courses.filter((c) => c.creatorId === activeCreatorId),
+    courses: courses.filter((c) => c.creatorId === effectiveCreatorId),
     allCourses: courses,
-    bookingServices: bookingServices.filter((b) => b.creatorId === activeCreatorId),
+    bookingServices: bookingServices.filter((b) => b.creatorId === effectiveCreatorId),
     allBookingServices: bookingServices,
-    appointments: appointments.filter((a) => a.creatorId === activeCreatorId),
-    orders: orders.filter((o) => o.creatorId === activeCreatorId),
+    appointments: appointments.filter((a) => a.creatorId === effectiveCreatorId),
+    orders: orders.filter((o) => o.creatorId === effectiveCreatorId),
     allOrders: orders,
     whatsappLogs,
     brandBriefs,
@@ -2169,11 +2237,11 @@ export function useCreatorStore() {
     communityMembers: communityMembers.filter((m) => m.communityId === activeCommunityId),
     allCommunityMembers: communityMembers,
     // Membership Subscriptions state & metrics
-    subscriptionPlans: subscriptionPlans.filter((p) => p.creatorId === activeCreatorId),
+    subscriptionPlans: subscriptionPlans.filter((p) => p.creatorId === effectiveCreatorId),
     allSubscriptionPlans: subscriptionPlans,
-    subscriptions: subscriptions.filter((s) => s.creatorId === activeCreatorId),
+    subscriptions: subscriptions.filter((s) => s.creatorId === effectiveCreatorId),
     allSubscriptions: subscriptions,
-    subscriptionPayments: subscriptionPayments.filter((p) => p.creatorId === activeCreatorId),
+    subscriptionPayments: subscriptionPayments.filter((p) => p.creatorId === effectiveCreatorId),
     allSubscriptionPayments: subscriptionPayments,
     membershipMetrics,
     // Calendar State
@@ -2182,7 +2250,7 @@ export function useCreatorStore() {
     bufferMinutes,
     calendarTimezone,
     blockedHolidays,
-    calendarMeetings: calendarMeetings.filter((m) => m.creatorId === activeCreatorId || activeCreatorId === 'all'),
+    calendarMeetings: calendarMeetings.filter((m) => m.creatorId === effectiveCreatorId || effectiveCreatorId === 'all'),
     allCalendarMeetings: calendarMeetings,
     // Price Optimization State
     priceHistory,

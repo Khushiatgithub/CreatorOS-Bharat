@@ -115,7 +115,7 @@ export default function DashboardOverviewPage() {
             <div className="flex items-center gap-2.5">
               <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
               <span>
-                <strong>IMPS Payout Dispatched!</strong> ₹{totalGMV.toFixed(2)} transferred to {activeCreator?.bankAccount.bankName} ({activeCreator?.bankAccount.accountNumberMasked}).
+                <strong>IMPS Payout Dispatched!</strong> ₹{totalGMV.toFixed(2)} transferred to {activeCreator?.bankAccount?.bankName || 'HDFC Bank'} ({activeCreator?.bankAccount?.accountNumberMasked || '•••• 0000'}).
               </span>
             </div>
             <span className="font-mono text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
@@ -319,7 +319,7 @@ export default function DashboardOverviewPage() {
               Available Balance: <span className="font-mono text-white">₹<AnimatedCounter value={totalGMV} decimals={2} /></span>
             </h3>
             <p className="text-xs text-slate-400 mt-1">
-              Linked to <span className="font-semibold text-white">{activeCreator?.bankAccount.bankName}</span> ({activeCreator?.bankAccount.accountNumberMasked}) • IFSC: <span className="font-mono text-royal-300">{activeCreator?.bankAccount.ifsc}</span>
+              Linked to <span className="font-semibold text-white">{activeCreator?.bankAccount?.bankName || 'HDFC Bank'}</span> ({activeCreator?.bankAccount?.accountNumberMasked || '•••• 0000'}) • IFSC: <span className="font-mono text-royal-300">{activeCreator?.bankAccount?.ifsc || 'HDFC0000001'}</span>
             </p>
           </div>
 

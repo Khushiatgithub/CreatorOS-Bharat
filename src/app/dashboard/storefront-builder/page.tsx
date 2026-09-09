@@ -29,25 +29,28 @@ export default function StorefrontBuilderPage() {
     updateCreator, 
     products, 
     courses, 
-    bookingServices 
+    bookingServices,
+    creators
   } = useCreatorStore();
 
   const [activeTab, setActiveTab] = useState<'theme' | 'profile' | 'links' | 'payouts'>('theme');
   const [savedSuccess, setSavedSuccess] = useState(false);
 
+  const fallbackCreator = activeCreator || creators[0];
+
   // Local form state
-  const [name, setName] = useState(activeCreator?.name || '');
-  const [tagline, setTagline] = useState(activeCreator?.tagline || '');
-  const [bio, setBio] = useState(activeCreator?.bio || '');
-  const [category, setCategory] = useState(activeCreator?.category || '');
-  const [location, setLocation] = useState(activeCreator?.location || '');
-  const [themeId, setThemeId] = useState(activeCreator?.themeId || 'linear-royal');
-  const [upiId, setUpiId] = useState(activeCreator?.upiId || '');
-  const [upiName, setUpiName] = useState(activeCreator?.upiName || '');
-  const [gstNumber, setGstNumber] = useState(activeCreator?.gstNumber || '');
+  const [name, setName] = useState(activeCreator?.name || fallbackCreator.name);
+  const [tagline, setTagline] = useState(activeCreator?.tagline || fallbackCreator.tagline);
+  const [bio, setBio] = useState(activeCreator?.bio || fallbackCreator.bio);
+  const [category, setCategory] = useState(activeCreator?.category || fallbackCreator.category);
+  const [location, setLocation] = useState(activeCreator?.location || fallbackCreator.location);
+  const [themeId, setThemeId] = useState(activeCreator?.themeId || fallbackCreator.themeId || 'linear-royal');
+  const [upiId, setUpiId] = useState(activeCreator?.upiId || fallbackCreator.upiId);
+  const [upiName, setUpiName] = useState(activeCreator?.upiName || fallbackCreator.upiName);
+  const [gstNumber, setGstNumber] = useState(activeCreator?.gstNumber || fallbackCreator.gstNumber || '');
 
   // Custom links state
-  const [links, setLinks] = useState(activeCreator?.customLinks || []);
+  const [links, setLinks] = useState(activeCreator?.customLinks || fallbackCreator.customLinks || []);
   const [newLinkTitle, setNewLinkTitle] = useState('');
   const [newLinkUrl, setNewLinkUrl] = useState('');
 
@@ -91,7 +94,7 @@ export default function StorefrontBuilderPage() {
 
   const currentPreviewTheme = THEMES.find((t) => t.id === themeId) || activeTheme;
   const currentPreviewCreator = {
-    ...activeCreator,
+    ...fallbackCreator,
     name,
     tagline,
     bio,

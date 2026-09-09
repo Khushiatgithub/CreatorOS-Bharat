@@ -390,11 +390,11 @@ function ResilientProfileSettings() {
           <div className="rounded-[16px] bg-[#05070B] border border-white/[0.08] p-3.5 space-y-2">
             <div className="flex items-center justify-between text-xs">
               <span className="text-slate-400">Bank</span>
-              <span className="font-mono text-slate-200">{activeCreator?.bankAccount.bankName}</span>
+              <span className="font-mono text-slate-200">{activeCreator?.bankAccount?.bankName || 'HDFC Bank'}</span>
             </div>
             <div className="flex items-center justify-between text-xs">
               <span className="text-slate-400">A/C Number</span>
-              <span className="font-mono text-slate-200">{activeCreator?.bankAccount.accountNumberMasked}</span>
+              <span className="font-mono text-slate-200">{activeCreator?.bankAccount?.accountNumberMasked || '•••• •••• •••• 0000'}</span>
             </div>
             <div className="flex items-center justify-between text-xs">
               <span className="text-slate-400">GSTIN</span>

@@ -1,9 +1,9 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ClerkProvider, SignedIn as ClerkSignedIn, SignedOut as ClerkSignedOut, UserButton as ClerkUserButton, SignOutButton as ClerkSignOutButton, useUser as useClerkUser } from '@clerk/nextjs';
+import { ClerkProvider, SignedIn as ClerkSignedIn, SignedOut as ClerkSignedOut, UserButton as ClerkUserButton, SignOutButton as ClerkSignOutButton, useUser as useClerkUser, useClerk } from '@clerk/nextjs';
 import { dark } from '@clerk/themes';
 import { useCreatorStore } from '@/lib/store';
 import { 
@@ -18,6 +18,60 @@ import {
   Sparkles,
   Zap
 } from 'lucide-react';
+
+/**
+ * Completely clears all local auth tokens, session states, and browser cookies.
+ */
+export function clearAllAuthSessions() {
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.removeItem('creatoros_demo_mode');
+      localStorage.removeItem('creatoros_active_creator_id');
+      localStorage.removeItem('creatoros_session');
+      localStorage.removeItem('creatoros_user');
+      localStorage.removeItem('creatoros_auth');
+      localStorage.removeItem('creatoros_onboarding_step');
+      sessionStorage.removeItem('creatoros_demo_mode');
+      sessionStorage.removeItem('creatoros_active_creator_id');
+      sessionStorage.clear();
+
+      if (typeof document !== 'undefined' && document.cookie) {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i];
+          const eqPos = cookie.indexOf('=');
+          const name = eqPos > -1 ? cookie.substring(0, eqPos).trim() : cookie.trim();
+          if (name) {
+            document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;`;
+            document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${window.location.hostname};`;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Error clearing auth sessions:', e);
+    }
+  }
+}
+
+/**
+ * Log into Demo Studio as Aarav Sharma (or specific demo creator).
+ * Activates demo mode and dispatches cross-component synchronization events.
+ */
+export function loginAsDemoCreator(creatorId: string = 'creator_aarav') {
+  if (typeof window !== 'undefined') {
+    try {
+      sessionStorage.setItem('creatoros_demo_mode', 'true');
+      sessionStorage.setItem('creatoros_active_creator_id', creatorId);
+      localStorage.setItem('creatoros_demo_mode', 'true');
+      localStorage.setItem('creatoros_active_creator_id', creatorId);
+      window.dispatchEvent(new Event('creatoros_auth_updated'));
+      window.dispatchEvent(new Event('creatoros_store_updated'));
+      window.dispatchEvent(new Event('storage'));
+    } catch (e) {
+      console.warn('Demo login storage error:', e);
+    }
+  }
+}
 
 /**
  * Validates whether the provided Clerk key is a genuine, active Clerk Publishable Key
@@ -44,6 +98,7 @@ export function isRealClerkKey(key?: string): boolean {
 interface SafeAuthContextType {
   isClerkEnabled: boolean;
   isSignedIn: boolean;
+  isLoaded: boolean;
   user: {
     id: string;
     fullName: string;
@@ -51,13 +106,14 @@ interface SafeAuthContextType {
     imageUrl: string;
     username: string;
   } | null;
-  signOut: () => void;
+  signOut: () => Promise<void> | void;
   signIn: () => void;
 }
 
 const SafeAuthContext = createContext<SafeAuthContextType>({
   isClerkEnabled: false,
-  isSignedIn: true,
+  isSignedIn: false,
+  isLoaded: false,
   user: null,
   signOut: () => {},
   signIn: () => {},
@@ -68,8 +124,8 @@ export function useSafeAuth() {
 }
 
 export function useSafeUser() {
-  const { user, isClerkEnabled } = useSafeAuth();
-  return { user, isLoaded: true, isSignedIn: !!user };
+  const { user, isLoaded, isSignedIn } = useSafeAuth();
+  return { user, isLoaded, isSignedIn };
 }
 
 interface SafeClerkProviderProps {
@@ -82,6 +138,7 @@ interface SafeClerkProviderProps {
  */
 function ClerkAuthBridge({ children }: { children: ReactNode }) {
   const { user: clerkUser, isLoaded, isSignedIn } = useClerkUser();
+  const clerk = useClerk();
   const { creators, updateCreator, switchActiveCreator, setDemoMode } = useCreatorStore();
   const router = useRouter();
 
@@ -171,13 +228,26 @@ function ClerkAuthBridge({ children }: { children: ReactNode }) {
     username: clerkUser.username || (clerkUser.primaryEmailAddress?.emailAddress ? clerkUser.primaryEmailAddress.emailAddress.split('@')[0] : 'creator'),
   } : null;
 
+  const handleClerkSignOut = async () => {
+    clearAllAuthSessions();
+    if (setDemoMode) setDemoMode(false);
+    if (switchActiveCreator) switchActiveCreator('');
+    window.dispatchEvent(new Event('creatoros_auth_updated'));
+    window.dispatchEvent(new Event('creatoros_store_updated'));
+    try {
+      await clerk.signOut();
+    } catch (e) {
+      console.warn('Clerk sign out error:', e);
+    }
+    router.push('/');
+  };
+
   const contextValue: SafeAuthContextType = {
     isClerkEnabled: true,
-    isSignedIn: !!isSignedIn,
+    isSignedIn: Boolean(isSignedIn),
+    isLoaded: Boolean(isLoaded),
     user,
-    signOut: () => {
-      // Clerk handles sign-out
-    },
+    signOut: handleClerkSignOut,
     signIn: () => {
       router.push('/sign-in');
     },
@@ -197,33 +267,78 @@ function ClerkAuthBridge({ children }: { children: ReactNode }) {
 export function SafeClerkProvider({ children }: SafeClerkProviderProps) {
   const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || '';
   const clerkEnabled = isRealClerkKey(publishableKey);
-  const { activeCreator } = useCreatorStore();
+  const { activeCreator, setDemoMode, switchActiveCreator, creators } = useCreatorStore();
   const router = useRouter();
 
-  // Local state for demo mode
-  const [isDemoSignedIn, setIsDemoSignedIn] = useState(true);
+  // Local state for demo/resilient auth mode - safely initialized for SSR
+  const [isDemoSignedIn, setIsDemoSignedIn] = useState<boolean>(false);
+  const [isAuthLoaded, setIsAuthLoaded] = useState<boolean>(false);
 
-  const demoUser = isDemoSignedIn && activeCreator ? {
-    id: activeCreator.id,
-    fullName: activeCreator.name,
-    email: activeCreator.email || `${activeCreator.username}@creatoros.in`,
-    imageUrl: activeCreator.avatarUrl,
-    username: activeCreator.username,
+  useEffect(() => {
+    const syncAuthState = () => {
+      if (typeof window !== 'undefined') {
+        try {
+          const demoMode =
+            sessionStorage.getItem('creatoros_demo_mode') === 'true' ||
+            localStorage.getItem('creatoros_demo_mode') === 'true';
+          const activeId =
+            sessionStorage.getItem('creatoros_active_creator_id') ||
+            localStorage.getItem('creatoros_active_creator_id');
+          // If activeId is 'creator_aarav' but demoMode is false, the demo account is not signed in
+          const signedIn = demoMode ? true : Boolean(activeId && activeId !== '' && activeId !== 'creator_aarav');
+          setIsDemoSignedIn(signedIn);
+        } catch (e) {
+          setIsDemoSignedIn(false);
+        } finally {
+          setIsAuthLoaded(true);
+        }
+      }
+    };
+
+    syncAuthState();
+    window.addEventListener('storage', syncAuthState);
+    window.addEventListener('creatoros_auth_updated', syncAuthState);
+    window.addEventListener('creatoros_store_updated', syncAuthState);
+
+    return () => {
+      window.removeEventListener('storage', syncAuthState);
+      window.removeEventListener('creatoros_auth_updated', syncAuthState);
+      window.removeEventListener('creatoros_store_updated', syncAuthState);
+    };
+  }, []);
+
+  const currentCreator = (activeCreator && activeCreator.id)
+    ? activeCreator
+    : isDemoSignedIn
+      ? (creators.find((c) => c.id === 'creator_aarav') || creators[0])
+      : null;
+
+  const demoUser = isDemoSignedIn && currentCreator ? {
+    id: currentCreator.id,
+    fullName: currentCreator.name,
+    email: currentCreator.email || `${currentCreator.username}@creatoros.in`,
+    imageUrl: currentCreator.avatarUrl,
+    username: currentCreator.username,
   } : null;
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
     setIsDemoSignedIn(false);
+    clearAllAuthSessions();
+    if (setDemoMode) setDemoMode(false);
+    if (switchActiveCreator) switchActiveCreator('');
+    window.dispatchEvent(new Event('creatoros_auth_updated'));
+    window.dispatchEvent(new Event('creatoros_store_updated'));
     router.push('/');
   };
 
   const handleSignIn = () => {
-    setIsDemoSignedIn(true);
-    router.push('/dashboard');
+    router.push('/sign-in');
   };
 
   const contextValue: SafeAuthContextType = {
     isClerkEnabled: false,
-    isSignedIn: isDemoSignedIn,
+    isSignedIn: Boolean(isDemoSignedIn && demoUser),
+    isLoaded: isAuthLoaded,
     user: demoUser,
     signOut: handleSignOut,
     signIn: handleSignIn,
@@ -262,13 +377,13 @@ export function SafeClerkProvider({ children }: SafeClerkProviderProps) {
  * Universal SignedIn component - works seamlessly with Clerk or Demo Mode
  */
 export function SignedIn({ children }: { children: ReactNode }) {
-  const { isClerkEnabled, isSignedIn } = useSafeAuth();
+  const { isClerkEnabled, isSignedIn, isLoaded } = useSafeAuth();
 
   if (isClerkEnabled) {
     return <ClerkSignedIn>{children}</ClerkSignedIn>;
   }
 
-  if (!isSignedIn) return null;
+  if (!isLoaded || !isSignedIn) return null;
   return <>{children}</>;
 }
 
@@ -276,13 +391,13 @@ export function SignedIn({ children }: { children: ReactNode }) {
  * Universal SignedOut component - works seamlessly with Clerk or Demo Mode
  */
 export function SignedOut({ children }: { children: ReactNode }) {
-  const { isClerkEnabled, isSignedIn } = useSafeAuth();
+  const { isClerkEnabled, isSignedIn, isLoaded } = useSafeAuth();
 
   if (isClerkEnabled) {
     return <ClerkSignedOut>{children}</ClerkSignedOut>;
   }
 
-  if (isSignedIn) return null;
+  if (isLoaded && isSignedIn) return null;
   return <>{children}</>;
 }
 
@@ -302,80 +417,117 @@ export function UserButton({
   const { isClerkEnabled, user, signOut } = useSafeAuth();
   const { activeCreator } = useCreatorStore();
   const [isOpen, setIsOpen] = useState(false);
-
-  if (isClerkEnabled) {
-    return (
-      <ClerkUserButton
-        afterSignOutUrl={afterSignOutUrl}
-        userProfileMode="navigation"
-        userProfileUrl={userProfileUrl}
-        appearance={appearance || {
-          elements: {
-            userButtonAvatarBox: 'h-8 w-8 ring-2 ring-royal-500/50 rounded-full',
-            userButtonPopoverCard: 'bg-[#0A0D17] border border-white/[0.12] text-white shadow-2xl',
-            userButtonPopoverFooter: 'hidden',
-          },
-        }}
-      />
-    );
-  }
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const avatar = user?.imageUrl || activeCreator?.avatarUrl || '/avatars/user-avatar.png';
   const name = user?.fullName || activeCreator?.name || 'Creator';
-  const email = user?.email || `${activeCreator?.username || 'creator'}@creatoros.in`;
+  const username = activeCreator?.username || user?.username || 'creator';
+  const category = activeCreator?.category || 'Software Engineering & Tech';
+  const email = user?.email || activeCreator?.email || `${username}@creatoros.in`;
+
+  // Close dropdown on click outside or Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown, true);
+    document.addEventListener('touchstart', handlePointerDown, true);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown, true);
+      document.removeEventListener('touchstart', handlePointerDown, true);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
 
   return (
-    <div className="relative">
+    <div className="relative" ref={containerRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 p-0.5 rounded-full ring-2 ring-royal-500/50 hover:ring-royal-400 transition btn-press focus:outline-none"
+        className="flex items-center gap-1.5 p-0.5 rounded-full ring-2 ring-royal-500/50 hover:ring-royal-400 transition btn-press focus:outline-none cursor-pointer shrink-0"
         title="Creator Profile & Account"
+        aria-expanded={isOpen}
+        aria-haspopup="true"
       >
         <img
           src={avatar}
           alt={name}
-          className="h-8 w-8 rounded-full object-cover"
+          className="h-8 w-8 rounded-full object-cover ring-1 ring-royal-500"
         />
       </button>
 
       {isOpen && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
           <div 
-            className="absolute right-0 top-full mt-2 w-64 rounded-[20px] glass-dropdown p-3 shadow-2xl z-50 border border-white/[0.12] bg-[#0A0D17]/95 backdrop-blur-2xl animate-scale-in"
-            onClick={() => setIsOpen(false)}
+            className="fixed inset-0 z-40 bg-transparent cursor-default" 
+            onClick={() => setIsOpen(false)} 
+            aria-hidden="true"
+          />
+          <div 
+            className="absolute right-0 top-full mt-2 w-72 rounded-[20px] glass-dropdown p-2.5 shadow-2xl z-50 border border-white/[0.12] bg-[#0A0D17]/95 backdrop-blur-2xl animate-scale-in"
           >
             {/* User Info Header */}
-            <div className="flex items-center gap-3 pb-3 border-b border-white/[0.08] px-1">
-              <img src={avatar} alt={name} className="h-10 w-10 rounded-full object-cover ring-1 ring-royal-500" />
+            <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center gap-3">
+              <img 
+                src={avatar} 
+                alt={name} 
+                className="h-10 w-10 rounded-full object-cover shrink-0 ring-2 ring-royal-500/50" 
+              />
               <div className="flex-1 overflow-hidden">
-                <div className="flex items-center gap-1">
-                  <h4 className="font-semibold text-xs text-white truncate">{name}</h4>
-                  <ShieldCheck className="h-3.5 w-3.5 text-royal-400 shrink-0" />
+                <div className="flex items-center gap-1.5">
+                  <span className="font-bold text-xs truncate text-white">{name}</span>
+                  {activeCreator?.verified && <ShieldCheck className="h-3.5 w-3.5 text-royal-400 shrink-0" />}
                 </div>
-                <p className="text-[11px] text-slate-400 truncate">{email}</p>
+                <p className="text-[11px] text-royal-400 font-mono truncate">@{username}</p>
+                <p className="text-[10px] text-slate-400 truncate mt-0.5">{category}</p>
               </div>
             </div>
 
             {/* Links */}
-            <div className="py-2 space-y-1">
+            <div className="mt-2 space-y-1">
               <Link
                 href="/dashboard"
-                className="flex items-center gap-2.5 rounded-[12px] px-2.5 py-2 text-xs font-medium text-slate-200 hover:bg-white/[0.06] hover:text-white transition"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-medium text-slate-200 hover:bg-white/[0.06] hover:text-white transition"
               >
                 <LayoutDashboard className="h-4 w-4 text-royal-400" />
                 <span>Creator Studio</span>
               </Link>
               <Link
                 href="/dashboard/ai-coach"
-                className="flex items-center gap-2.5 rounded-[12px] px-2.5 py-2 text-xs font-medium text-slate-200 hover:bg-white/[0.06] hover:text-white transition"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-medium text-slate-200 hover:bg-white/[0.06] hover:text-white transition"
               >
                 <Bot className="h-4 w-4 text-emerald-400" />
                 <span>AI Business Coach</span>
               </Link>
               <Link
+                href="/onboarding"
+                onClick={() => setIsOpen(false)}
+                className="w-full flex items-center justify-between rounded-xl px-2.5 py-2 text-xs font-semibold text-royal-400 hover:bg-royal-600/10 transition"
+              >
+                <span className="flex items-center gap-2.5">
+                  <Sparkles className="h-4 w-4 text-royal-400" />
+                  <span>Launch Onboarding Wizard</span>
+                </span>
+                <span className="text-[10px] font-mono bg-royal-600/20 px-1.5 py-0.5 rounded">3 Steps</span>
+              </Link>
+              <Link
                 href={userProfileUrl}
-                className="flex items-center gap-2.5 rounded-[12px] px-2.5 py-2 text-xs font-medium text-slate-200 hover:bg-white/[0.06] hover:text-white transition"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-medium text-slate-200 hover:bg-white/[0.06] hover:text-white transition"
               >
                 <Settings className="h-4 w-4 text-slate-400" />
                 <span>Account & Security</span>
@@ -383,10 +535,13 @@ export function UserButton({
             </div>
 
             {/* Sign out */}
-            <div className="pt-2 border-t border-white/[0.08]">
+            <div className="pt-2 mt-1 border-t border-white/[0.08]">
               <button
-                onClick={signOut}
-                className="w-full flex items-center gap-2.5 rounded-[12px] px-2.5 py-2 text-xs font-medium text-rose-400 hover:bg-rose-500/10 transition"
+                onClick={() => {
+                  setIsOpen(false);
+                  signOut();
+                }}
+                className="w-full flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-medium text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
               >
                 <LogOut className="h-4 w-4" />
                 <span>Sign Out</span>
@@ -409,27 +564,29 @@ export function SignOutButton({
   children?: ReactNode;
   redirectUrl?: string;
 }) {
-  const { isClerkEnabled, signOut } = useSafeAuth();
+  const { signOut } = useSafeAuth();
   const router = useRouter();
 
-  if (isClerkEnabled) {
-    return <ClerkSignOutButton redirectUrl={redirectUrl}>{children}</ClerkSignOutButton>;
-  }
-
-  const handleClick = () => {
-    signOut();
-    if (redirectUrl) router.push(redirectUrl);
+  const handleSignOutClick = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    await signOut();
+    if (redirectUrl) {
+      router.push(redirectUrl);
+    }
   };
 
   if (children && React.isValidElement(children)) {
     return React.cloneElement(children as React.ReactElement<any>, {
-      onClick: handleClick,
+      onClick: handleSignOutClick,
     });
   }
 
   return (
     <button
-      onClick={handleClick}
+      onClick={handleSignOutClick}
       className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-white/[0.06] rounded-xl transition"
     >
       <LogOut className="h-4 w-4 text-rose-400" />

@@ -381,27 +381,27 @@ export default function StorefrontContent({
 
           {/* Social Icons Row */}
           <div className="flex items-center justify-center gap-2.5 mt-5">
-            {creator.socials.youtube && (
+            {creator?.socials?.youtube && (
               <motion.a whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.92 }} href={creator.socials.youtube} target="_blank" rel="noreferrer" className="p-2.5 rounded-[14px] bg-white/[0.04] hover:bg-red-500/20 text-slate-400 hover:text-red-400 border border-white/[0.08] transition shadow-sm">
                 <Youtube className="h-4 w-4" />
               </motion.a>
             )}
-            {creator.socials.instagram && (
+            {creator?.socials?.instagram && (
               <motion.a whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.92 }} href={creator.socials.instagram} target="_blank" rel="noreferrer" className="p-2.5 rounded-[14px] bg-white/[0.04] hover:bg-pink-500/20 text-slate-400 hover:text-pink-400 border border-white/[0.08] transition shadow-sm">
                 <Instagram className="h-4 w-4" />
               </motion.a>
             )}
-            {creator.socials.linkedin && (
+            {creator?.socials?.linkedin && (
               <motion.a whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.92 }} href={creator.socials.linkedin} target="_blank" rel="noreferrer" className="p-2.5 rounded-[14px] bg-white/[0.04] hover:bg-royal-600/20 text-slate-400 hover:text-royal-400 border border-white/[0.08] transition shadow-sm">
                 <Linkedin className="h-4 w-4" />
               </motion.a>
             )}
-            {creator.socials.twitter && (
+            {creator?.socials?.twitter && (
               <motion.a whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.92 }} href={creator.socials.twitter} target="_blank" rel="noreferrer" className="p-2.5 rounded-[14px] bg-white/[0.04] hover:bg-sky-500/20 text-slate-400 hover:text-sky-400 border border-white/[0.08] transition shadow-sm">
                 <Twitter className="h-4 w-4" />
               </motion.a>
             )}
-            {creator.socials.telegram && (
+            {creator?.socials?.telegram && (
               <motion.a whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.92 }} href={creator.socials.telegram} target="_blank" rel="noreferrer" className="p-2.5 rounded-[14px] bg-white/[0.04] hover:bg-blue-400/20 text-slate-400 hover:text-blue-400 border border-white/[0.08] transition shadow-sm">
                 <Send className="h-4 w-4" />
               </motion.a>

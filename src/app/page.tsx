@@ -35,6 +35,8 @@ import {
   Quote
 } from 'lucide-react';
 import { useCreatorStore } from '@/lib/store';
+import { loginAsDemoCreator, SignedIn } from '@/components/auth/SafeAuth';
+import GoogleAccountChooserModal from '@/components/auth/GoogleAccountChooserModal';
 import UPICheckoutModal from '@/components/checkout/UPICheckoutModal';
 import { 
   AnimatedCounter, 
@@ -90,23 +92,53 @@ const CREATOR_TESTIMONIALS = [
 
 export default function SaaSGrandLandingPage() {
   const router = useRouter();
-  const { activeCreator, products, switchActiveCreator, setDemoMode } = useCreatorStore();
+  const { activeCreator, products, allProducts, switchActiveCreator, setDemoMode } = useCreatorStore();
   const [demoCheckoutOpen, setDemoCheckoutOpen] = useState(false);
+  const [googleModalOpen, setGoogleModalOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<'starter' | 'pro_trial'>('starter');
+  const [trialStartDate, setTrialStartDate] = useState<string>('');
+  const [trialEndDate, setTrialEndDate] = useState<string>('');
 
-  const sampleProduct = products[0] || {
+  const sampleProduct = products[0] || allProducts?.[0] || {
     id: 'prod_demo',
     title: 'Ultimate FAANG SDE & DSA Master Sheet 2025',
     price: 399,
   };
 
   const handleLaunchDemoStudio = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('creatoros_active_creator_id', 'creator_aarav');
-      localStorage.setItem('creatoros_demo_mode', 'true');
-    }
+    loginAsDemoCreator('creator_aarav');
     if (setDemoMode) setDemoMode(true);
     switchActiveCreator('creator_aarav');
     router.push('/dashboard');
+  };
+
+  const handleSelectPricingPlan = (plan: 'starter' | 'pro_trial') => {
+    setSelectedPlan(plan);
+    const now = new Date();
+    const startDate = now.toISOString();
+    const endDate = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString();
+
+    if (plan === 'pro_trial') {
+      setTrialStartDate(startDate);
+      setTrialEndDate(endDate);
+    } else {
+      setTrialStartDate('');
+      setTrialEndDate('');
+    }
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('creatoros_pending_plan', plan);
+      localStorage.setItem('creatoros_plan', plan);
+      if (plan === 'pro_trial') {
+        localStorage.setItem('creatoros_trial_start', startDate);
+        localStorage.setItem('creatoros_trial_end', endDate);
+      } else {
+        localStorage.removeItem('creatoros_trial_start');
+        localStorage.removeItem('creatoros_trial_end');
+      }
+    }
+
+    setGoogleModalOpen(true);
   };
 
   return (
@@ -179,14 +211,16 @@ export default function SaaSGrandLandingPage() {
                   <span>Test Live UPI Checkout (₹399)</span>
                 </RippleButton>
 
-                <Link
-                  href={`/${activeCreator?.username}`}
-                  target="_blank"
-                  className="w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-[16px] border border-white/[0.08] bg-black/40 px-5 py-3.5 text-xs font-medium text-slate-300 hover:text-white hover:border-white/[0.2] transition btn-press"
-                >
-                  <span>Live Storefront</span>
-                  <ArrowUpRight className="h-3.5 w-3.5 text-royal-400" />
-                </Link>
+                <SignedIn>
+                  <Link
+                    href={`/${activeCreator?.username || 'aarav.tech'}`}
+                    target="_blank"
+                    className="w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-[16px] border border-white/[0.08] bg-black/40 px-5 py-3.5 text-xs font-medium text-slate-300 hover:text-white hover:border-white/[0.2] transition btn-press"
+                  >
+                    <span>Live Storefront</span>
+                    <ArrowUpRight className="h-3.5 w-3.5 text-royal-400" />
+                  </Link>
+                </SignedIn>
               </div>
             </FadeIn>
 
@@ -431,7 +465,7 @@ export default function SaaSGrandLandingPage() {
         </section>
 
         {/* PRICING PLANS */}
-        <section className="py-20 bg-[#07090F] border-t border-white/[0.08]">
+        <section id="pricing" className="py-20 bg-[#07090F] border-t border-white/[0.08]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             
             <FadeIn>
@@ -485,11 +519,12 @@ export default function SaaSGrandLandingPage() {
                     </div>
                   </div>
 
-                  <Link href="/dashboard">
-                    <RippleButton className="w-full text-center rounded-[14px] border border-white/[0.12] bg-white/[0.04] py-2.5 text-xs font-semibold text-white hover:bg-white/[0.08]">
-                      Get Started Free
-                    </RippleButton>
-                  </Link>
+                  <RippleButton 
+                    onClick={() => handleSelectPricingPlan('starter')}
+                    className="w-full text-center rounded-[14px] border border-white/[0.12] bg-white/[0.04] py-2.5 text-xs font-semibold text-white hover:bg-white/[0.08]"
+                  >
+                    Get Started Free
+                  </RippleButton>
                 </HoverCard>
               </FadeIn>
 
@@ -538,11 +573,12 @@ export default function SaaSGrandLandingPage() {
                     </div>
                   </div>
 
-                  <Link href="/dashboard">
-                    <RippleButton className="w-full text-center rounded-[14px] bg-royal-600 hover:bg-royal-500 py-3 text-xs font-bold text-white shadow-royal">
-                      Start 14-Day Free Pro Trial
-                    </RippleButton>
-                  </Link>
+                  <RippleButton 
+                    onClick={() => handleSelectPricingPlan('pro_trial')}
+                    className="w-full text-center rounded-[14px] bg-royal-600 hover:bg-royal-500 py-3 text-xs font-bold text-white shadow-royal"
+                  >
+                    Start 14-Day Free Pro Trial
+                  </RippleButton>
                 </HoverCard>
               </FadeIn>
 
@@ -576,6 +612,17 @@ export default function SaaSGrandLandingPage() {
 
         {/* FOOTER */}
         <Footer />
+
+        {/* GOOGLE ACCOUNT CHOOSER / SIGN UP MODAL */}
+        <GoogleAccountChooserModal
+          isOpen={googleModalOpen}
+          onClose={() => setGoogleModalOpen(false)}
+          mode="sign-up"
+          plan={selectedPlan}
+          trialStartDate={trialStartDate}
+          trialEndDate={trialEndDate}
+          redirectUrl="/onboarding"
+        />
 
         {/* DEMO UPI CHECKOUT MODAL */}
         {demoCheckoutOpen && (

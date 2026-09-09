@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Zap, ShieldCheck, Mail, ArrowUpRight, Heart, MapPin } from 'lucide-react';
+import { Zap, ShieldCheck, Mail, ArrowUpRight, Heart } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -52,27 +52,27 @@ export default function Footer() {
             </h3>
             <ul className="space-y-2.5 text-xs text-slate-400">
               <li>
-                <Link href="/dashboard/storefront-builder" className="hover:text-white transition flex items-center gap-1">
+                <Link href="/features/storefront-builder" className="hover:text-white transition flex items-center gap-1">
                   Bio Storefront Builder
                 </Link>
               </li>
               <li>
-                <Link href="/dashboard/gst-invoices" className="hover:text-white transition flex items-center gap-1">
+                <Link href="/features/gst-invoicing" className="hover:text-white transition flex items-center gap-1">
                   GST Invoicing (SAC 998439)
                 </Link>
               </li>
               <li>
-                <Link href="/dashboard/whatsapp" className="hover:text-white transition flex items-center gap-1">
+                <Link href="/features/whatsapp-automation" className="hover:text-white transition flex items-center gap-1">
                   WhatsApp Automations
                 </Link>
               </li>
               <li>
-                <Link href="/dashboard/ai-coach" className="hover:text-white transition flex items-center gap-1">
+                <Link href="/features/ai-business-coach" className="hover:text-white transition flex items-center gap-1">
                   AI Business Coach
                 </Link>
               </li>
               <li>
-                <Link href="/dashboard/calendar" className="hover:text-white transition flex items-center gap-1">
+                <Link href="/features/calendar-sync" className="hover:text-white transition flex items-center gap-1">
                   Google Calendar 1:1 Sync
                 </Link>
               </li>
@@ -86,27 +86,27 @@ export default function Footer() {
             </h3>
             <ul className="space-y-2.5 text-xs text-slate-400">
               <li>
-                <Link href="/aarav" className="hover:text-white transition flex items-center gap-1">
+                <Link href="/solutions/digital-products" className="hover:text-white transition flex items-center gap-1">
                   Digital Product Sales
                 </Link>
               </li>
               <li>
-                <Link href="/aarav/course/course_system_design" className="hover:text-white transition flex items-center gap-1">
+                <Link href="/solutions/video-courses" className="hover:text-white transition flex items-center gap-1">
                   Video Courses & Cohorts
                 </Link>
               </li>
               <li>
-                <Link href="/aarav/memberships" className="hover:text-white transition flex items-center gap-1">
+                <Link href="/solutions/community" className="hover:text-white transition flex items-center gap-1">
                   Paid Community Subscriptions
                 </Link>
               </li>
               <li>
-                <Link href="/dashboard/marketplace" className="hover:text-white transition flex items-center gap-1">
+                <Link href="/solutions/brand-marketplace" className="hover:text-white transition flex items-center gap-1">
                   Brand Collaboration Marketplace
                 </Link>
               </li>
               <li>
-                <Link href="/dashboard/media-kit" className="hover:text-white transition flex items-center gap-1">
+                <Link href="/solutions/ai-media-kit" className="hover:text-white transition flex items-center gap-1">
                   AI Media Kit Generator
                 </Link>
               </li>
@@ -175,10 +175,7 @@ export default function Footer() {
           </div>
 
           <div className="flex items-center gap-4 text-slate-400">
-            <span className="flex items-center gap-1 text-slate-500">
-              <MapPin className="h-3 w-3 text-royal-400" />
-              Indiranagar, Bengaluru, Karnataka
-            </span>
+            <span>All rights reserved</span>
           </div>
         </div>
 

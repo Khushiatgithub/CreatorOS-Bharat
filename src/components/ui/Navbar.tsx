@@ -1,37 +1,29 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { SignedIn, SignedOut, UserButton } from '@/components/auth/SafeAuth';
 import { useCreatorStore } from '@/lib/store';
 import { useTheme } from '@/components/ui/ThemeProvider';
 import { 
-  Sparkles, 
-  ExternalLink, 
   LayoutDashboard, 
-  ChevronDown, 
-  ShoppingBag, 
   Zap, 
-  ShieldCheck, 
-  Layers,
   ArrowUpRight,
   Sun,
   Moon,
-  LogIn,
-  User
+  LogIn
 } from 'lucide-react';
 
 export default function Navbar() {
   const pathname = usePathname();
   const { activeCreator } = useCreatorStore();
   const { theme, toggleTheme } = useTheme();
-  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const isDashboard = pathname.startsWith('/dashboard');
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-white/[0.08] bg-[#05070B]/90 dark:bg-[#05070B]/90 light:bg-white/90 backdrop-blur-2xl transition-colors duration-300">
+    <header className="sticky top-0 z-50 w-full border-b border-white/[0.08] bg-[#05070B]/90 backdrop-blur-2xl transition-colors duration-300">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         
         {/* Brand Logo - Linear/Stripe Inspired */}
@@ -55,7 +47,7 @@ export default function Navbar() {
             </div>
           </Link>
 
-          {/* Navigation Links (Desktop) - Linear Clean Menu */}
+          {/* Navigation Links (Desktop) */}
           <nav className="hidden md:flex items-center gap-1 pl-2">
             <Link 
               href="/#features" 
@@ -64,30 +56,21 @@ export default function Navbar() {
               Features
             </Link>
             <Link 
-              href="/dashboard/storefront-builder" 
+              href="/#pricing" 
               className="rounded-xl px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.05] transition-colors whitespace-nowrap"
             >
-              Storefront Builder
+              Pricing
             </Link>
-            <Link 
-              href="/dashboard/gst-invoices" 
-              className="rounded-xl px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.05] transition-colors whitespace-nowrap"
-            >
-              GST Invoicing
-            </Link>
-            <Link 
-              href="/dashboard/media-kit" 
-              className="rounded-xl px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.05] transition-colors whitespace-nowrap"
-            >
-              AI Media Kit
-            </Link>
-            <Link 
-              href="/dashboard/marketplace" 
-              className="rounded-xl px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.05] transition-colors flex items-center gap-1.5 whitespace-nowrap"
-            >
-              <span>Brand Deals</span>
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            </Link>
+            <SignedIn>
+              <Link 
+                href={`/${activeCreator?.username || 'aarav.tech'}`}
+                target="_blank"
+                className="rounded-xl px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.05] transition-colors flex items-center gap-1 whitespace-nowrap"
+              >
+                <span>Live Storefront</span>
+                <ArrowUpRight className="h-3 w-3 text-royal-400" />
+              </Link>
+            </SignedIn>
           </nav>
         </div>
 
@@ -96,122 +79,20 @@ export default function Navbar() {
           
           {/* Theme Sun/Moon Toggle Button */}
           <button
+            type="button"
             onClick={toggleTheme}
+            aria-label={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            className="flex h-9 w-9 items-center justify-center rounded-[12px] border border-white/[0.1] bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] hover:text-white hover:border-royal-500/40 transition-all duration-300 btn-press"
+            className="flex h-9 w-9 items-center justify-center rounded-[12px] border border-white/[0.1] bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] hover:text-white hover:border-royal-500/40 transition-all duration-300 btn-press shrink-0 cursor-pointer"
           >
             {theme === 'dark' ? (
               <Sun className="h-4 w-4 text-amber-400 transition-transform duration-300 hover:rotate-45" />
             ) : (
-              <Moon className="h-4 w-4 text-royal-400 transition-transform duration-300 hover:-rotate-12" />
+              <Moon className="h-4 w-4 text-royal-500 transition-transform duration-300 hover:-rotate-12" />
             )}
           </button>
 
-          {/* Creator Account Menu */}
-          <div className="relative">
-            <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-2 rounded-full border border-white/[0.1] bg-white/[0.04] px-3 py-1.5 text-xs text-slate-200 hover:border-royal-500/40 hover:bg-white/[0.08] transition btn-press shrink-0"
-            >
-              <img 
-                src={activeCreator?.avatarUrl} 
-                alt={activeCreator?.name} 
-                className="h-6 w-6 rounded-full object-cover shrink-0 ring-1 ring-royal-500"
-              />
-              <span className="font-medium hidden sm:inline text-white whitespace-nowrap">{activeCreator?.name}</span>
-              <span className="text-slate-400 font-mono text-[11px] whitespace-nowrap hidden lg:inline">@{activeCreator?.username}</span>
-              <ChevronDown className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-            </button>
-
-            {dropdownOpen && (
-              <>
-                {/* Backdrop overlay to close on outside click */}
-                <div 
-                  className="fixed inset-0 z-40" 
-                  onClick={() => setDropdownOpen(false)} 
-                />
-
-                <div 
-                  className="absolute right-0 top-full mt-2 w-72 rounded-[20px] glass-dropdown p-2.5 shadow-2xl z-50 border border-white/[0.12] animate-scale-in"
-                  onClick={() => setDropdownOpen(false)}
-                >
-                  {/* Creator Profile Summary Header */}
-                  <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center gap-3">
-                    <img 
-                      src={activeCreator?.avatarUrl} 
-                      alt={activeCreator?.name} 
-                      className="h-10 w-10 rounded-full object-cover shrink-0 ring-2 ring-royal-500/50" 
-                    />
-                    <div className="flex-1 overflow-hidden">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-bold text-xs truncate text-white">{activeCreator?.name}</span>
-                        {activeCreator?.verified && <ShieldCheck className="h-3.5 w-3.5 text-royal-400 shrink-0" />}
-                      </div>
-                      <p className="text-[11px] text-royal-400 font-mono truncate">@{activeCreator?.username}</p>
-                      <p className="text-[10px] text-slate-400 truncate mt-0.5">{activeCreator?.category}</p>
-                    </div>
-                  </div>
-
-                  <div className="mt-2 space-y-1">
-                    <Link
-                      href={`/${activeCreator?.username}`}
-                      target="_blank"
-                      className="w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-white/[0.06] hover:text-white transition"
-                    >
-                      <span className="flex items-center gap-2">
-                        <ArrowUpRight className="h-3.5 w-3.5 text-royal-400" />
-                        <span>View Live Storefront</span>
-                      </span>
-                      <span className="text-[10px] font-mono text-slate-400 bg-white/[0.06] px-1.5 py-0.5 rounded">Live</span>
-                    </Link>
-
-                    <Link
-                      href="/dashboard/storefront-builder"
-                      className="w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-white/[0.06] hover:text-white transition"
-                    >
-                      <span className="flex items-center gap-2">
-                        <Layers className="h-3.5 w-3.5 text-royal-400" />
-                        <span>Storefront Builder</span>
-                      </span>
-                    </Link>
-
-                    <Link
-                      href="/onboarding"
-                      className="w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-royal-400 hover:bg-royal-600/10 transition"
-                    >
-                      <span className="flex items-center gap-2">
-                        <Sparkles className="h-3.5 w-3.5" />
-                        <span>Launch Onboarding Wizard</span>
-                      </span>
-                      <span className="text-[10px] font-mono bg-royal-600/20 px-1.5 py-0.5 rounded">3 Steps</span>
-                    </Link>
-
-                    <Link
-                      href="/dashboard/profile"
-                      className="w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/[0.06] hover:text-white transition"
-                    >
-                      <span className="flex items-center gap-2">
-                        <User className="h-3.5 w-3.5 text-slate-400" />
-                        <span>Account & Security</span>
-                      </span>
-                    </Link>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* View Live Bio-link storefront button */}
-          <Link
-            href={`/${activeCreator?.username}`}
-            target="_blank"
-            className="flex items-center gap-1.5 rounded-[14px] border border-white/[0.1] bg-white/[0.04] px-3.5 py-2 text-xs font-medium text-slate-200 hover:bg-white/[0.08] hover:border-white/[0.2] transition btn-press shadow-sm whitespace-nowrap shrink-0"
-          >
-            <span className="hidden sm:inline">Storefront</span>
-            <ArrowUpRight className="h-3.5 w-3.5 text-royal-400" />
-          </Link>
-
-          {/* CLERK AUTHENTICATION ACTIONS */}
+          {/* CLERK & RESILIENT AUTHENTICATION ACTIONS */}
           <SignedIn>
             <div className="flex items-center gap-2">
               <Link
@@ -226,13 +107,6 @@ export default function Navbar() {
                 afterSignOutUrl="/"
                 userProfileMode="navigation"
                 userProfileUrl="/dashboard/profile"
-                appearance={{
-                  elements: {
-                    userButtonAvatarBox: 'h-8 w-8 ring-2 ring-royal-500/50 rounded-full',
-                    userButtonPopoverCard: 'bg-[#0A0D17] border border-white/[0.12] text-white shadow-2xl',
-                    userButtonPopoverFooter: 'hidden'
-                  }
-                }}
               />
             </div>
           </SignedIn>

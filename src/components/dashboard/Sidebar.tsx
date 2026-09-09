@@ -226,10 +226,10 @@ export default function Sidebar() {
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
           </div>
           <p className="text-[11px] text-slate-300 truncate">
-            <span className="text-slate-400">Bank:</span> <span className="font-mono text-white font-medium">{activeCreator?.bankAccount.bankName}</span>
+            <span className="text-slate-400">Bank:</span> <span className="font-mono text-white font-medium">{activeCreator?.bankAccount?.bankName}</span>
           </p>
           <p className="text-[10px] text-slate-400 mt-0.5 font-mono truncate">
-            {activeCreator?.bankAccount.accountNumberMasked}
+            {activeCreator?.bankAccount?.accountNumberMasked}
           </p>
         </div>
       </div>

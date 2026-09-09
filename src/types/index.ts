@@ -54,6 +54,9 @@ export interface Creator {
     icon?: string;
     highlight?: boolean;
   }[];
+  plan?: 'starter' | 'pro_trial' | 'pro' | string;
+  trial_start_date?: string;
+  trial_end_date?: string;
 }
 
 export interface DigitalProduct {

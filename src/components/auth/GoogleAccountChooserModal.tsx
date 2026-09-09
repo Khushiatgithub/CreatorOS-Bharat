@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCreatorStore } from '@/lib/store';
+import { loginAsDemoCreator } from '@/components/auth/SafeAuth';
 import { UserPlus, X, Minus, Square, ExternalLink, Shield, Check, Lock, ArrowRight, Sparkles } from 'lucide-react';
 
 interface GoogleAccount {
@@ -41,12 +42,20 @@ interface GoogleAccountChooserModalProps {
   isOpen: boolean;
   onClose: () => void;
   mode?: 'sign-up' | 'sign-in';
+  plan?: 'starter' | 'pro_trial' | string;
+  trialStartDate?: string;
+  trialEndDate?: string;
+  redirectUrl?: string;
 }
 
 export default function GoogleAccountChooserModal({
   isOpen,
   onClose,
   mode = 'sign-up',
+  plan,
+  trialStartDate,
+  trialEndDate,
+  redirectUrl,
 }: GoogleAccountChooserModalProps) {
   const router = useRouter();
   const { creators, switchActiveCreator, updateCreator, setDemoMode } = useCreatorStore();
@@ -77,14 +86,33 @@ export default function GoogleAccountChooserModal({
       const rawUsername = cleanEmail.split('@')[0].replace(/[^a-z0-9_.]/g, '') || 'creator';
       const displayName = account.name || rawUsername;
 
+      // Determine active plan and trial dates
+      const activePlan = plan || (typeof window !== 'undefined' ? localStorage.getItem('creatoros_pending_plan') : null) || 'starter';
+      const activeTrialStart = trialStartDate || (activePlan === 'pro_trial' ? (typeof window !== 'undefined' ? localStorage.getItem('creatoros_trial_start') : null) || new Date().toISOString() : undefined);
+      const activeTrialEnd = trialEndDate || (activePlan === 'pro_trial' ? (typeof window !== 'undefined' ? localStorage.getItem('creatoros_trial_end') : null) || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString() : undefined);
+
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('creatoros_plan', activePlan);
+        if (activeTrialStart) localStorage.setItem('creatoros_trial_start', activeTrialStart);
+        if (activeTrialEnd) localStorage.setItem('creatoros_trial_end', activeTrialEnd);
+      }
+
       // Check if creator already exists
       const existing = creators.find(
         (c) => c.email?.toLowerCase() === cleanEmail || c.username?.toLowerCase() === rawUsername
       );
 
       if (existing) {
+        const updatedExisting = {
+          ...existing,
+          plan: activePlan,
+          trial_start_date: activeTrialStart,
+          trial_end_date: activeTrialEnd,
+        };
+        updateCreator(updatedExisting);
         switchActiveCreator(existing.id);
-        router.push(mode === 'sign-up' ? '/onboarding' : '/dashboard');
+        const destination = redirectUrl || (mode === 'sign-up' ? '/onboarding' : '/dashboard');
+        router.push(destination);
       } else {
         // Create new dedicated CreatorOS profile for chosen Google account
         const newCreatorId = `user_${Date.now()}`;
@@ -104,6 +132,9 @@ export default function GoogleAccountChooserModal({
           upiId: `${rawUsername}@okaxis`,
           upiName: displayName,
           email: cleanEmail,
+          plan: activePlan,
+          trial_start_date: activeTrialStart,
+          trial_end_date: activeTrialEnd,
           bankAccount: {
             accountNumberMasked: '•••• •••• •••• 0000',
             ifsc: 'HDFC0000001',
@@ -123,7 +154,8 @@ export default function GoogleAccountChooserModal({
 
         updateCreator(newCreator);
         switchActiveCreator(newCreator.id);
-        router.push(mode === 'sign-up' ? '/onboarding' : '/dashboard');
+        const destination = redirectUrl || (mode === 'sign-up' ? '/onboarding' : '/dashboard');
+        router.push(destination);
       }
 
       onClose();
@@ -294,6 +326,35 @@ export default function GoogleAccountChooserModal({
                     <UserPlus className="h-4 w-4" />
                   </div>
                   <span className="text-sm font-medium">Use another account</span>
+                </button>
+
+                {/* Explore Aarav Sharma Demo Account */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    loginAsDemoCreator('creator_aarav');
+                    if (setDemoMode) setDemoMode(true);
+                    switchActiveCreator('creator_aarav');
+                    onClose();
+                    router.push('/dashboard');
+                  }}
+                  disabled={!!selectingEmail}
+                  className="w-full flex items-center gap-3.5 p-3 rounded-[12px] text-left hover:bg-amber-500/10 hover:border-amber-500/40 border border-amber-500/25 bg-amber-500/5 transition duration-150 text-amber-200 mt-2 group"
+                >
+                  <div className="h-9 w-9 rounded-full flex items-center justify-center bg-amber-500/20 border border-amber-500/40 text-amber-300 shrink-0">
+                    <Sparkles className="h-4 w-4 text-amber-400 group-hover:rotate-12 transition-transform" />
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                    <div className="font-semibold text-sm text-amber-200 flex items-center gap-1.5">
+                      <span>Aarav Sharma</span>
+                      <span className="text-[10px] font-mono bg-amber-500/25 border border-amber-500/40 px-1.5 py-0.2 rounded text-amber-300">
+                        Demo Account
+                      </span>
+                    </div>
+                    <div className="text-xs text-amber-200/70 truncate">
+                      Instant demo studio access • No Google sign-in needed
+                    </div>
+                  </div>
                 </button>
               </div>
             </div>
